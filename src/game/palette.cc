@@ -1,6 +1,6 @@
 #include "game/palette.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "game/cycle.h"
 #include "game/gsound.h"
@@ -36,7 +36,7 @@ void palette_init()
 
     fadeSystemPalette(current_palette, current_palette, 60);
 
-    colorSetFadeBkFunc(NULL);
+    colorSetFadeBkFunc(nullptr);
 
     // Actual fade duration will never be 0 since |fadeSystemPalette| uses
     // frame rate throttling.
@@ -69,7 +69,7 @@ void palette_fade_to(unsigned char* palette)
     }
 
     fadeSystemPalette(current_palette, palette, fade_steps);
-    colorSetFadeBkFunc(NULL);
+    colorSetFadeBkFunc(nullptr);
 
     memcpy(current_palette, palette, 768);
 

@@ -1,7 +1,7 @@
 #include "int/widget.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "int/datafile.h"
 #include "int/memdbg.h"
@@ -16,9 +16,9 @@
 
 namespace fallout {
 
-#define WIDGET_UPDATE_REGIONS_CAPACITY 32
+static constexpr int WIDGET_UPDATE_REGIONS_CAPACITY = 32;
 
-typedef struct StatusBar {
+struct StatusBar {
     unsigned char* field_0;
     unsigned char* field_4;
     int win;
@@ -29,9 +29,9 @@ typedef struct StatusBar {
     int field_1C;
     int field_20;
     int field_24;
-} StatusBar;
+};
 
-typedef struct UpdateRegion {
+struct UpdateRegion {
     int win;
     int x;
     int y;
@@ -40,9 +40,9 @@ typedef struct UpdateRegion {
     void* value;
     UpdateRegionShowFunc* showFunc;
     UpdateRegionDrawFunc* drawFunc;
-} UpdateRegion;
+};
 
-typedef struct TextInputRegion {
+struct TextInputRegion {
     int textRegionId;
     int isUsed;
     int field_8;
@@ -55,9 +55,9 @@ typedef struct TextInputRegion {
     TextInputRegionDeleteFunc* deleteFunc;
     int field_28;
     void* deleteFuncUserData;
-} TextInputRegion;
+};
 
-typedef struct TextRegion {
+struct TextRegion {
     int win;
     int isUsed;
     int x;
@@ -68,7 +68,7 @@ typedef struct TextRegion {
     int textFlags;
     int backgroundColor;
     int font;
-} TextRegion;
+};
 
 static void deleteChar(char* string, int pos, int length);
 static void insertChar(char* string, char ch, int pos, int length);
@@ -145,10 +145,10 @@ int win_add_text_input_region(int textRegionId, char* text, int a3, int a4)
     }
 
     if (textInputRegionIndex == numTextInputRegions) {
-        if (textInputRegions == NULL) {
-            textInputRegions = (TextInputRegion*)mymalloc(sizeof(*textInputRegions), __FILE__, __LINE__);
+        if (textInputRegions == nullptr) {
+            textInputRegions = static_cast<TextInputRegion*>(mymalloc(sizeof(*textInputRegions), __FILE__, __LINE__));
         } else {
-            textInputRegions = (TextInputRegion*)myrealloc(textInputRegions, sizeof(*textInputRegions) * (numTextInputRegions + 1), __FILE__, __LINE__);
+            textInputRegions = static_cast<TextInputRegion*>(myrealloc(textInputRegions, sizeof(*textInputRegions) * (numTextInputRegions + 1), __FILE__, __LINE__));
         }
         numTextInputRegions++;
     }
@@ -160,8 +160,8 @@ int win_add_text_input_region(int textRegionId, char* text, int a3, int a4)
     textInputRegions[textInputRegionIndex].field_C = 0;
     textInputRegions[textInputRegionIndex].text = text;
     textInputRegions[textInputRegionIndex].field_10 = strlen(text);
-    textInputRegions[textInputRegionIndex].deleteFunc = NULL;
-    textInputRegions[textInputRegionIndex].deleteFuncUserData = NULL;
+    textInputRegions[textInputRegionIndex].deleteFunc = nullptr;
+    textInputRegions[textInputRegionIndex].deleteFuncUserData = nullptr;
 
     oldFont = text_curr();
     text_font(textRegions[textRegionId - 1].font);
@@ -175,11 +175,11 @@ int win_add_text_input_region(int textRegionId, char* text, int a3, int a4)
         -1,
         -1,
         (textInputRegionIndex + 1) | 0x400,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
         0);
-    win_register_button_func(btn, NULL, NULL, NULL, textInputRegionDispatch);
+    win_register_button_func(btn, nullptr, nullptr, nullptr, textInputRegionDispatch);
 
     // NOTE: Uninline.
     win_print_text_region(textRegionId, text);
@@ -219,7 +219,7 @@ int win_delete_text_input_region(int textInputRegionId)
     textInputRegionIndex = textInputRegionId - 1;
     if (textInputRegionIndex >= 0 && textInputRegionIndex < numTextInputRegions) {
         if (textInputRegions[textInputRegionIndex].isUsed != 0) {
-            if (textInputRegions[textInputRegionIndex].deleteFunc != NULL) {
+            if (textInputRegions[textInputRegionIndex].deleteFunc != nullptr) {
                 textInputRegions[textInputRegionIndex].deleteFunc(textInputRegions[textInputRegionIndex].text, textInputRegions[textInputRegionIndex].deleteFuncUserData);
             }
 
@@ -264,10 +264,10 @@ int win_add_text_region(int win, int x, int y, int width, int font, int textAlig
     }
 
     if (textRegionIndex == numTextRegions) {
-        if (textRegions == NULL) {
-            textRegions = (TextRegion*)mymalloc(sizeof(*textRegions), __FILE__, __LINE__); // "..\int\WIDGET.C", 615
+        if (textRegions == nullptr) {
+            textRegions = static_cast<TextRegion*>(mymalloc(sizeof(*textRegions), __FILE__, __LINE__)); // "..\int\WIDGET.C", 615
         } else {
-            textRegions = (TextRegion*)myrealloc(textRegions, sizeof(*textRegions) * (numTextRegions + 1), __FILE__, __LINE__); // "..\int\WIDGET.C", 616
+            textRegions = static_cast<TextRegion*>(myrealloc(textRegions, sizeof(*textRegions) * (numTextRegions + 1), __FILE__, __LINE__)); // "..\int\WIDGET.C", 616
         }
         numTextRegions++;
     }
@@ -417,10 +417,10 @@ int win_delete_all_update_regions(int win)
     int index;
 
     for (index = 0; index < WIDGET_UPDATE_REGIONS_CAPACITY; index++) {
-        if (updateRegions[index] != NULL) {
+        if (updateRegions[index] != nullptr) {
             if (win == updateRegions[index]->win) {
                 myfree(updateRegions[index], __FILE__, __LINE__); // "..\int\WIDGET.C", 722
-                updateRegions[index] = NULL;
+                updateRegions[index] = nullptr;
             }
         }
     }
@@ -488,7 +488,7 @@ int widgetDoInput()
     int index;
 
     for (index = 0; index < WIDGET_UPDATE_REGIONS_CAPACITY; index++) {
-        if (updateRegions[index] != NULL) {
+        if (updateRegions[index] != nullptr) {
             showRegion(updateRegions[index]);
         }
     }
@@ -517,17 +517,17 @@ static void showRegion(UpdateRegion* updateRegion)
 
     switch (updateRegion->type & 0xFF) {
     case 1:
-        value = (float)(*(int*)updateRegion->value);
+        value = static_cast<float>(*(int*)updateRegion->value);
         break;
     case 2:
-        value = *(float*)updateRegion->value;
+        value = *reinterpret_cast<float*>(updateRegion->value);
         break;
     case 4:
-        value = *(float*)updateRegion->value / 65636.0f;
+        value = *reinterpret_cast<float*>(updateRegion->value) / 65636.0f;
         break;
     case 8:
         win_print(updateRegion->win,
-            (char*)updateRegion->value,
+            reinterpret_cast<char*>(updateRegion->value),
             0,
             updateRegion->x,
             updateRegion->y,
@@ -542,7 +542,7 @@ static void showRegion(UpdateRegion* updateRegion)
 
     switch (updateRegion->type & 0xFF00) {
     case 0x100:
-        snprintf(stringBuffer, sizeof(stringBuffer), " %d ", (int)value);
+        snprintf(stringBuffer, sizeof(stringBuffer), " %d ", static_cast<int>(value));
         break;
     case 0x200:
         snprintf(stringBuffer, sizeof(stringBuffer), " %f ", value);
@@ -551,7 +551,7 @@ static void showRegion(UpdateRegion* updateRegion)
         snprintf(stringBuffer, sizeof(stringBuffer), " %6.2f%% ", value * 100.0f);
         break;
     case 0x800:
-        if (updateRegion->showFunc != NULL) {
+        if (updateRegion->showFunc != nullptr) {
             updateRegion->showFunc(updateRegion->value);
         }
         return;
@@ -574,7 +574,7 @@ int draw_widgets()
     int index;
 
     for (index = 0; index < WIDGET_UPDATE_REGIONS_CAPACITY; index++) {
-        if (updateRegions[index] != NULL) {
+        if (updateRegions[index] != nullptr) {
             if ((updateRegions[index]->type & 0xFF00) == 0x800) {
                 updateRegions[index]->drawFunc(updateRegions[index]->value);
             }
@@ -588,7 +588,7 @@ int draw_widgets()
 int update_widgets()
 {
     for (int index = 0; index < WIDGET_UPDATE_REGIONS_CAPACITY; index++) {
-        if (updateRegions[index] != NULL) {
+        if (updateRegions[index] != nullptr) {
             showRegion(updateRegions[index]);
         }
     }
@@ -602,7 +602,7 @@ int win_register_update(int win, int x, int y, UpdateRegionShowFunc* showFunc, U
     int updateRegionIndex;
 
     for (updateRegionIndex = 0; updateRegionIndex < WIDGET_UPDATE_REGIONS_CAPACITY; updateRegionIndex++) {
-        if (updateRegions[updateRegionIndex] == NULL) {
+        if (updateRegions[updateRegionIndex] == nullptr) {
             break;
         }
     }
@@ -611,7 +611,7 @@ int win_register_update(int win, int x, int y, UpdateRegionShowFunc* showFunc, U
         return -1;
     }
 
-    updateRegions[updateRegionIndex] = (UpdateRegion*)mymalloc(sizeof(*updateRegions), __FILE__, __LINE__); // "..\int\WIDGET.C", 859
+    updateRegions[updateRegionIndex] = static_cast<UpdateRegion*>(mymalloc(sizeof(*updateRegions), __FILE__, __LINE__)); // "..\int\WIDGET.C", 859
     updateRegions[updateRegionIndex]->win = win;
     updateRegions[updateRegionIndex]->x = x;
     updateRegions[updateRegionIndex]->y = y;
@@ -628,9 +628,9 @@ int win_register_update(int win, int x, int y, UpdateRegionShowFunc* showFunc, U
 int win_delete_update_region(int updateRegionIndex)
 {
     if (updateRegionIndex >= 0 && updateRegionIndex < WIDGET_UPDATE_REGIONS_CAPACITY) {
-        if (updateRegions[updateRegionIndex] == NULL) {
+        if (updateRegions[updateRegionIndex] == nullptr) {
             myfree(updateRegions[updateRegionIndex], __FILE__, __LINE__); // "..\int\WIDGET.C", 875
-            updateRegions[updateRegionIndex] = NULL;
+            updateRegions[updateRegionIndex] = nullptr;
             return 1;
         }
     }
@@ -642,7 +642,7 @@ int win_delete_update_region(int updateRegionIndex)
 void win_do_updateregions()
 {
     for (int index = 0; index < WIDGET_UPDATE_REGIONS_CAPACITY; index++) {
-        if (updateRegions[index] != NULL) {
+        if (updateRegions[index] != nullptr) {
             showRegion(updateRegions[index]);
         }
     }
@@ -651,14 +651,14 @@ void win_do_updateregions()
 // 0x4A28B4
 static void freeStatusBar()
 {
-    if (statusBar.field_0 != NULL) {
+    if (statusBar.field_0 != nullptr) {
         myfree(statusBar.field_0, __FILE__, __LINE__); // "..\int\WIDGET.C", 891
-        statusBar.field_0 = NULL;
+        statusBar.field_0 = nullptr;
     }
 
-    if (statusBar.field_4 != NULL) {
+    if (statusBar.field_4 != nullptr) {
         myfree(statusBar.field_4, __FILE__, __LINE__); // "..\int\WIDGET.C", 892
-        statusBar.field_4 = NULL;
+        statusBar.field_4 = nullptr;
     }
 
     memset(&statusBar, 0, sizeof(statusBar));
@@ -672,13 +672,13 @@ void initWidgets()
     int updateRegionIndex;
 
     for (updateRegionIndex = 0; updateRegionIndex < WIDGET_UPDATE_REGIONS_CAPACITY; updateRegionIndex++) {
-        updateRegions[updateRegionIndex] = NULL;
+        updateRegions[updateRegionIndex] = nullptr;
     }
 
-    textRegions = NULL;
+    textRegions = nullptr;
     numTextRegions = 0;
 
-    textInputRegions = NULL;
+    textInputRegions = nullptr;
     numTextInputRegions = 0;
 
     freeStatusBar();
@@ -687,16 +687,16 @@ void initWidgets()
 // 0x4A2958
 void widgetsClose()
 {
-    if (textRegions != NULL) {
+    if (textRegions != nullptr) {
         myfree(textRegions, __FILE__, __LINE__); // "..\int\WIDGET.C", 908
     }
-    textRegions = NULL;
+    textRegions = nullptr;
     numTextRegions = 0;
 
-    if (textInputRegions != NULL) {
+    if (textInputRegions != nullptr) {
         myfree(textInputRegions, __FILE__, __LINE__); // "..\int\WIDGET.C", 912
     }
-    textInputRegions = NULL;
+    textInputRegions = nullptr;
     numTextInputRegions = 0;
 
     freeStatusBar();
@@ -748,9 +748,9 @@ void real_win_set_status_bar(int a1, int a2, int a3)
 void real_win_update_status_bar(float a1, float a2)
 {
     if (statusBarActive) {
-        statusBar.field_1C = (int)(a1 * statusBar.width);
-        statusBar.field_20 = (int)(a1 * statusBar.width);
-        statusBar.field_24 = (int)(a2 * statusBar.width);
+        statusBar.field_1C = static_cast<int>(a1 * statusBar.width);
+        statusBar.field_20 = static_cast<int>(a1 * statusBar.width);
+        statusBar.field_24 = static_cast<int>(a2 * statusBar.width);
         drawStatusBar();
         soundUpdate();
     }
@@ -760,7 +760,7 @@ void real_win_update_status_bar(float a1, float a2)
 void real_win_increment_status_bar(float a1)
 {
     if (statusBarActive) {
-        statusBar.field_1C = statusBar.field_20 + (int)(a1 * (statusBar.field_24 - statusBar.field_20));
+        statusBar.field_1C = statusBar.field_20 + static_cast<int>(a1 * (statusBar.field_24 - statusBar.field_20));
         drawStatusBar();
         soundUpdate();
     }

@@ -1,9 +1,10 @@
 #include "game/lip_sync.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "game/gsound.h"
+#include "game/raii.h"
 #include "int/audio.h"
 #include "int/sound.h"
 #include "platform_compat.h"
@@ -37,7 +38,7 @@ LipsData lip_info = {
     2,
     22528,
     0,
-    NULL,
+    nullptr,
     -1,
     0,
     0,
@@ -86,7 +87,7 @@ void lips_bkg_proc()
     v0 = head_marker_current;
 
     if ((lip_info.flags & LIPS_FLAG_0x02) != 0) {
-        int v1 = soundGetPosition(lip_info.sound);
+        int v1 = lip_info.sound->getPosition();
 
         speech_marker = &(lip_info.markers[v0]);
         while (v1 > speech_marker->position) {
@@ -149,7 +150,7 @@ int lips_play_speech()
     lip_info.flags |= LIPS_FLAG_0x02;
     head_marker_current = 0;
 
-    if (soundSetPosition(lip_info.sound, lip_info.field_20) != 0) {
+    if (lip_info.sound->setPosition(lip_info.field_20) != 0) {
         debug_printf("Failed set of start_offset!\n");
     }
 
@@ -168,11 +169,11 @@ int lips_play_speech()
     }
 
     int speechVolume = gsound_speech_volume_get();
-    soundVolume(lip_info.sound, (int)(speechVolume * 0.69));
+    lip_info.sound->setVolume(static_cast<int>(speechVolume * 0.69));
 
     speechStartTime = get_time();
 
-    if (soundPlay(lip_info.sound) != 0) {
+    if (lip_info.sound->play() != 0) {
         debug_printf("Failed play!\n");
 
         // NOTE: Uninline.
@@ -186,7 +187,7 @@ int lips_play_speech()
 static int lips_stop_speech()
 {
     head_marker_current = 0;
-    soundStop(lip_info.sound);
+    lip_info.sound->stop();
     lip_info.flags &= ~(LIPS_FLAG_0x01 | LIPS_FLAG_0x02);
     return 0;
 }
@@ -194,7 +195,7 @@ static int lips_stop_speech()
 // 0x46CEBC
 static int lips_read_phoneme_type(unsigned char* phoneme_type, DB_FILE* stream)
 {
-    return db_freadByte(stream, phoneme_type);
+    return stream->freadByte(phoneme_type);
 }
 
 // 0x46CECC
@@ -203,10 +204,10 @@ static int lips_read_marker_type(SpeechMarker* marker_type, DB_FILE* stream)
     int marker;
 
     // Marker is read into temporary variable.
-    if (db_freadInt32(stream, &marker) == -1) return -1;
+    if (stream->freadInt32(&marker) == -1) return -1;
 
     // Position is read directly into struct.
-    if (db_freadInt32(stream, &(marker_type->position)) == -1) return -1;
+    if (stream->freadInt32(&(marker_type->position)) == -1) return -1;
 
     marker_type->marker = marker;
 
@@ -221,31 +222,31 @@ static int lips_read_lipsynch_info(LipsData* lipsData, DB_FILE* stream)
     int phonemes;
     int markers;
 
-    if (db_freadInt32(stream, &(lipsData->version)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_4)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->flags)) == -1) return -1;
-    if (db_freadInt32(stream, &(sound)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_10)) == -1) return -1;
-    if (db_freadInt32(stream, &(field_14)) == -1) return -1;
-    if (db_freadInt32(stream, &(phonemes)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_1C)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_20)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->phoneme_count)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_28)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->marker_count)) == -1) return -1;
-    if (db_freadInt32(stream, &(markers)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_34)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_38)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_3C)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_40)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_44)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_48)) == -1) return -1;
-    if (db_freadInt32(stream, &(lipsData->field_4C)) == -1) return -1;
-    if (db_freadInt8List(stream, lipsData->file_name, 8) == -1) return -1;
-    if (db_freadInt8List(stream, lipsData->field_58, 4) == -1) return -1;
-    if (db_freadInt8List(stream, lipsData->field_5C, 4) == -1) return -1;
-    if (db_freadInt8List(stream, lipsData->field_60, 4) == -1) return -1;
-    if (db_freadInt8List(stream, lipsData->field_64, 260) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->version)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_4)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->flags)) == -1) return -1;
+    if (stream->freadInt32(&(sound)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_10)) == -1) return -1;
+    if (stream->freadInt32(&(field_14)) == -1) return -1;
+    if (stream->freadInt32(&(phonemes)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_1C)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_20)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->phoneme_count)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_28)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->marker_count)) == -1) return -1;
+    if (stream->freadInt32(&(markers)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_34)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_38)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_3C)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_40)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_44)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_48)) == -1) return -1;
+    if (stream->freadInt32(&(lipsData->field_4C)) == -1) return -1;
+    if (stream->freadInt8List(lipsData->file_name, 8) == -1) return -1;
+    if (stream->freadInt8List(lipsData->field_58, 4) == -1) return -1;
+    if (stream->freadInt8List(lipsData->field_5C, 4) == -1) return -1;
+    if (stream->freadInt8List(lipsData->field_60, 4) == -1) return -1;
+    if (stream->freadInt8List(lipsData->field_64, 260) == -1) return -1;
 
     // NOTE: Original code is different. For unknown reason it assigns values
     // from file (integers) and treat them as pointers, which is obviously wrong
@@ -278,14 +279,14 @@ int lips_load_file(const char* audioFileName, const char* headFileName)
     strcat(path, "\\");
 
     sep = strchr(path, '.');
-    if (sep != NULL) {
+    if (sep != nullptr) {
         *sep = '\0';
     }
 
     strcpy(audioBaseName, audioFileName);
 
     sep = strchr(audioBaseName, '.');
-    if (sep != NULL) {
+    if (sep != nullptr) {
         *sep = '\0';
     }
 
@@ -297,49 +298,49 @@ int lips_load_file(const char* audioFileName, const char* headFileName)
 
     lips_free_speech();
 
-    // FIXME: stream is not closed if any error is encountered during reading.
-    DB_FILE* stream = db_fopen(path, "rb");
-    if (stream != NULL) {
-        if (db_freadInt32(stream, &(lip_info.version)) == -1) {
+    // RAII guard ensures stream is closed on any error return path.
+    DbFileGuard stream(db_fopen(path, "rb"));
+    if (stream) {
+        if (stream.get()->freadInt32(&(lip_info.version)) == -1) {
             return -1;
         }
 
         if (lip_info.version == 1) {
             debug_printf("\nLoading old save-file version (1)");
 
-            if (db_fseek(stream, 0, SEEK_SET) != 0) {
+            if (stream.get()->fseek(0, SEEK_SET) != 0) {
                 return -1;
             }
 
-            if (lips_read_lipsynch_info(&lip_info, stream) != 0) {
+            if (lips_read_lipsynch_info(&lip_info, stream.get()) != 0) {
                 return -1;
             }
         } else if (lip_info.version == 2) {
             debug_printf("\nLoading current save-file version (2)");
 
-            if (db_freadInt32(stream, &(lip_info.field_4)) == -1) return -1;
-            if (db_freadInt32(stream, &(lip_info.flags)) == -1) return -1;
-            if (db_freadInt32(stream, &(lip_info.field_10)) == -1) return -1;
-            if (db_freadInt32(stream, &(lip_info.field_1C)) == -1) return -1;
-            if (db_freadInt32(stream, &(lip_info.phoneme_count)) == -1) return -1;
-            if (db_freadInt32(stream, &(lip_info.field_28)) == -1) return -1;
-            if (db_freadInt32(stream, &(lip_info.marker_count)) == -1) return -1;
-            if (db_freadInt8List(stream, lip_info.file_name, 8) == -1) return -1;
-            if (db_freadInt8List(stream, lip_info.field_58, 4) == -1) return -1;
+            if (stream.get()->freadInt32(&(lip_info.field_4)) == -1) return -1;
+            if (stream.get()->freadInt32(&(lip_info.flags)) == -1) return -1;
+            if (stream.get()->freadInt32(&(lip_info.field_10)) == -1) return -1;
+            if (stream.get()->freadInt32(&(lip_info.field_1C)) == -1) return -1;
+            if (stream.get()->freadInt32(&(lip_info.phoneme_count)) == -1) return -1;
+            if (stream.get()->freadInt32(&(lip_info.field_28)) == -1) return -1;
+            if (stream.get()->freadInt32(&(lip_info.marker_count)) == -1) return -1;
+            if (stream.get()->freadInt8List(lip_info.file_name, 8) == -1) return -1;
+            if (stream.get()->freadInt8List(lip_info.field_58, 4) == -1) return -1;
         } else {
             debug_printf("\nError: Lips file WRONG version!");
         }
     }
 
-    lip_info.phonemes = (unsigned char*)mem_malloc(lip_info.phoneme_count);
-    if (lip_info.phonemes == NULL) {
+    lip_info.phonemes = static_cast<unsigned char*>(mem_malloc(lip_info.phoneme_count));
+    if (lip_info.phonemes == nullptr) {
         debug_printf("Out of memory in lips_load_file.'\n");
         return -1;
     }
 
-    if (stream != NULL) {
+    if (stream) {
         for (i = 0; i < lip_info.phoneme_count; i++) {
-            if (lips_read_phoneme_type(&(lip_info.phonemes[i]), stream) != 0) {
+            if (lips_read_phoneme_type(&(lip_info.phonemes[i]), stream.get()) != 0) {
                 debug_printf("lips_load_file: Error reading phoneme type.\n");
                 return -1;
             }
@@ -353,16 +354,16 @@ int lips_load_file(const char* audioFileName, const char* headFileName)
         }
     }
 
-    lip_info.markers = (SpeechMarker*)mem_malloc(sizeof(*speech_marker) * lip_info.marker_count);
-    if (lip_info.markers == NULL) {
+    lip_info.markers = static_cast<SpeechMarker*>(mem_malloc(sizeof(*speech_marker) * lip_info.marker_count));
+    if (lip_info.markers == nullptr) {
         debug_printf("Out of memory in lips_load_file.'\n");
         return -1;
     }
 
-    if (stream != NULL) {
+    if (stream) {
         for (i = 0; i < lip_info.marker_count; i++) {
             // NOTE: Uninline.
-            if (lips_read_marker_type(&(lip_info.markers[i]), stream) != 0) {
+            if (lips_read_marker_type(&(lip_info.markers[i]), stream.get()) != 0) {
                 debug_printf("lips_load_file: Error reading marker type.");
                 return -1;
             }
@@ -392,8 +393,8 @@ int lips_load_file(const char* audioFileName, const char* headFileName)
         }
     }
 
-    if (stream != NULL) {
-        db_fclose(stream);
+    if (stream) {
+        stream.reset();
     }
 
     lip_info.field_38 = 0;
@@ -423,34 +424,34 @@ int lips_load_file(const char* audioFileName, const char* headFileName)
 // 0x46D740
 static int lips_make_speech()
 {
-    if (lip_info.field_14 != NULL) {
+    if (lip_info.field_14 != nullptr) {
         mem_free(lip_info.field_14);
-        lip_info.field_14 = NULL;
+        lip_info.field_14 = nullptr;
     }
 
     char path[COMPAT_MAX_PATH];
     char* v1 = lips_fix_string(lip_info.file_name, sizeof(lip_info.file_name));
     snprintf(path, sizeof(path), "%s%s\\%s.%s", "SOUND\\SPEECH\\", lips_subdir_name, v1, "ACM");
 
-    if (lip_info.sound != NULL) {
-        soundDelete(lip_info.sound);
-        lip_info.sound = NULL;
+    if (lip_info.sound != nullptr) {
+        lip_info.sound->destroy();
+        lip_info.sound = nullptr;
     }
 
     lip_info.sound = soundAllocate(1, 8);
-    if (lip_info.sound == NULL) {
+    if (lip_info.sound == nullptr) {
         debug_printf("\nsoundAllocate falied in lips_make_speech!");
         return -1;
     }
 
-    if (soundSetFileIO(lip_info.sound, audioOpen, audioCloseFile, audioRead, NULL, audioSeek, NULL, audioFileSize)) {
+    if (lip_info.sound->setFileIO(audioOpen, audioCloseFile, audioRead, nullptr, audioSeek, nullptr, audioFileSize)) {
         debug_printf("Ack!");
         debug_printf("Error!");
     }
 
-    if (soundLoad(lip_info.sound, path)) {
-        soundDelete(lip_info.sound);
-        lip_info.sound = NULL;
+    if (lip_info.sound->load(path)) {
+        lip_info.sound->destroy();
+        lip_info.sound = nullptr;
 
         debug_printf("lips_make_speech: soundLoad failed with path ");
         debug_printf("%s -- file probably doesn't exist.\n", path);
@@ -465,28 +466,28 @@ static int lips_make_speech()
 // 0x46D8A0
 int lips_free_speech()
 {
-    if (lip_info.field_14 != NULL) {
+    if (lip_info.field_14 != nullptr) {
         mem_free(lip_info.field_14);
-        lip_info.field_14 = NULL;
+        lip_info.field_14 = nullptr;
     }
 
-    if (lip_info.sound != NULL) {
+    if (lip_info.sound != nullptr) {
         // NOTE: Uninline.
         lips_stop_speech();
 
-        soundDelete(lip_info.sound);
+        lip_info.sound->destroy();
 
-        lip_info.sound = NULL;
+        lip_info.sound = nullptr;
     }
 
-    if (lip_info.phonemes != NULL) {
+    if (lip_info.phonemes != nullptr) {
         mem_free(lip_info.phonemes);
-        lip_info.phonemes = NULL;
+        lip_info.phonemes = nullptr;
     }
 
-    if (lip_info.markers != NULL) {
+    if (lip_info.markers != nullptr) {
         mem_free(lip_info.markers);
-        lip_info.markers = NULL;
+        lip_info.markers = nullptr;
     }
 
     return 0;

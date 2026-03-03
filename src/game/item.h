@@ -1,21 +1,28 @@
-#ifndef FALLOUT_GAME_ITEM_H_
-#define FALLOUT_GAME_ITEM_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "plib/db/db.h"
 
 namespace fallout {
 
-#define ADDICTION_COUNT 7
+inline constexpr int ADDICTION_COUNT = 7;
 
-typedef enum AttackType {
-    ATTACK_TYPE_NONE,
-    ATTACK_TYPE_UNARMED,
-    ATTACK_TYPE_MELEE,
-    ATTACK_TYPE_THROW,
-    ATTACK_TYPE_RANGED,
-    ATTACK_TYPE_COUNT,
-} AttackType;
+enum class AttackType : int {
+    None = 0,
+    Unarmed = 1,
+    Melee = 2,
+    Throw = 3,
+    Ranged = 4,
+    Count = 5,
+};
+
+inline constexpr int ATTACK_TYPE_NONE = static_cast<int>(AttackType::None);
+inline constexpr int ATTACK_TYPE_UNARMED = static_cast<int>(AttackType::Unarmed);
+inline constexpr int ATTACK_TYPE_MELEE = static_cast<int>(AttackType::Melee);
+inline constexpr int ATTACK_TYPE_THROW = static_cast<int>(AttackType::Throw);
+inline constexpr int ATTACK_TYPE_RANGED = static_cast<int>(AttackType::Ranged);
+inline constexpr int ATTACK_TYPE_COUNT = static_cast<int>(AttackType::Count);
 
 int item_init();
 int item_reset();
@@ -115,5 +122,3 @@ int item_caps_get_amount(Object* obj);
 int item_caps_set_amount(Object* obj, int a2);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_ITEM_H_ */

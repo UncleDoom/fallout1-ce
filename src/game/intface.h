@@ -1,32 +1,45 @@
-#ifndef FALLOUT_GAME_INTFACE_H_
-#define FALLOUT_GAME_INTFACE_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "plib/db/db.h"
 
 namespace fallout {
 
-#define INTERFACE_BAR_WIDTH 640
-#define INTERFACE_BAR_HEIGHT 100
+inline constexpr int INTERFACE_BAR_WIDTH = 640;
+inline constexpr int INTERFACE_BAR_HEIGHT = 100;
 
-typedef enum Hand {
+enum class Hand : int {
     // Item1 (Punch)
-    HAND_LEFT,
+    Left = 0,
     // Item2 (Kick)
-    HAND_RIGHT,
-    HAND_COUNT,
-} Hand;
+    Right = 1,
+    Count = 2,
+};
 
-typedef enum InterfaceItemAction {
-    INTERFACE_ITEM_ACTION_DEFAULT = -1,
-    INTERFACE_ITEM_ACTION_USE,
-    INTERFACE_ITEM_ACTION_PRIMARY,
-    INTERFACE_ITEM_ACTION_PRIMARY_AIMING,
-    INTERFACE_ITEM_ACTION_SECONDARY,
-    INTERFACE_ITEM_ACTION_SECONDARY_AIMING,
-    INTERFACE_ITEM_ACTION_RELOAD,
-    INTERFACE_ITEM_ACTION_COUNT,
-} InterfaceItemAction;
+inline constexpr int HAND_LEFT = static_cast<int>(Hand::Left);
+inline constexpr int HAND_RIGHT = static_cast<int>(Hand::Right);
+inline constexpr int HAND_COUNT = static_cast<int>(Hand::Count);
+
+enum class InterfaceItemAction : int {
+    Default = -1,
+    Use = 0,
+    Primary = 1,
+    PrimaryAiming = 2,
+    Secondary = 3,
+    SecondaryAiming = 4,
+    Reload = 5,
+    Count = 6,
+};
+
+inline constexpr int INTERFACE_ITEM_ACTION_DEFAULT = static_cast<int>(InterfaceItemAction::Default);
+inline constexpr int INTERFACE_ITEM_ACTION_USE = static_cast<int>(InterfaceItemAction::Use);
+inline constexpr int INTERFACE_ITEM_ACTION_PRIMARY = static_cast<int>(InterfaceItemAction::Primary);
+inline constexpr int INTERFACE_ITEM_ACTION_PRIMARY_AIMING = static_cast<int>(InterfaceItemAction::PrimaryAiming);
+inline constexpr int INTERFACE_ITEM_ACTION_SECONDARY = static_cast<int>(InterfaceItemAction::Secondary);
+inline constexpr int INTERFACE_ITEM_ACTION_SECONDARY_AIMING = static_cast<int>(InterfaceItemAction::SecondaryAiming);
+inline constexpr int INTERFACE_ITEM_ACTION_RELOAD = static_cast<int>(InterfaceItemAction::Reload);
+inline constexpr int INTERFACE_ITEM_ACTION_COUNT = static_cast<int>(InterfaceItemAction::Count);
 
 extern int interfaceWindow;
 extern int bar_window;
@@ -63,5 +76,3 @@ bool enable_box_bar_win();
 bool disable_box_bar_win();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_INTFACE_H_ */

@@ -1,6 +1,6 @@
 #include "plib/gnw/vcr.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "plib/gnw/input.h"
 #include "plib/gnw/memory.h"
@@ -13,7 +13,7 @@ static bool vcr_clear_buffer();
 static bool vcr_load_buffer();
 
 // 0x51E2F0
-VcrEntry* vcr_buffer = NULL;
+VcrEntry* vcr_buffer = nullptr;
 
 // number of entries in vcr_buffer
 // 0x51E2F4
@@ -41,13 +41,13 @@ static unsigned int vcr_start_time = 0;
 static int vcr_registered_atexit = 0;
 
 // 0x51E314
-static DB_FILE* vcr_file = NULL;
+static DB_FILE* vcr_file = nullptr;
 
 // 0x51E318
 static int vcr_buffer_end = 0;
 
 // 0x51E31C
-static VcrPlaybackCompletionCallback* vcr_notify_callback = NULL;
+static VcrPlaybackCompletionCallback* vcr_notify_callback = nullptr;
 
 // 0x51E320
 static unsigned int vcr_temp_terminate_flags = 0;
@@ -65,7 +65,7 @@ bool vcr_record(const char* fileName)
         return false;
     }
 
-    if (fileName == NULL) {
+    if (fileName == nullptr) {
         return false;
     }
 
@@ -75,7 +75,7 @@ bool vcr_record(const char* fileName)
     }
 
     vcr_file = db_fopen(fileName, "wb");
-    if (vcr_file == NULL) {
+    if (vcr_file == nullptr) {
         // NOTE: Uninline.
         vcr_destroy_buffer();
         return false;
@@ -113,7 +113,7 @@ bool vcr_play(const char* fileName, unsigned int terminationFlags, VcrPlaybackCo
         return false;
     }
 
-    if (fileName == NULL) {
+    if (fileName == nullptr) {
         return false;
     }
 
@@ -123,14 +123,14 @@ bool vcr_play(const char* fileName, unsigned int terminationFlags, VcrPlaybackCo
     }
 
     vcr_file = db_fopen(fileName, "rb");
-    if (vcr_file == NULL) {
+    if (vcr_file == nullptr) {
         // NOTE: Uninline.
         vcr_destroy_buffer();
         return false;
     }
 
     if (!vcr_load_buffer()) {
-        db_fclose(vcr_file);
+        vcr_file->fclose();
         // NOTE: Uninline.
         vcr_destroy_buffer();
         return false;
@@ -182,23 +182,23 @@ int vcr_update()
         case VCR_STATE_RECORDING:
             vcr_dump_buffer();
 
-            db_fclose(vcr_file);
-            vcr_file = NULL;
+            vcr_file->fclose();
+            vcr_file = nullptr;
 
             // NOTE: Uninline.
             vcr_destroy_buffer();
 
             break;
         case VCR_STATE_PLAYING:
-            db_fclose(vcr_file);
-            vcr_file = NULL;
+            vcr_file->fclose();
+            vcr_file = nullptr;
 
             // NOTE: Uninline.
             vcr_destroy_buffer();
 
             kb_set_layout(vcr_old_layout);
 
-            if (vcr_notify_callback != NULL) {
+            if (vcr_notify_callback != nullptr) {
                 vcr_notify_callback(vcr_terminated_condition);
             }
             break;
@@ -290,9 +290,9 @@ int vcr_update()
 // 0x4D2C64
 static bool vcr_create_buffer()
 {
-    if (vcr_buffer == NULL) {
-        vcr_buffer = (VcrEntry*)mem_malloc(sizeof(*vcr_buffer) * VCR_BUFFER_CAPACITY);
-        if (vcr_buffer == NULL) {
+    if (vcr_buffer == nullptr) {
+        vcr_buffer = static_cast<VcrEntry*>(mem_malloc(sizeof(*vcr_buffer) * VCR_BUFFER_CAPACITY));
+        if (vcr_buffer == nullptr) {
             return false;
         }
     }
@@ -308,7 +308,7 @@ static bool vcr_create_buffer()
 // 0x4D2C98
 static bool vcr_destroy_buffer()
 {
-    if (vcr_buffer == NULL) {
+    if (vcr_buffer == nullptr) {
         return false;
     }
 
@@ -316,7 +316,7 @@ static bool vcr_destroy_buffer()
     vcr_clear_buffer();
 
     mem_free(vcr_buffer);
-    vcr_buffer = NULL;
+    vcr_buffer = nullptr;
 
     return true;
 }
@@ -324,7 +324,7 @@ static bool vcr_destroy_buffer()
 // 0x4D2CD0
 static bool vcr_clear_buffer()
 {
-    if (vcr_buffer == NULL) {
+    if (vcr_buffer == nullptr) {
         return false;
     }
 
@@ -336,16 +336,16 @@ static bool vcr_clear_buffer()
 // 0x4D2CF0
 bool vcr_dump_buffer()
 {
-    if (vcr_buffer == NULL) {
+    if (vcr_buffer == nullptr) {
         return false;
     }
 
-    if (vcr_file == NULL) {
+    if (vcr_file == nullptr) {
         return false;
     }
 
     for (int index = 0; index < vcr_buffer_index; index++) {
-        if (!vcr_save_record(&(vcr_buffer[index]), vcr_file)) {
+        if (!vcr_buffer[index].save(vcr_file)) {
             return false;
         }
     }
@@ -361,7 +361,7 @@ bool vcr_dump_buffer()
 // 0x4D2D74
 static bool vcr_load_buffer()
 {
-    if (vcr_file == NULL) {
+    if (vcr_file == nullptr) {
         return false;
     }
 
@@ -371,7 +371,7 @@ static bool vcr_load_buffer()
     }
 
     for (vcr_buffer_end = 0; vcr_buffer_end < VCR_BUFFER_CAPACITY; vcr_buffer_end++) {
-        if (!vcr_load_record(&(vcr_buffer[vcr_buffer_end]), vcr_file)) {
+        if (!vcr_buffer[vcr_buffer_end].load(vcr_file)) {
             break;
         }
     }
@@ -384,25 +384,25 @@ static bool vcr_load_buffer()
 }
 
 // 0x4D2E00
-bool vcr_save_record(VcrEntry* vcrEntry, DB_FILE* stream)
+bool VcrEntry::save(DB_FILE* stream)
 {
-    if (db_fwriteUInt32(stream, vcrEntry->type) == -1) return false;
-    if (db_fwriteUInt32(stream, vcrEntry->time) == -1) return false;
-    if (db_fwriteUInt32(stream, vcrEntry->counter) == -1) return false;
+    if (stream->fwriteUInt32(type) == -1) return false;
+    if (stream->fwriteUInt32(time) == -1) return false;
+    if (stream->fwriteUInt32(counter) == -1) return false;
 
-    switch (vcrEntry->type) {
+    switch (type) {
     case VCR_ENTRY_TYPE_INITIAL_STATE:
-        if (db_fwriteInt32(stream, vcrEntry->initial.mouseX) == -1) return false;
-        if (db_fwriteInt32(stream, vcrEntry->initial.mouseY) == -1) return false;
-        if (db_fwriteInt32(stream, vcrEntry->initial.keyboardLayout) == -1) return false;
+        if (stream->fwriteInt32(initial.mouseX) == -1) return false;
+        if (stream->fwriteInt32(initial.mouseY) == -1) return false;
+        if (stream->fwriteInt32(initial.keyboardLayout) == -1) return false;
         return true;
     case VCR_ENTRY_TYPE_KEYBOARD_EVENT:
-        if (db_fwriteInt16(stream, vcrEntry->keyboardEvent.key) == -1) return false;
+        if (stream->fwriteInt16(keyboardEvent.key) == -1) return false;
         return true;
     case VCR_ENTRY_TYPE_MOUSE_EVENT:
-        if (db_fwriteInt32(stream, vcrEntry->mouseEvent.dx) == -1) return false;
-        if (db_fwriteInt32(stream, vcrEntry->mouseEvent.dy) == -1) return false;
-        if (db_fwriteInt32(stream, vcrEntry->mouseEvent.buttons) == -1) return false;
+        if (stream->fwriteInt32(mouseEvent.dx) == -1) return false;
+        if (stream->fwriteInt32(mouseEvent.dy) == -1) return false;
+        if (stream->fwriteInt32(mouseEvent.buttons) == -1) return false;
         return true;
     }
 
@@ -410,25 +410,25 @@ bool vcr_save_record(VcrEntry* vcrEntry, DB_FILE* stream)
 }
 
 // 0x4D2EE4
-bool vcr_load_record(VcrEntry* vcrEntry, DB_FILE* stream)
+bool VcrEntry::load(DB_FILE* stream)
 {
-    if (db_freadUInt32(stream, &(vcrEntry->type)) == -1) return false;
-    if (db_freadUInt32(stream, &(vcrEntry->time)) == -1) return false;
-    if (db_freadUInt32(stream, &(vcrEntry->counter)) == -1) return false;
+    if (stream->freadUInt32(&type) == -1) return false;
+    if (stream->freadUInt32(&time) == -1) return false;
+    if (stream->freadUInt32(&counter) == -1) return false;
 
-    switch (vcrEntry->type) {
+    switch (type) {
     case VCR_ENTRY_TYPE_INITIAL_STATE:
-        if (db_freadInt32(stream, &(vcrEntry->initial.mouseX)) == -1) return false;
-        if (db_freadInt32(stream, &(vcrEntry->initial.mouseY)) == -1) return false;
-        if (db_freadInt32(stream, &(vcrEntry->initial.keyboardLayout)) == -1) return false;
+        if (stream->freadInt32(&initial.mouseX) == -1) return false;
+        if (stream->freadInt32(&initial.mouseY) == -1) return false;
+        if (stream->freadInt32(&initial.keyboardLayout) == -1) return false;
         return true;
     case VCR_ENTRY_TYPE_KEYBOARD_EVENT:
-        if (db_freadInt16(stream, &(vcrEntry->keyboardEvent.key)) == -1) return false;
+        if (stream->freadInt16(&keyboardEvent.key) == -1) return false;
         return true;
     case VCR_ENTRY_TYPE_MOUSE_EVENT:
-        if (db_freadInt32(stream, &(vcrEntry->mouseEvent.dx)) == -1) return false;
-        if (db_freadInt32(stream, &(vcrEntry->mouseEvent.dy)) == -1) return false;
-        if (db_freadInt32(stream, &(vcrEntry->mouseEvent.buttons)) == -1) return false;
+        if (stream->freadInt32(&mouseEvent.dx) == -1) return false;
+        if (stream->freadInt32(&mouseEvent.dy) == -1) return false;
+        if (stream->freadInt32(&mouseEvent.buttons) == -1) return false;
         return true;
     }
 

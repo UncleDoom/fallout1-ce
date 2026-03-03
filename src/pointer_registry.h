@@ -1,5 +1,5 @@
-#ifndef FALLOUT_POINTER_REGISTRY_H_
-#define FALLOUT_POINTER_REGISTRY_H_
+#pragma once
+
 
 #include <unordered_map>
 
@@ -23,5 +23,3 @@ int ptrToInt(void* ptr);
 void* intToPtr(int ref, bool remove = false);
 
 } // namespace fallout
-
-#endif /* FALLOUT_POINTER_REGISTRY_H_ */

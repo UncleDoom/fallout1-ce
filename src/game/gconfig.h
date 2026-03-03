@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_GCONFIG_H_
-#define FALLOUT_GAME_GCONFIG_H_
+#pragma once
+
 
 #include "game/config.h"
 
@@ -88,30 +88,47 @@ namespace fallout {
 #define ITALIAN "italian"
 #define SPANISH "spanish"
 
-typedef enum GameDifficulty {
-    GAME_DIFFICULTY_EASY,
-    GAME_DIFFICULTY_NORMAL,
-    GAME_DIFFICULTY_HARD,
-} GameDifficulty;
+enum class GameDifficulty : int {
+    Easy = 0,
+    Normal = 1,
+    Hard = 2,
+};
 
-typedef enum CombatDifficulty {
-    COMBAT_DIFFICULTY_EASY,
-    COMBAT_DIFFICULTY_NORMAL,
-    COMBAT_DIFFICULTY_HARD,
-} CombatDifficulty;
+inline constexpr int GAME_DIFFICULTY_EASY = static_cast<int>(GameDifficulty::Easy);
+inline constexpr int GAME_DIFFICULTY_NORMAL = static_cast<int>(GameDifficulty::Normal);
+inline constexpr int GAME_DIFFICULTY_HARD = static_cast<int>(GameDifficulty::Hard);
 
-typedef enum ViolenceLevel {
-    VIOLENCE_LEVEL_NONE,
-    VIOLENCE_LEVEL_MINIMAL,
-    VIOLENCE_LEVEL_NORMAL,
-    VIOLENCE_LEVEL_MAXIMUM_BLOOD,
-} ViolenceLevel;
+enum class CombatDifficulty : int {
+    Easy = 0,
+    Normal = 1,
+    Hard = 2,
+};
 
-typedef enum TargetHighlight {
-    TARGET_HIGHLIGHT_OFF,
-    TARGET_HIGHLIGHT_ON,
-    TARGET_HIGHLIGHT_TARGETING_ONLY,
-} TargetHighlight;
+inline constexpr int COMBAT_DIFFICULTY_EASY = static_cast<int>(CombatDifficulty::Easy);
+inline constexpr int COMBAT_DIFFICULTY_NORMAL = static_cast<int>(CombatDifficulty::Normal);
+inline constexpr int COMBAT_DIFFICULTY_HARD = static_cast<int>(CombatDifficulty::Hard);
+
+enum class ViolenceLevel : int {
+    None = 0,
+    Minimal = 1,
+    Normal = 2,
+    MaximumBlood = 3,
+};
+
+inline constexpr int VIOLENCE_LEVEL_NONE = static_cast<int>(ViolenceLevel::None);
+inline constexpr int VIOLENCE_LEVEL_MINIMAL = static_cast<int>(ViolenceLevel::Minimal);
+inline constexpr int VIOLENCE_LEVEL_NORMAL = static_cast<int>(ViolenceLevel::Normal);
+inline constexpr int VIOLENCE_LEVEL_MAXIMUM_BLOOD = static_cast<int>(ViolenceLevel::MaximumBlood);
+
+enum class TargetHighlight : int {
+    Off = 0,
+    On = 1,
+    TargetingOnly = 2,
+};
+
+inline constexpr int TARGET_HIGHLIGHT_OFF = static_cast<int>(TargetHighlight::Off);
+inline constexpr int TARGET_HIGHLIGHT_ON = static_cast<int>(TargetHighlight::On);
+inline constexpr int TARGET_HIGHLIGHT_TARGETING_ONLY = static_cast<int>(TargetHighlight::TargetingOnly);
 
 extern Config game_config;
 
@@ -120,5 +137,3 @@ bool gconfig_save();
 bool gconfig_exit(bool shouldSave);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_GCONFIG_H_ */

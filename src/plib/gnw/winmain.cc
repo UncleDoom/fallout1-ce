@@ -1,6 +1,7 @@
 #include "plib/gnw/winmain.h"
 
-#include <stdlib.h>
+#include <cstdlib>
+#include <memory>
 
 #include <SDL.h>
 
@@ -18,28 +19,83 @@
 
 namespace fallout {
 
-// 0x53A290
-bool GNW95_isActive = false;
-
+// Platform detection as constexpr booleans for use in runtime branches.
+// Preprocessor #if is still required for include-level gating and
+// platform-specific types, but runtime logic can use these.
+inline constexpr bool kIsWindows =
 #if _WIN32
-// 0x53A294
-HANDLE GNW95_mutex = NULL;
+    true;
+#else
+    false;
 #endif
 
-// 0x6B0760
-char GNW95_title[256];
+inline constexpr bool kIsIOS =
+#if __APPLE__ && TARGET_OS_IOS
+    true;
+#else
+    false;
+#endif
 
-int main(int argc, char* argv[])
-{
-    int rc;
+inline constexpr bool kIsMacOS =
+#if __APPLE__ && TARGET_OS_OSX
+    true;
+#else
+    false;
+#endif
 
-#if _WIN32
-    GNW95_mutex = CreateMutexA(0, TRUE, "GNW95MUTEX");
-    if (GetLastError() != ERROR_SUCCESS) {
-        return 0;
+inline constexpr bool kIsAndroid =
+#if __ANDROID__
+    true;
+#else
+    false;
+#endif
+
+// RAII wrapper for SDL initialization/teardown.
+class SdlContext {
+public:
+    SdlContext() noexcept = default;
+    ~SdlContext() = default;
+
+    SdlContext(const SdlContext&) = delete;
+    SdlContext& operator=(const SdlContext&) = delete;
+
+    void hideCursor() noexcept
+    {
+        SDL_ShowCursor(SDL_DISABLE);
     }
+};
+
+#if _WIN32
+// RAII wrapper for a Windows named mutex.
+class NamedMutex {
+public:
+    explicit NamedMutex(const char* name) noexcept
+        : handle_(CreateMutexA(nullptr, TRUE, name))
+    {
+        valid_ = (GetLastError() == ERROR_SUCCESS);
+    }
+
+    ~NamedMutex()
+    {
+        if (handle_ != nullptr) {
+            CloseHandle(handle_);
+        }
+    }
+
+    NamedMutex(const NamedMutex&) = delete;
+    NamedMutex& operator=(const NamedMutex&) = delete;
+
+    [[nodiscard]] bool isValid() const noexcept { return valid_; }
+
+private:
+    HANDLE handle_ = nullptr;
+    bool valid_ = false;
+};
 #endif
 
+// Performs platform-specific initialization (working directory, touch hints).
+static void platformInit() noexcept
+{
 #if __APPLE__ && TARGET_OS_IOS
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
@@ -57,15 +113,35 @@ int main(int argc, char* argv[])
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
     chdir(SDL_AndroidGetExternalStoragePath());
 #endif
+}
 
-    SDL_ShowCursor(SDL_DISABLE);
-
-    GNW95_isActive = true;
-    rc = gnw_main(argc, argv);
+// 0x53A290
+bool GNW95_isActive = false;
 
 #if _WIN32
-    CloseHandle(GNW95_mutex);
+// 0x53A294
+HANDLE GNW95_mutex = nullptr;
 #endif
+
+// 0x6B0760
+char GNW95_title[256];
+
+int main(int argc, char* argv[])
+{
+#if _WIN32
+    NamedMutex mutex("GNW95MUTEX");
+    if (!mutex.isValid()) {
+        return 0;
+    }
+#endif
+
+    platformInit();
+
+    SdlContext sdl;
+    sdl.hideCursor();
+
+    GNW95_isActive = true;
+    const int rc = gnw_main(argc, argv);
 
     return rc;
 }

@@ -1,9 +1,9 @@
-#ifndef FALLOUT_INT_AUDIO_H_
-#define FALLOUT_INT_AUDIO_H_
+#pragma once
+
 
 namespace fallout {
 
-typedef bool(AudioQueryCompressedFunc)(char* filePath);
+using AudioQueryCompressedFunc = bool(char* filePath);
 
 int audioOpen(const char* fname, int mode);
 int audioCloseFile(int fileHandle);
@@ -16,5 +16,3 @@ int initAudio(AudioQueryCompressedFunc* isCompressedProc);
 void audioClose();
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_AUDIO_H_ */

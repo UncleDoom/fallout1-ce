@@ -1,9 +1,9 @@
 #include "game/cache.h"
 
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <climits>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "int/sound.h"
 #include "plib/gnw/debug.h"
@@ -11,116 +11,104 @@
 
 namespace fallout {
 
-static bool cache_add(Cache* cache, int key, int* indexPtr);
-static bool cache_insert(Cache* cache, CacheEntry* cacheEntry, int index);
-static int cache_find(Cache* cache, int key, int* indexPtr);
-static int cache_create_item(CacheEntry** cacheEntryPtr);
-static bool cache_init_item(CacheEntry* cacheEntry);
-static bool cache_destroy_item(Cache* cache, CacheEntry* cacheEntry);
-static bool cache_unlock_all(Cache* cache);
-static bool cache_reset_counter(Cache* cache);
-static bool cache_make_room(Cache* cache, int size);
-static bool cache_purge(Cache* cache);
-static bool cache_resize_array(Cache* cache, int newCapacity);
-static int cache_compare_make_room(const void* a1, const void* a2);
-static int cache_compare_reset_counter(const void* a1, const void* a2);
-
 // 0x4FEC7C
 static int lock_sound_ticker = 0;
 
-// 0x41E9C0
-bool cache_init(Cache* cache, CacheSizeProc* sizeProc, CacheReadProc* readProc, CacheFreeProc* freeProc, int maxSize)
+// ---------------------------------------------------------------------------
+// Cache implementation
+// ---------------------------------------------------------------------------
+
+Cache::~Cache()
 {
-    if (!heap_init(&(cache->heap), maxSize)) {
+    // If the cache was initialised (entries_ non-null), clean up.
+    if (entries_ != nullptr) {
+        exit();
+    }
+}
+
+// 0x41E9C0
+bool Cache::init(CacheSizeProc* sizeProc, CacheReadProc* readProc, CacheFreeProc* freeProc, int maxSize)
+{
+    if (!heap_.init(maxSize)) {
         return false;
     }
 
-    cache->size = 0;
-    cache->maxSize = maxSize;
-    cache->entriesLength = 0;
-    cache->entriesCapacity = CACHE_ENTRIES_INITIAL_CAPACITY;
-    cache->hits = 0;
-    cache->entries = (CacheEntry**)mem_malloc(sizeof(*cache->entries) * cache->entriesCapacity);
-    cache->sizeProc = sizeProc;
-    cache->readProc = readProc;
-    cache->freeProc = freeProc;
+    size_ = 0;
+    maxSize_ = maxSize;
+    entriesLength_ = 0;
+    entriesCapacity_ = kCacheEntriesInitialCapacity;
+    hits_ = 0;
+    entries_ = static_cast<CacheEntry**>(mem_malloc(sizeof(*entries_) * entriesCapacity_));
+    sizeProc_ = sizeProc;
+    readProc_ = readProc;
+    freeProc_ = freeProc;
 
-    if (cache->entries == NULL) {
+    if (entries_ == nullptr) {
         return false;
     }
 
-    memset(cache->entries, 0, sizeof(*cache->entries) * cache->entriesCapacity);
+    std::memset(entries_, 0, sizeof(*entries_) * entriesCapacity_);
 
     return true;
 }
 
 // 0x41EA50
-bool cache_exit(Cache* cache)
+bool Cache::exit()
 {
-    if (cache == NULL) {
-        return false;
+    unlockAll();
+    flush();
+    heap_.exit();
+
+    size_ = 0;
+    maxSize_ = 0;
+    entriesLength_ = 0;
+    entriesCapacity_ = 0;
+    hits_ = 0;
+
+    if (entries_ != nullptr) {
+        mem_free(entries_);
+        entries_ = nullptr;
     }
 
-    cache_unlock_all(cache);
-    cache_flush(cache);
-    heap_exit(&(cache->heap));
-
-    cache->size = 0;
-    cache->maxSize = 0;
-    cache->entriesLength = 0;
-    cache->entriesCapacity = 0;
-    cache->hits = 0;
-
-    if (cache->entries != NULL) {
-        mem_free(cache->entries);
-        cache->entries = NULL;
-    }
-
-    cache->sizeProc = NULL;
-    cache->readProc = NULL;
-    cache->freeProc = NULL;
+    sizeProc_ = nullptr;
+    readProc_ = nullptr;
+    freeProc_ = nullptr;
 
     return true;
 }
 
 // 0x41EAC0
-int cache_query(Cache* cache, int key)
+int Cache::query(int key)
 {
     int index;
-
-    if (cache == NULL) {
+    if (find(key, &index) != 2) {
         return 0;
     }
-
-    if (cache_find(cache, key, &index) != 2) {
-        return 0;
-    }
-
     return 1;
 }
 
 // 0x41EAE8
-bool cache_lock(Cache* cache, int key, void** data, CacheEntry** cacheEntryPtr)
+bool Cache::lock(int key, void** data, CacheEntry** cacheEntryPtr)
 {
-    if (cache == NULL || data == NULL || cacheEntryPtr == NULL) {
+    if (data == nullptr || cacheEntryPtr == nullptr) {
         return false;
     }
 
-    *cacheEntryPtr = NULL;
+    *cacheEntryPtr = nullptr;
 
     int index;
-    int rc = cache_find(cache, key, &index);
+    int rc = find(key, &index);
     if (rc == 2) {
         // Use existing cache entry.
-        CacheEntry* cacheEntry = cache->entries[index];
+        CacheEntry* cacheEntry = entries_[index];
         cacheEntry->hits++;
     } else if (rc == 3) {
         // New cache entry is required.
-        if (cache->entriesLength >= INT_MAX) {
+        if (entriesLength_ >= INT_MAX) {
             return false;
         }
 
-        if (!cache_add(cache, key, &index)) {
+        if (!add(key, &index)) {
             return false;
         }
 
@@ -132,20 +120,20 @@ bool cache_lock(Cache* cache, int key, void** data, CacheEntry** cacheEntryPtr)
         return false;
     }
 
-    CacheEntry* cacheEntry = cache->entries[index];
+    CacheEntry* cacheEntry = entries_[index];
     if (cacheEntry->referenceCount == 0) {
-        if (!heap_lock(&(cache->heap), cacheEntry->heapHandleIndex, &(cacheEntry->data))) {
+        if (!heap_.lock(cacheEntry->heapHandleIndex, &(cacheEntry->data))) {
             return false;
         }
     }
 
     cacheEntry->referenceCount++;
 
-    cache->hits++;
-    cacheEntry->mru = cache->hits;
+    hits_++;
+    cacheEntry->mru = hits_;
 
-    if (cache->hits == UINT_MAX) {
-        cache_reset_counter(cache);
+    if (hits_ == UINT_MAX) {
+        resetCounter();
     }
 
     *data = cacheEntry->data;
@@ -155,9 +143,9 @@ bool cache_lock(Cache* cache, int key, void** data, CacheEntry** cacheEntryPtr)
 }
 
 // 0x41EDB8
-bool cache_unlock(Cache* cache, CacheEntry* cacheEntry)
+bool Cache::unlock(CacheEntry* cacheEntry)
 {
-    if (cache == NULL || cacheEntry == NULL) {
+    if (cacheEntry == nullptr) {
         return false;
     }
 
@@ -168,108 +156,87 @@ bool cache_unlock(Cache* cache, CacheEntry* cacheEntry)
     cacheEntry->referenceCount--;
 
     if (cacheEntry->referenceCount == 0) {
-        heap_unlock(&(cache->heap), cacheEntry->heapHandleIndex);
+        heap_.unlock(cacheEntry->heapHandleIndex);
     }
 
     return true;
 }
 
 // 0x41EDEC
-int cache_discard(Cache* cache, int key)
+int Cache::discard(int key)
 {
     int index;
-    CacheEntry* cacheEntry;
-
-    if (cache == NULL) {
+    if (find(key, &index) != 2) {
         return 0;
     }
 
-    if (cache_find(cache, key, &index) != 2) {
-        return 0;
-    }
-
-    cacheEntry = cache->entries[index];
+    CacheEntry* cacheEntry = entries_[index];
     if (cacheEntry->referenceCount != 0) {
         return 0;
     }
 
     cacheEntry->flags |= CACHE_ENTRY_MARKED_FOR_EVICTION;
-
-    cache_purge(cache);
+    purge();
 
     return 1;
 }
 
 // 0x41EE2C
-bool cache_flush(Cache* cache)
+bool Cache::flush()
 {
-    if (cache == NULL) {
-        return false;
-    }
-
     // Loop thru cache entries and mark those with no references for eviction.
-    for (int index = 0; index < cache->entriesLength; index++) {
-        CacheEntry* cacheEntry = cache->entries[index];
+    for (int index = 0; index < entriesLength_; index++) {
+        CacheEntry* cacheEntry = entries_[index];
         if (cacheEntry->referenceCount == 0) {
             cacheEntry->flags |= CACHE_ENTRY_MARKED_FOR_EVICTION;
         }
     }
 
     // Sweep cache entries marked earlier.
-    cache_purge(cache);
+    purge();
 
     // Shrink cache entries array if it's too big.
-    int optimalCapacity = cache->entriesLength + CACHE_ENTRIES_GROW_CAPACITY;
-    if (optimalCapacity < cache->entriesCapacity) {
-        cache_resize_array(cache, optimalCapacity);
+    int optimalCapacity = entriesLength_ + kCacheEntriesGrowCapacity;
+    if (optimalCapacity < entriesCapacity_) {
+        resizeArray(optimalCapacity);
     }
 
     return true;
 }
 
 // 0x41EE84
-int cache_size(Cache* cache, int* sizePtr)
+int Cache::getSize(int* sizePtr)
 {
-    if (cache == NULL) {
+    if (sizePtr == nullptr) {
         return 0;
     }
 
-    if (sizePtr == NULL) {
-        return 0;
-    }
-
-    *sizePtr = cache->size;
-
+    *sizePtr = size_;
     return 1;
 }
 
 // 0x41EE9C
-bool cache_stats(Cache* cache, char* dest, size_t size)
+bool Cache::stats(char* dest, size_t size)
 {
-    if (cache == NULL || dest == NULL) {
+    if (dest == nullptr) {
         return false;
     }
 
-    snprintf(dest, size, "Cache stats are disabled.%s", "\n");
-
+    std::snprintf(dest, size, "Cache stats are disabled.%s", "\n");
     return true;
 }
 
 // 0x41EEC0
-int cache_create_list(Cache* cache, unsigned int a2, int** tagsPtr, int* tagsLengthPtr)
+int Cache::createList(unsigned int a2, int** tagsPtr, int* tagsLengthPtr)
 {
     int cacheItemIndex;
     int tagIndex;
 
-    if (cache == NULL) {
+    if (tagsPtr == nullptr) {
         return 0;
     }
 
-    if (tagsPtr == NULL) {
-        return 0;
-    }
-
-    if (tagsLengthPtr == NULL) {
+    if (tagsLengthPtr == nullptr) {
         return 0;
     }
 
@@ -277,61 +244,60 @@ int cache_create_list(Cache* cache, unsigned int a2, int** tagsPtr, int* tagsLen
 
     switch (a2) {
     case CACHE_LIST_REQUEST_TYPE_ALL_ITEMS:
-        *tagsPtr = (int*)mem_malloc(sizeof(*tagsPtr) * cache->entriesLength);
-        if (*tagsPtr == NULL) {
+        *tagsPtr = static_cast<int*>(mem_malloc(sizeof(*tagsPtr) * entriesLength_));
+        if (*tagsPtr == nullptr) {
             return 0;
         }
 
-        for (cacheItemIndex = 0; cacheItemIndex < cache->entriesLength; cacheItemIndex++) {
-            (*tagsPtr)[cacheItemIndex] = cache->entries[cacheItemIndex]->key;
+        for (cacheItemIndex = 0; cacheItemIndex < entriesLength_; cacheItemIndex++) {
+            (*tagsPtr)[cacheItemIndex] = entries_[cacheItemIndex]->key;
         }
 
-        *tagsLengthPtr = cache->entriesLength;
-
+        *tagsLengthPtr = entriesLength_;
         break;
+
     case CACHE_LIST_REQUEST_TYPE_LOCKED_ITEMS:
-        for (cacheItemIndex = 0; cacheItemIndex < cache->entriesLength; cacheItemIndex++) {
-            if (cache->entries[cacheItemIndex]->referenceCount != 0) {
+        for (cacheItemIndex = 0; cacheItemIndex < entriesLength_; cacheItemIndex++) {
+            if (entries_[cacheItemIndex]->referenceCount != 0) {
                 (*tagsLengthPtr)++;
             }
         }
 
-        *tagsPtr = (int*)mem_malloc(sizeof(*tagsPtr) * (*tagsLengthPtr));
-        if (*tagsPtr == NULL) {
+        *tagsPtr = static_cast<int*>(mem_malloc(sizeof(*tagsPtr) * (*tagsLengthPtr)));
+        if (*tagsPtr == nullptr) {
             return 0;
         }
 
         tagIndex = 0;
-        for (cacheItemIndex = 0; cacheItemIndex < cache->entriesLength; cacheItemIndex++) {
-            if (cache->entries[cacheItemIndex]->referenceCount != 0) {
+        for (cacheItemIndex = 0; cacheItemIndex < entriesLength_; cacheItemIndex++) {
+            if (entries_[cacheItemIndex]->referenceCount != 0) {
                 if (tagIndex < *tagsLengthPtr) {
-                    (*tagsPtr)[tagIndex++] = cache->entries[cacheItemIndex]->key;
+                    (*tagsPtr)[tagIndex++] = entries_[cacheItemIndex]->key;
                 }
             }
         }
-
         break;
+
     case CACHE_LIST_REQUEST_TYPE_UNLOCKED_ITEMS:
-        for (cacheItemIndex = 0; cacheItemIndex < cache->entriesLength; cacheItemIndex++) {
-            if (cache->entries[cacheItemIndex]->referenceCount == 0) {
+        for (cacheItemIndex = 0; cacheItemIndex < entriesLength_; cacheItemIndex++) {
+            if (entries_[cacheItemIndex]->referenceCount == 0) {
                 (*tagsLengthPtr)++;
             }
         }
 
-        *tagsPtr = (int*)mem_malloc(sizeof(*tagsPtr) * (*tagsLengthPtr));
-        if (*tagsPtr == NULL) {
+        *tagsPtr = static_cast<int*>(mem_malloc(sizeof(*tagsPtr) * (*tagsLengthPtr)));
+        if (*tagsPtr == nullptr) {
             return 0;
         }
 
         tagIndex = 0;
-        for (cacheItemIndex = 0; cacheItemIndex < cache->entriesLength; cacheItemIndex++) {
-            if (cache->entries[cacheItemIndex]->referenceCount == 0) {
+        for (cacheItemIndex = 0; cacheItemIndex < entriesLength_; cacheItemIndex++) {
+            if (entries_[cacheItemIndex]->referenceCount == 0) {
                 if (tagIndex < *tagsLengthPtr) {
-                    (*tagsPtr)[tagIndex++] = cache->entries[cacheItemIndex]->key;
+                    (*tagsPtr)[tagIndex++] = entries_[cacheItemIndex]->key;
                 }
             }
         }
-
         break;
     }
 
@@ -339,68 +305,69 @@ int cache_create_list(Cache* cache, unsigned int a2, int** tagsPtr, int* tagsLen
 }
 
 // 0x41F084
-int cache_destroy_list(int** tagsPtr)
+int Cache::destroyList(int** tagsPtr)
 {
-    if (tagsPtr == NULL) {
+    if (tagsPtr == nullptr) {
         return 0;
     }
 
-    if (*tagsPtr == NULL) {
+    if (*tagsPtr == nullptr) {
         return 0;
     }
 
     mem_free(*tagsPtr);
-    *tagsPtr = NULL;
+    *tagsPtr = nullptr;
 
     return 1;
 }
 
+// -- Private methods --------------------------------------------------------
+
 // Fetches entry for the specified key into the cache.
-//
 // 0x41F0AC
-static bool cache_add(Cache* cache, int key, int* indexPtr)
+bool Cache::add(int key, int* indexPtr)
 {
     CacheEntry* cacheEntry;
 
     // NOTE: Uninline.
-    if (cache_create_item(&cacheEntry) != 1) {
-        return 0;
+    if (createItem(&cacheEntry) != 1) {
+        return false;
     }
 
     do {
         int size;
-        if (cache->sizeProc(key, &size) != 0) {
+        if (sizeProc_(key, &size) != 0) {
             break;
         }
 
-        if (!cache_make_room(cache, size)) {
+        if (!makeRoom(size)) {
             break;
         }
 
         bool allocated = false;
         int cacheEntrySize = size;
         for (int attempt = 0; attempt < 10; attempt++) {
-            if (heap_allocate(&(cache->heap), &(cacheEntry->heapHandleIndex), size, 1)) {
+            if (heap_.allocate(&(cacheEntry->heapHandleIndex), size, 1)) {
                 allocated = true;
                 break;
             }
 
-            cacheEntrySize = (int)((double)cacheEntrySize + (double)size * 0.25);
-            if (cacheEntrySize > cache->maxSize) {
+            cacheEntrySize = static_cast<int>(static_cast<double>(cacheEntrySize) + static_cast<double>(size) * 0.25);
+            if (cacheEntrySize > maxSize_) {
                 break;
             }
 
-            if (!cache_make_room(cache, cacheEntrySize)) {
+            if (!makeRoom(cacheEntrySize)) {
                 break;
             }
         }
 
         if (!allocated) {
-            cache_flush(cache);
+            flush();
 
             allocated = true;
-            if (!heap_allocate(&(cache->heap), &(cacheEntry->heapHandleIndex), size, 1)) {
-                if (!heap_allocate(&(cache->heap), &(cacheEntry->heapHandleIndex), size, 0)) {
+            if (!heap_.allocate(&(cacheEntry->heapHandleIndex), size, 1)) {
+                if (!heap_.allocate(&(cacheEntry->heapHandleIndex), size, 0)) {
                     allocated = false;
                 }
             }
@@ -411,79 +378,77 @@ static bool cache_add(Cache* cache, int key, int* indexPtr)
         }
 
         do {
-            if (!heap_lock(&(cache->heap), cacheEntry->heapHandleIndex, &(cacheEntry->data))) {
+            if (!heap_.lock(cacheEntry->heapHandleIndex, &(cacheEntry->data))) {
                 break;
             }
 
-            if (cache->readProc(key, &size, cacheEntry->data) != 0) {
+            if (readProc_(key, &size, cacheEntry->data) != 0) {
                 break;
             }
 
-            heap_unlock(&(cache->heap), cacheEntry->heapHandleIndex);
+            heap_.unlock(cacheEntry->heapHandleIndex);
 
             cacheEntry->size = size;
             cacheEntry->key = key;
 
             bool isNewKey = true;
-            if (*indexPtr < cache->entriesLength) {
-                if (key < cache->entries[*indexPtr]->key) {
-                    if (*indexPtr == 0 || key > cache->entries[*indexPtr - 1]->key) {
+            if (*indexPtr < entriesLength_) {
+                if (key < entries_[*indexPtr]->key) {
+                    if (*indexPtr == 0 || key > entries_[*indexPtr - 1]->key) {
                         isNewKey = false;
                     }
                 }
             }
 
             if (isNewKey) {
-                if (cache_find(cache, key, indexPtr) != 3) {
+                if (find(key, indexPtr) != 3) {
                     break;
                 }
             }
 
-            if (!cache_insert(cache, cacheEntry, *indexPtr)) {
+            if (!insert(cacheEntry, *indexPtr)) {
                 break;
             }
 
             return true;
         } while (0);
 
-        heap_unlock(&(cache->heap), cacheEntry->heapHandleIndex);
+        heap_.unlock(cacheEntry->heapHandleIndex);
     } while (0);
 
     // NOTE: Uninline.
-    cache_destroy_item(cache, cacheEntry);
+    destroyItem(cacheEntry);
 
     return false;
 }
 
 // 0x41F2E8
-static bool cache_insert(Cache* cache, CacheEntry* cacheEntry, int index)
+bool Cache::insert(CacheEntry* cacheEntry, int index)
 {
     // Ensure cache have enough space for new entry.
-    if (cache->entriesLength == cache->entriesCapacity - 1) {
-        if (!cache_resize_array(cache, cache->entriesCapacity + CACHE_ENTRIES_GROW_CAPACITY)) {
+    if (entriesLength_ == entriesCapacity_ - 1) {
+        if (!resizeArray(entriesCapacity_ + kCacheEntriesGrowCapacity)) {
             return false;
         }
     }
 
     // Move entries below insertion point.
-    memmove(&(cache->entries[index + 1]), &(cache->entries[index]), sizeof(*cache->entries) * (cache->entriesLength - index));
+    std::memmove(&(entries_[index + 1]), &(entries_[index]), sizeof(*entries_) * (entriesLength_ - index));
 
-    cache->entries[index] = cacheEntry;
-    cache->entriesLength++;
-    cache->size += cacheEntry->size;
+    entries_[index] = cacheEntry;
+    entriesLength_++;
+    size_ += cacheEntry->size;
 
     return true;
 }
 
 // Finds index for given key.
-//
-// Returns 2 if entry already exists in cache, or 3 if entry does not exist. In
-// this case indexPtr represents insertion point.
-//
+// Returns 2 if entry already exists in cache, or 3 if entry does not exist.
+// In this case indexPtr represents insertion point.
 // 0x41F354
-static int cache_find(Cache* cache, int key, int* indexPtr)
+int Cache::find(int key, int* indexPtr)
 {
-    int length = cache->entriesLength;
+    int length = entriesLength_;
     if (length == 0) {
         *indexPtr = 0;
         return 3;
@@ -497,7 +462,7 @@ static int cache_find(Cache* cache, int key, int* indexPtr)
     do {
         mid = (l + r) / 2;
 
-        cmp = key - cache->entries[mid]->key;
+        cmp = key - entries_[mid]->key;
         if (cmp == 0) {
             *indexPtr = mid;
             return 2;
@@ -520,25 +485,25 @@ static int cache_find(Cache* cache, int key, int* indexPtr)
 }
 
 // 0x41F3C0
-static int cache_create_item(CacheEntry** cacheEntryPtr)
+int Cache::createItem(CacheEntry** cacheEntryPtr)
 {
-    *cacheEntryPtr = (CacheEntry*)mem_malloc(sizeof(**cacheEntryPtr));
+    *cacheEntryPtr = static_cast<CacheEntry*>(mem_malloc(sizeof(**cacheEntryPtr)));
 
-    // FIXME: Wrong check, should be *cacheEntryPtr != NULL.
-    if (cacheEntryPtr != NULL) {
+    // FIXME: Wrong check, should be *cacheEntryPtr != nullptr.
+    if (cacheEntryPtr != nullptr) {
         // NOTE: Uninline.
-        return cache_init_item(*cacheEntryPtr);
+        return initItem(*cacheEntryPtr);
     }
 
     return 0;
 }
 
 // 0x41F408
-static bool cache_init_item(CacheEntry* cacheEntry)
+bool Cache::initItem(CacheEntry* cacheEntry)
 {
     cacheEntry->key = 0;
     cacheEntry->size = 0;
-    cacheEntry->data = NULL;
+    cacheEntry->data = nullptr;
     cacheEntry->referenceCount = 0;
     cacheEntry->hits = 0;
     cacheEntry->flags = 0;
@@ -547,29 +512,27 @@ static bool cache_init_item(CacheEntry* cacheEntry)
 }
 
 // 0x41F440
-static bool cache_destroy_item(Cache* cache, CacheEntry* cacheEntry)
+bool Cache::destroyItem(CacheEntry* cacheEntry)
 {
-    if (cacheEntry->data != NULL) {
-        heap_deallocate(&(cache->heap), &(cacheEntry->heapHandleIndex));
+    if (cacheEntry->data != nullptr) {
+        heap_.deallocate(&(cacheEntry->heapHandleIndex));
     }
 
     mem_free(cacheEntry);
-
     return true;
 }
 
 // 0x41F464
-static bool cache_unlock_all(Cache* cache)
+bool Cache::unlockAll()
 {
-    Heap* heap = &(cache->heap);
-    for (int index = 0; index < cache->entriesLength; index++) {
-        CacheEntry* cacheEntry = cache->entries[index];
+    for (int index = 0; index < entriesLength_; index++) {
+        CacheEntry* cacheEntry = entries_[index];
 
         // NOTE: Original code is slightly different. For unknown reason it uses
         // inner loop to decrement `referenceCount` one by one. Probably using
         // some inlined function.
         if (cacheEntry->referenceCount != 0) {
-            heap_unlock(heap, cacheEntry->heapHandleIndex);
+            heap_.unlock(cacheEntry->heapHandleIndex);
             cacheEntry->referenceCount = 0;
         }
     }
@@ -578,27 +541,23 @@ static bool cache_unlock_all(Cache* cache)
 }
 
 // 0x41F4D4
-static bool cache_reset_counter(Cache* cache)
+bool Cache::resetCounter()
 {
-    if (cache == NULL) {
+    CacheEntry** entries = static_cast<CacheEntry**>(mem_malloc(sizeof(CacheEntry*) * entriesLength_));
+    if (entries == nullptr) {
         return false;
     }
 
-    CacheEntry** entries = (CacheEntry**)mem_malloc(sizeof(*entries) * cache->entriesLength);
-    if (entries == NULL) {
-        return false;
-    }
+    std::memcpy(entries, entries_, sizeof(*entries) * entriesLength_);
 
-    memcpy(entries, cache->entries, sizeof(*entries) * cache->entriesLength);
+    std::qsort(entries, entriesLength_, sizeof(*entries), compareResetCounter);
 
-    qsort(entries, cache->entriesLength, sizeof(*entries), cache_compare_reset_counter);
-
-    for (int index = 0; index < cache->entriesLength; index++) {
+    for (int index = 0; index < entriesLength_; index++) {
         CacheEntry* cacheEntry = entries[index];
         cacheEntry->mru = index;
     }
 
-    cache->hits = cache->entriesLength;
+    hits_ = entriesLength_;
 
     // FIXME: Obviously leak `entries`.
 
@@ -606,33 +565,32 @@ static bool cache_reset_counter(Cache* cache)
 }
 
 // Prepare cache for storing new entry with the specified size.
-//
 // 0x41F54C
-static bool cache_make_room(Cache* cache, int size)
+bool Cache::makeRoom(int size)
 {
-    if (size > cache->maxSize) {
+    if (size > maxSize_) {
         // The entry of given size is too big for caching, no matter what.
         return false;
     }
 
-    if (cache->maxSize - cache->size >= size) {
+    if (maxSize_ - size_ >= size) {
         // There is space available for entry of given size, there is no need to
         // evict anything.
         return true;
     }
 
-    CacheEntry** entries = (CacheEntry**)mem_malloc(sizeof(*entries) * cache->entriesLength);
-    if (entries != NULL) {
-        memcpy(entries, cache->entries, sizeof(*entries) * cache->entriesLength);
-        qsort(entries, cache->entriesLength, sizeof(*entries), cache_compare_make_room);
+    CacheEntry** entries = static_cast<CacheEntry**>(mem_malloc(sizeof(CacheEntry*) * entriesLength_));
+    if (entries != nullptr) {
+        std::memcpy(entries, entries_, sizeof(CacheEntry*) * entriesLength_);
+        std::qsort(entries, entriesLength_, sizeof(CacheEntry*), compareMakeRoom);
 
         // The sweeping threshold is 20% of cache size plus size for the new
         // entry. Once the threshold is reached the marking process stops.
-        int threshold = size + (int)((double)cache->size * 0.2);
+        int threshold = size + static_cast<int>(static_cast<double>(size_) * 0.2);
 
         int accum = 0;
         int index;
-        for (index = 0; index < cache->entriesLength; index++) {
+        for (index = 0; index < entriesLength_; index++) {
             CacheEntry* entry = entries[index];
             if (entry->referenceCount == 0) {
                 if (entry->size >= threshold) {
@@ -657,7 +615,7 @@ static bool cache_make_room(Cache* cache, int size)
             // The loop below assumes index to be positioned on the entry, where
             // accumulator stopped. If we've reached the end, reposition
             // it to the last entry.
-            if (index == cache->entriesLength) {
+            if (index == entriesLength_) {
                 index -= 1;
             }
 
@@ -674,9 +632,9 @@ static bool cache_make_room(Cache* cache, int size)
         mem_free(entries);
     }
 
-    cache_purge(cache);
+    purge();
 
-    if (cache->maxSize - cache->size >= size) {
+    if (maxSize_ - size_ >= size) {
         return true;
     }
 
@@ -684,10 +642,10 @@ static bool cache_make_room(Cache* cache, int size)
 }
 
 // 0x41F69C
-static bool cache_purge(Cache* cache)
+bool Cache::purge()
 {
-    for (int index = 0; index < cache->entriesLength; index++) {
-        CacheEntry* cacheEntry = cache->entries[index];
+    for (int index = 0; index < entriesLength_; index++) {
+        CacheEntry* cacheEntry = entries_[index];
         if ((cacheEntry->flags & CACHE_ENTRY_MARKED_FOR_EVICTION) != 0) {
             if (cacheEntry->referenceCount != 0) {
                 // Entry was marked for eviction but still has references,
@@ -697,13 +655,13 @@ static bool cache_purge(Cache* cache)
                 int cacheEntrySize = cacheEntry->size;
 
                 // NOTE: Uninline.
-                cache_destroy_item(cache, cacheEntry);
+                destroyItem(cacheEntry);
 
                 // Move entries up.
-                memmove(&(cache->entries[index]), &(cache->entries[index + 1]), sizeof(*cache->entries) * ((cache->entriesLength - index) - 1));
+                std::memmove(&(entries_[index]), &(entries_[index + 1]), sizeof(*entries_) * ((entriesLength_ - index) - 1));
 
-                cache->entriesLength--;
-                cache->size -= cacheEntrySize;
+                entriesLength_--;
+                size_ -= cacheEntrySize;
 
                 // The entry was removed, compensate index.
                 index--;
@@ -715,28 +673,28 @@ static bool cache_purge(Cache* cache)
 }
 
 // 0x41F740
-static bool cache_resize_array(Cache* cache, int newCapacity)
+bool Cache::resizeArray(int newCapacity)
 {
-    if (newCapacity < cache->entriesLength) {
+    if (newCapacity < entriesLength_) {
         return false;
     }
 
-    CacheEntry** entries = (CacheEntry**)mem_realloc(cache->entries, sizeof(*cache->entries) * newCapacity);
-    if (entries == NULL) {
+    auto** entries = static_cast<CacheEntry**>(mem_realloc(entries_, sizeof(*entries_) * newCapacity));
+    if (entries == nullptr) {
         return false;
     }
 
-    cache->entries = entries;
-    cache->entriesCapacity = newCapacity;
+    entries_ = entries;
+    entriesCapacity_ = newCapacity;
 
     return true;
 }
 
 // 0x41F774
-static int cache_compare_make_room(const void* a1, const void* a2)
+int Cache::compareMakeRoom(const void* a1, const void* a2)
 {
-    CacheEntry* v1 = *(CacheEntry**)a1;
-    CacheEntry* v2 = *(CacheEntry**)a2;
+    CacheEntry* v1 = *static_cast<CacheEntry* const*>(a1);
+    CacheEntry* v2 = *static_cast<CacheEntry* const*>(a2);
 
     if (v1->referenceCount != 0 && v2->referenceCount == 0) {
         return 1;
@@ -762,10 +720,10 @@ static int cache_compare_make_room(const void* a1, const void* a2)
 }
 
 // 0x41F7E8
-static int cache_compare_reset_counter(const void* a1, const void* a2)
+int Cache::compareResetCounter(const void* a1, const void* a2)
 {
-    CacheEntry* v1 = *(CacheEntry**)a1;
-    CacheEntry* v2 = *(CacheEntry**)a2;
+    CacheEntry* v1 = *static_cast<CacheEntry* const*>(a1);
+    CacheEntry* v2 = *static_cast<CacheEntry* const*>(a2);
 
     if (v1->mru < v2->mru) {
         return 1;
@@ -774,6 +732,75 @@ static int cache_compare_reset_counter(const void* a1, const void* a2)
     } else {
         return 0;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Legacy free-function API — thin wrappers for backward compatibility.
+// ---------------------------------------------------------------------------
+
+bool cache_init(Cache* cache, CacheSizeProc* sizeProc, CacheReadProc* readProc, CacheFreeProc* freeProc, int maxSize)
+{
+    if (cache == nullptr) return false;
+    return cache->init(sizeProc, readProc, freeProc, maxSize);
+}
+
+bool cache_exit(Cache* cache)
+{
+    if (cache == nullptr) return false;
+    return cache->exit();
+}
+
+int cache_query(Cache* cache, int key)
+{
+    if (cache == nullptr) return 0;
+    return cache->query(key);
+}
+
+bool cache_lock(Cache* cache, int key, void** data, CacheEntry** cacheEntryPtr)
+{
+    if (cache == nullptr) return false;
+    return cache->lock(key, data, cacheEntryPtr);
+}
+
+bool cache_unlock(Cache* cache, CacheEntry* cacheEntry)
+{
+    if (cache == nullptr) return false;
+    return cache->unlock(cacheEntry);
+}
+
+int cache_discard(Cache* cache, int key)
+{
+    if (cache == nullptr) return 0;
+    return cache->discard(key);
+}
+
+bool cache_flush(Cache* cache)
+{
+    if (cache == nullptr) return false;
+    return cache->flush();
+}
+
+int cache_size(Cache* cache, int* sizePtr)
+{
+    if (cache == nullptr) return 0;
+    return cache->getSize(sizePtr);
+}
+
+bool cache_stats(Cache* cache, char* dest, size_t size)
+{
+    if (cache == nullptr) return false;
+    return cache->stats(dest, size);
+}
+
+int cache_create_list(Cache* cache, unsigned int a2, int** tagsPtr, int* tagsLengthPtr)
+{
+    if (cache == nullptr) return 0;
+    return cache->createList(a2, tagsPtr, tagsLengthPtr);
+}
+
+int cache_destroy_list(int** tagsPtr)
+{
+    return Cache::destroyList(tagsPtr);
 }
 
 } // namespace fallout

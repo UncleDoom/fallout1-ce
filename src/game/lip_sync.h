@@ -1,8 +1,9 @@
-#ifndef FALLOUT_GAME_LIP_SYNC_H_
-#define FALLOUT_GAME_LIP_SYNC_H_
+#pragma once
 
-#include <stddef.h>
 
+#include <cstddef>
+
+#include "game/enum_utils.h"
 #include "int/sound.h"
 #include "plib/db/db.h"
 
@@ -10,17 +11,23 @@ namespace fallout {
 
 #define PHONEME_COUNT (42)
 
-typedef enum LipsFlags {
-    LIPS_FLAG_0x01 = 0x01,
-    LIPS_FLAG_0x02 = 0x02,
-} LipsFlags;
+enum class LipsFlags : unsigned {
+    Flag0x01 = 0x01,
+    Flag0x02 = 0x02,
+};
 
-typedef struct SpeechMarker {
+DEFINE_ENUM_FLAG_OPERATORS(LipsFlags)
+
+inline constexpr int LIPS_FLAG_0x01 = static_cast<int>(LipsFlags::Flag0x01);
+inline constexpr int LIPS_FLAG_0x02 = static_cast<int>(LipsFlags::Flag0x02);
+
+
+struct SpeechMarker {
     int marker;
     int position;
-} SpeechMarker;
+};
 
-typedef struct LipsData {
+struct LipsData {
     int version;
     int field_4;
     int flags;
@@ -46,7 +53,7 @@ typedef struct LipsData {
     char field_5C[4];
     char field_60[4];
     char field_64[260];
-} LipsData;
+};
 
 extern unsigned char head_phoneme_current;
 extern unsigned char head_phoneme_drawn;
@@ -61,5 +68,3 @@ int lips_load_file(const char* audioFileName, const char* headFileName);
 int lips_free_speech();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_LIP_SYNC_H_ */

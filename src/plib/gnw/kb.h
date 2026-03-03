@@ -1,5 +1,5 @@
-#ifndef FALLOUT_PLIB_GNW_KB_H_
-#define FALLOUT_PLIB_GNW_KB_H_
+#pragma once
+
 
 #include <SDL.h>
 
@@ -7,43 +7,48 @@
 
 namespace fallout {
 
-#define KEY_STATE_UP 0
-#define KEY_STATE_DOWN 1
-#define KEY_STATE_REPEAT 2
+inline constexpr int KEY_STATE_UP = 0;
+inline constexpr int KEY_STATE_DOWN = 1;
+inline constexpr int KEY_STATE_REPEAT = 2;
 
-#define MODIFIER_KEY_STATE_NUM_LOCK 0x01
-#define MODIFIER_KEY_STATE_CAPS_LOCK 0x02
-#define MODIFIER_KEY_STATE_SCROLL_LOCK 0x04
+inline constexpr int MODIFIER_KEY_STATE_NUM_LOCK = 0x01;
+inline constexpr int MODIFIER_KEY_STATE_CAPS_LOCK = 0x02;
+inline constexpr int MODIFIER_KEY_STATE_SCROLL_LOCK = 0x04;
 
-#define KEYBOARD_EVENT_MODIFIER_CAPS_LOCK 0x0001
-#define KEYBOARD_EVENT_MODIFIER_NUM_LOCK 0x0002
-#define KEYBOARD_EVENT_MODIFIER_SCROLL_LOCK 0x0004
-#define KEYBOARD_EVENT_MODIFIER_LEFT_SHIFT 0x0008
-#define KEYBOARD_EVENT_MODIFIER_RIGHT_SHIFT 0x0010
-#define KEYBOARD_EVENT_MODIFIER_LEFT_ALT 0x0020
-#define KEYBOARD_EVENT_MODIFIER_RIGHT_ALT 0x0040
-#define KEYBOARD_EVENT_MODIFIER_LEFT_CONTROL 0x0080
-#define KEYBOARD_EVENT_MODIFIER_RIGHT_CONTROL 0x0100
+inline constexpr int KEYBOARD_EVENT_MODIFIER_CAPS_LOCK = 0x0001;
+inline constexpr int KEYBOARD_EVENT_MODIFIER_NUM_LOCK = 0x0002;
+inline constexpr int KEYBOARD_EVENT_MODIFIER_SCROLL_LOCK = 0x0004;
+inline constexpr int KEYBOARD_EVENT_MODIFIER_LEFT_SHIFT = 0x0008;
+inline constexpr int KEYBOARD_EVENT_MODIFIER_RIGHT_SHIFT = 0x0010;
+inline constexpr int KEYBOARD_EVENT_MODIFIER_LEFT_ALT = 0x0020;
+inline constexpr int KEYBOARD_EVENT_MODIFIER_RIGHT_ALT = 0x0040;
+inline constexpr int KEYBOARD_EVENT_MODIFIER_LEFT_CONTROL = 0x0080;
+inline constexpr int KEYBOARD_EVENT_MODIFIER_RIGHT_CONTROL = 0x0100;
 #define KEYBOARD_EVENT_MODIFIER_ANY_SHIFT (KEYBOARD_EVENT_MODIFIER_LEFT_SHIFT | KEYBOARD_EVENT_MODIFIER_RIGHT_SHIFT)
 #define KEYBOARD_EVENT_MODIFIER_ANY_ALT (KEYBOARD_EVENT_MODIFIER_LEFT_ALT | KEYBOARD_EVENT_MODIFIER_RIGHT_ALT)
 #define KEYBOARD_EVENT_MODIFIER_ANY_CONTROL (KEYBOARD_EVENT_MODIFIER_LEFT_CONTROL | KEYBOARD_EVENT_MODIFIER_RIGHT_CONTROL)
 
-#define KEY_QUEUE_SIZE 64
+inline constexpr int KEY_QUEUE_SIZE = 64;
 
-typedef enum KeyboardLayout {
-    KEYBOARD_LAYOUT_QWERTY,
-    KEYBOARD_LAYOUT_FRENCH,
-    KEYBOARD_LAYOUT_GERMAN,
-    KEYBOARD_LAYOUT_ITALIAN,
-    KEYBOARD_LAYOUT_SPANISH,
-} KeyboardLayout;
+enum class KeyboardLayout : int {
+    Qwerty = 0,
+    French = 1,
+    German = 2,
+    Italian = 3,
+    Spanish = 4,
+};
 
-typedef enum Key {
+inline constexpr int KEYBOARD_LAYOUT_QWERTY = static_cast<int>(KeyboardLayout::Qwerty);
+inline constexpr int KEYBOARD_LAYOUT_FRENCH = static_cast<int>(KeyboardLayout::French);
+inline constexpr int KEYBOARD_LAYOUT_GERMAN = static_cast<int>(KeyboardLayout::German);
+inline constexpr int KEYBOARD_LAYOUT_ITALIAN = static_cast<int>(KeyboardLayout::Italian);
+inline constexpr int KEYBOARD_LAYOUT_SPANISH = static_cast<int>(KeyboardLayout::Spanish);
+
+enum class Key : int {
     KEY_ESCAPE = '\x1b',
     KEY_TAB = '\x09',
     KEY_BACKSPACE = '\x08',
     KEY_RETURN = '\r',
-
     KEY_SPACE = ' ',
     KEY_EXCLAMATION = '!',
     KEY_QUOTE = '"',
@@ -103,13 +108,11 @@ typedef enum Key {
     KEY_UPPERCASE_X = 'X',
     KEY_UPPERCASE_Y = 'Y',
     KEY_UPPERCASE_Z = 'Z',
-
     KEY_BRACKET_LEFT = '[',
     KEY_BACKSLASH = '\\',
     KEY_BRACKET_RIGHT = ']',
     KEY_CARET = '^',
     KEY_UNDERSCORE = '_',
-
     KEY_GRAVE = '`',
     KEY_LOWERCASE_A = 'a',
     KEY_LOWERCASE_B = 'b',
@@ -142,7 +145,6 @@ typedef enum Key {
     KEY_BRACE_RIGHT = '}',
     KEY_TILDE = '~',
     KEY_DEL = 127,
-
     KEY_136 = 136,
     KEY_146 = 146,
     KEY_149 = 149,
@@ -181,7 +183,6 @@ typedef enum Key {
     KEY_247 = 247,
     KEY_249 = 249,
     KEY_252 = 252,
-
     KEY_ALT_Q = 272,
     KEY_ALT_W = 273,
     KEY_ALT_E = 274,
@@ -208,7 +209,6 @@ typedef enum Key {
     KEY_ALT_B = 304,
     KEY_ALT_N = 305,
     KEY_ALT_M = 306,
-
     KEY_CTRL_Q = 17,
     KEY_CTRL_W = 23,
     KEY_CTRL_E = 5,
@@ -235,7 +235,6 @@ typedef enum Key {
     KEY_CTRL_B = 2,
     KEY_CTRL_N = 14,
     KEY_CTRL_M = 13,
-
     KEY_F1 = 315,
     KEY_F2 = 316,
     KEY_F3 = 317,
@@ -248,7 +247,6 @@ typedef enum Key {
     KEY_F10 = 324,
     KEY_F11 = 389,
     KEY_F12 = 390,
-
     KEY_SHIFT_F1 = 340,
     KEY_SHIFT_F2 = 341,
     KEY_SHIFT_F3 = 342,
@@ -261,7 +259,6 @@ typedef enum Key {
     KEY_SHIFT_F10 = 349,
     KEY_SHIFT_F11 = 391,
     KEY_SHIFT_F12 = 392,
-
     KEY_CTRL_F1 = 350,
     KEY_CTRL_F2 = 351,
     KEY_CTRL_F3 = 352,
@@ -274,7 +271,6 @@ typedef enum Key {
     KEY_CTRL_F10 = 359,
     KEY_CTRL_F11 = 393,
     KEY_CTRL_F12 = 394,
-
     KEY_ALT_F1 = 360,
     KEY_ALT_F2 = 361,
     KEY_ALT_F3 = 362,
@@ -287,56 +283,318 @@ typedef enum Key {
     KEY_ALT_F10 = 369,
     KEY_ALT_F11 = 395,
     KEY_ALT_F12 = 396,
-
     KEY_HOME = 327,
     KEY_CTRL_HOME = 375,
     KEY_ALT_HOME = 407,
-
     KEY_PAGE_UP = 329,
     KEY_CTRL_PAGE_UP = 388,
     KEY_ALT_PAGE_UP = 409,
-
     KEY_INSERT = 338,
     KEY_CTRL_INSERT = 402,
     KEY_ALT_INSERT = 418,
-
     KEY_DELETE = 339,
     KEY_CTRL_DELETE = 403,
     KEY_ALT_DELETE = 419,
-
     KEY_END = 335,
     KEY_CTRL_END = 373,
     KEY_ALT_END = 415,
-
     KEY_PAGE_DOWN = 337,
     KEY_ALT_PAGE_DOWN = 417,
     KEY_CTRL_PAGE_DOWN = 374,
-
     KEY_ARROW_UP = 328,
     KEY_CTRL_ARROW_UP = 397,
     KEY_ALT_ARROW_UP = 408,
-
     KEY_ARROW_DOWN = 336,
     KEY_CTRL_ARROW_DOWN = 401,
     KEY_ALT_ARROW_DOWN = 416,
-
     KEY_ARROW_LEFT = 331,
     KEY_CTRL_ARROW_LEFT = 371,
     KEY_ALT_ARROW_LEFT = 411,
-
     KEY_ARROW_RIGHT = 333,
     KEY_CTRL_ARROW_RIGHT = 372,
     KEY_ALT_ARROW_RIGHT = 413,
-
     KEY_CTRL_BACKSLASH = 192,
-
     KEY_NUMBERPAD_5 = 332,
     KEY_CTRL_NUMBERPAD_5 = 399,
     KEY_ALT_NUMBERPAD_5 = 9999,
-
     KEY_FIRST_INPUT_CHARACTER = KEY_SPACE,
     KEY_LAST_INPUT_CHARACTER = KEY_LOWERCASE_Z,
-} Key;
+};
+
+inline constexpr int KEY_ESCAPE = static_cast<int>(Key::KEY_ESCAPE);
+inline constexpr int KEY_TAB = static_cast<int>(Key::KEY_TAB);
+inline constexpr int KEY_BACKSPACE = static_cast<int>(Key::KEY_BACKSPACE);
+inline constexpr int KEY_RETURN = static_cast<int>(Key::KEY_RETURN);
+inline constexpr int KEY_SPACE = static_cast<int>(Key::KEY_SPACE);
+inline constexpr int KEY_EXCLAMATION = static_cast<int>(Key::KEY_EXCLAMATION);
+inline constexpr int KEY_QUOTE = static_cast<int>(Key::KEY_QUOTE);
+inline constexpr int KEY_NUMBER_SIGN = static_cast<int>(Key::KEY_NUMBER_SIGN);
+inline constexpr int KEY_DOLLAR = static_cast<int>(Key::KEY_DOLLAR);
+inline constexpr int KEY_PERCENT = static_cast<int>(Key::KEY_PERCENT);
+inline constexpr int KEY_AMPERSAND = static_cast<int>(Key::KEY_AMPERSAND);
+inline constexpr int KEY_SINGLE_QUOTE = static_cast<int>(Key::KEY_SINGLE_QUOTE);
+inline constexpr int KEY_PAREN_LEFT = static_cast<int>(Key::KEY_PAREN_LEFT);
+inline constexpr int KEY_PAREN_RIGHT = static_cast<int>(Key::KEY_PAREN_RIGHT);
+inline constexpr int KEY_ASTERISK = static_cast<int>(Key::KEY_ASTERISK);
+inline constexpr int KEY_PLUS = static_cast<int>(Key::KEY_PLUS);
+inline constexpr int KEY_COMMA = static_cast<int>(Key::KEY_COMMA);
+inline constexpr int KEY_MINUS = static_cast<int>(Key::KEY_MINUS);
+inline constexpr int KEY_DOT = static_cast<int>(Key::KEY_DOT);
+inline constexpr int KEY_SLASH = static_cast<int>(Key::KEY_SLASH);
+inline constexpr int KEY_0 = static_cast<int>(Key::KEY_0);
+inline constexpr int KEY_1 = static_cast<int>(Key::KEY_1);
+inline constexpr int KEY_2 = static_cast<int>(Key::KEY_2);
+inline constexpr int KEY_3 = static_cast<int>(Key::KEY_3);
+inline constexpr int KEY_4 = static_cast<int>(Key::KEY_4);
+inline constexpr int KEY_5 = static_cast<int>(Key::KEY_5);
+inline constexpr int KEY_6 = static_cast<int>(Key::KEY_6);
+inline constexpr int KEY_7 = static_cast<int>(Key::KEY_7);
+inline constexpr int KEY_8 = static_cast<int>(Key::KEY_8);
+inline constexpr int KEY_9 = static_cast<int>(Key::KEY_9);
+inline constexpr int KEY_COLON = static_cast<int>(Key::KEY_COLON);
+inline constexpr int KEY_SEMICOLON = static_cast<int>(Key::KEY_SEMICOLON);
+inline constexpr int KEY_LESS = static_cast<int>(Key::KEY_LESS);
+inline constexpr int KEY_EQUAL = static_cast<int>(Key::KEY_EQUAL);
+inline constexpr int KEY_GREATER = static_cast<int>(Key::KEY_GREATER);
+inline constexpr int KEY_QUESTION = static_cast<int>(Key::KEY_QUESTION);
+inline constexpr int KEY_AT = static_cast<int>(Key::KEY_AT);
+inline constexpr int KEY_UPPERCASE_A = static_cast<int>(Key::KEY_UPPERCASE_A);
+inline constexpr int KEY_UPPERCASE_B = static_cast<int>(Key::KEY_UPPERCASE_B);
+inline constexpr int KEY_UPPERCASE_C = static_cast<int>(Key::KEY_UPPERCASE_C);
+inline constexpr int KEY_UPPERCASE_D = static_cast<int>(Key::KEY_UPPERCASE_D);
+inline constexpr int KEY_UPPERCASE_E = static_cast<int>(Key::KEY_UPPERCASE_E);
+inline constexpr int KEY_UPPERCASE_F = static_cast<int>(Key::KEY_UPPERCASE_F);
+inline constexpr int KEY_UPPERCASE_G = static_cast<int>(Key::KEY_UPPERCASE_G);
+inline constexpr int KEY_UPPERCASE_H = static_cast<int>(Key::KEY_UPPERCASE_H);
+inline constexpr int KEY_UPPERCASE_I = static_cast<int>(Key::KEY_UPPERCASE_I);
+inline constexpr int KEY_UPPERCASE_J = static_cast<int>(Key::KEY_UPPERCASE_J);
+inline constexpr int KEY_UPPERCASE_K = static_cast<int>(Key::KEY_UPPERCASE_K);
+inline constexpr int KEY_UPPERCASE_L = static_cast<int>(Key::KEY_UPPERCASE_L);
+inline constexpr int KEY_UPPERCASE_M = static_cast<int>(Key::KEY_UPPERCASE_M);
+inline constexpr int KEY_UPPERCASE_N = static_cast<int>(Key::KEY_UPPERCASE_N);
+inline constexpr int KEY_UPPERCASE_O = static_cast<int>(Key::KEY_UPPERCASE_O);
+inline constexpr int KEY_UPPERCASE_P = static_cast<int>(Key::KEY_UPPERCASE_P);
+inline constexpr int KEY_UPPERCASE_Q = static_cast<int>(Key::KEY_UPPERCASE_Q);
+inline constexpr int KEY_UPPERCASE_R = static_cast<int>(Key::KEY_UPPERCASE_R);
+inline constexpr int KEY_UPPERCASE_S = static_cast<int>(Key::KEY_UPPERCASE_S);
+inline constexpr int KEY_UPPERCASE_T = static_cast<int>(Key::KEY_UPPERCASE_T);
+inline constexpr int KEY_UPPERCASE_U = static_cast<int>(Key::KEY_UPPERCASE_U);
+inline constexpr int KEY_UPPERCASE_V = static_cast<int>(Key::KEY_UPPERCASE_V);
+inline constexpr int KEY_UPPERCASE_W = static_cast<int>(Key::KEY_UPPERCASE_W);
+inline constexpr int KEY_UPPERCASE_X = static_cast<int>(Key::KEY_UPPERCASE_X);
+inline constexpr int KEY_UPPERCASE_Y = static_cast<int>(Key::KEY_UPPERCASE_Y);
+inline constexpr int KEY_UPPERCASE_Z = static_cast<int>(Key::KEY_UPPERCASE_Z);
+inline constexpr int KEY_BRACKET_LEFT = static_cast<int>(Key::KEY_BRACKET_LEFT);
+inline constexpr int KEY_BACKSLASH = static_cast<int>(Key::KEY_BACKSLASH);
+inline constexpr int KEY_BRACKET_RIGHT = static_cast<int>(Key::KEY_BRACKET_RIGHT);
+inline constexpr int KEY_CARET = static_cast<int>(Key::KEY_CARET);
+inline constexpr int KEY_UNDERSCORE = static_cast<int>(Key::KEY_UNDERSCORE);
+inline constexpr int KEY_GRAVE = static_cast<int>(Key::KEY_GRAVE);
+inline constexpr int KEY_LOWERCASE_A = static_cast<int>(Key::KEY_LOWERCASE_A);
+inline constexpr int KEY_LOWERCASE_B = static_cast<int>(Key::KEY_LOWERCASE_B);
+inline constexpr int KEY_LOWERCASE_C = static_cast<int>(Key::KEY_LOWERCASE_C);
+inline constexpr int KEY_LOWERCASE_D = static_cast<int>(Key::KEY_LOWERCASE_D);
+inline constexpr int KEY_LOWERCASE_E = static_cast<int>(Key::KEY_LOWERCASE_E);
+inline constexpr int KEY_LOWERCASE_F = static_cast<int>(Key::KEY_LOWERCASE_F);
+inline constexpr int KEY_LOWERCASE_G = static_cast<int>(Key::KEY_LOWERCASE_G);
+inline constexpr int KEY_LOWERCASE_H = static_cast<int>(Key::KEY_LOWERCASE_H);
+inline constexpr int KEY_LOWERCASE_I = static_cast<int>(Key::KEY_LOWERCASE_I);
+inline constexpr int KEY_LOWERCASE_J = static_cast<int>(Key::KEY_LOWERCASE_J);
+inline constexpr int KEY_LOWERCASE_K = static_cast<int>(Key::KEY_LOWERCASE_K);
+inline constexpr int KEY_LOWERCASE_L = static_cast<int>(Key::KEY_LOWERCASE_L);
+inline constexpr int KEY_LOWERCASE_M = static_cast<int>(Key::KEY_LOWERCASE_M);
+inline constexpr int KEY_LOWERCASE_N = static_cast<int>(Key::KEY_LOWERCASE_N);
+inline constexpr int KEY_LOWERCASE_O = static_cast<int>(Key::KEY_LOWERCASE_O);
+inline constexpr int KEY_LOWERCASE_P = static_cast<int>(Key::KEY_LOWERCASE_P);
+inline constexpr int KEY_LOWERCASE_Q = static_cast<int>(Key::KEY_LOWERCASE_Q);
+inline constexpr int KEY_LOWERCASE_R = static_cast<int>(Key::KEY_LOWERCASE_R);
+inline constexpr int KEY_LOWERCASE_S = static_cast<int>(Key::KEY_LOWERCASE_S);
+inline constexpr int KEY_LOWERCASE_T = static_cast<int>(Key::KEY_LOWERCASE_T);
+inline constexpr int KEY_LOWERCASE_U = static_cast<int>(Key::KEY_LOWERCASE_U);
+inline constexpr int KEY_LOWERCASE_V = static_cast<int>(Key::KEY_LOWERCASE_V);
+inline constexpr int KEY_LOWERCASE_W = static_cast<int>(Key::KEY_LOWERCASE_W);
+inline constexpr int KEY_LOWERCASE_X = static_cast<int>(Key::KEY_LOWERCASE_X);
+inline constexpr int KEY_LOWERCASE_Y = static_cast<int>(Key::KEY_LOWERCASE_Y);
+inline constexpr int KEY_LOWERCASE_Z = static_cast<int>(Key::KEY_LOWERCASE_Z);
+inline constexpr int KEY_BRACE_LEFT = static_cast<int>(Key::KEY_BRACE_LEFT);
+inline constexpr int KEY_BAR = static_cast<int>(Key::KEY_BAR);
+inline constexpr int KEY_BRACE_RIGHT = static_cast<int>(Key::KEY_BRACE_RIGHT);
+inline constexpr int KEY_TILDE = static_cast<int>(Key::KEY_TILDE);
+inline constexpr int KEY_DEL = static_cast<int>(Key::KEY_DEL);
+inline constexpr int KEY_136 = static_cast<int>(Key::KEY_136);
+inline constexpr int KEY_146 = static_cast<int>(Key::KEY_146);
+inline constexpr int KEY_149 = static_cast<int>(Key::KEY_149);
+inline constexpr int KEY_150 = static_cast<int>(Key::KEY_150);
+inline constexpr int KEY_151 = static_cast<int>(Key::KEY_151);
+inline constexpr int KEY_152 = static_cast<int>(Key::KEY_152);
+inline constexpr int KEY_161 = static_cast<int>(Key::KEY_161);
+inline constexpr int KEY_163 = static_cast<int>(Key::KEY_163);
+inline constexpr int KEY_164 = static_cast<int>(Key::KEY_164);
+inline constexpr int KEY_166 = static_cast<int>(Key::KEY_166);
+inline constexpr int KEY_168 = static_cast<int>(Key::KEY_168);
+inline constexpr int KEY_167 = static_cast<int>(Key::KEY_167);
+inline constexpr int KEY_170 = static_cast<int>(Key::KEY_170);
+inline constexpr int KEY_172 = static_cast<int>(Key::KEY_172);
+inline constexpr int KEY_176 = static_cast<int>(Key::KEY_176);
+inline constexpr int KEY_178 = static_cast<int>(Key::KEY_178);
+inline constexpr int KEY_179 = static_cast<int>(Key::KEY_179);
+inline constexpr int KEY_180 = static_cast<int>(Key::KEY_180);
+inline constexpr int KEY_181 = static_cast<int>(Key::KEY_181);
+inline constexpr int KEY_186 = static_cast<int>(Key::KEY_186);
+inline constexpr int KEY_191 = static_cast<int>(Key::KEY_191);
+inline constexpr int KEY_196 = static_cast<int>(Key::KEY_196);
+inline constexpr int KEY_199 = static_cast<int>(Key::KEY_199);
+inline constexpr int KEY_209 = static_cast<int>(Key::KEY_209);
+inline constexpr int KEY_214 = static_cast<int>(Key::KEY_214);
+inline constexpr int KEY_215 = static_cast<int>(Key::KEY_215);
+inline constexpr int KEY_220 = static_cast<int>(Key::KEY_220);
+inline constexpr int KEY_223 = static_cast<int>(Key::KEY_223);
+inline constexpr int KEY_224 = static_cast<int>(Key::KEY_224);
+inline constexpr int KEY_228 = static_cast<int>(Key::KEY_228);
+inline constexpr int KEY_231 = static_cast<int>(Key::KEY_231);
+inline constexpr int KEY_232 = static_cast<int>(Key::KEY_232);
+inline constexpr int KEY_233 = static_cast<int>(Key::KEY_233);
+inline constexpr int KEY_241 = static_cast<int>(Key::KEY_241);
+inline constexpr int KEY_246 = static_cast<int>(Key::KEY_246);
+inline constexpr int KEY_247 = static_cast<int>(Key::KEY_247);
+inline constexpr int KEY_249 = static_cast<int>(Key::KEY_249);
+inline constexpr int KEY_252 = static_cast<int>(Key::KEY_252);
+inline constexpr int KEY_ALT_Q = static_cast<int>(Key::KEY_ALT_Q);
+inline constexpr int KEY_ALT_W = static_cast<int>(Key::KEY_ALT_W);
+inline constexpr int KEY_ALT_E = static_cast<int>(Key::KEY_ALT_E);
+inline constexpr int KEY_ALT_R = static_cast<int>(Key::KEY_ALT_R);
+inline constexpr int KEY_ALT_T = static_cast<int>(Key::KEY_ALT_T);
+inline constexpr int KEY_ALT_Y = static_cast<int>(Key::KEY_ALT_Y);
+inline constexpr int KEY_ALT_U = static_cast<int>(Key::KEY_ALT_U);
+inline constexpr int KEY_ALT_I = static_cast<int>(Key::KEY_ALT_I);
+inline constexpr int KEY_ALT_O = static_cast<int>(Key::KEY_ALT_O);
+inline constexpr int KEY_ALT_P = static_cast<int>(Key::KEY_ALT_P);
+inline constexpr int KEY_ALT_A = static_cast<int>(Key::KEY_ALT_A);
+inline constexpr int KEY_ALT_S = static_cast<int>(Key::KEY_ALT_S);
+inline constexpr int KEY_ALT_D = static_cast<int>(Key::KEY_ALT_D);
+inline constexpr int KEY_ALT_F = static_cast<int>(Key::KEY_ALT_F);
+inline constexpr int KEY_ALT_G = static_cast<int>(Key::KEY_ALT_G);
+inline constexpr int KEY_ALT_H = static_cast<int>(Key::KEY_ALT_H);
+inline constexpr int KEY_ALT_J = static_cast<int>(Key::KEY_ALT_J);
+inline constexpr int KEY_ALT_K = static_cast<int>(Key::KEY_ALT_K);
+inline constexpr int KEY_ALT_L = static_cast<int>(Key::KEY_ALT_L);
+inline constexpr int KEY_ALT_Z = static_cast<int>(Key::KEY_ALT_Z);
+inline constexpr int KEY_ALT_X = static_cast<int>(Key::KEY_ALT_X);
+inline constexpr int KEY_ALT_C = static_cast<int>(Key::KEY_ALT_C);
+inline constexpr int KEY_ALT_V = static_cast<int>(Key::KEY_ALT_V);
+inline constexpr int KEY_ALT_B = static_cast<int>(Key::KEY_ALT_B);
+inline constexpr int KEY_ALT_N = static_cast<int>(Key::KEY_ALT_N);
+inline constexpr int KEY_ALT_M = static_cast<int>(Key::KEY_ALT_M);
+inline constexpr int KEY_CTRL_Q = static_cast<int>(Key::KEY_CTRL_Q);
+inline constexpr int KEY_CTRL_W = static_cast<int>(Key::KEY_CTRL_W);
+inline constexpr int KEY_CTRL_E = static_cast<int>(Key::KEY_CTRL_E);
+inline constexpr int KEY_CTRL_R = static_cast<int>(Key::KEY_CTRL_R);
+inline constexpr int KEY_CTRL_T = static_cast<int>(Key::KEY_CTRL_T);
+inline constexpr int KEY_CTRL_Y = static_cast<int>(Key::KEY_CTRL_Y);
+inline constexpr int KEY_CTRL_U = static_cast<int>(Key::KEY_CTRL_U);
+inline constexpr int KEY_CTRL_I = static_cast<int>(Key::KEY_CTRL_I);
+inline constexpr int KEY_CTRL_O = static_cast<int>(Key::KEY_CTRL_O);
+inline constexpr int KEY_CTRL_P = static_cast<int>(Key::KEY_CTRL_P);
+inline constexpr int KEY_CTRL_A = static_cast<int>(Key::KEY_CTRL_A);
+inline constexpr int KEY_CTRL_S = static_cast<int>(Key::KEY_CTRL_S);
+inline constexpr int KEY_CTRL_D = static_cast<int>(Key::KEY_CTRL_D);
+inline constexpr int KEY_CTRL_F = static_cast<int>(Key::KEY_CTRL_F);
+inline constexpr int KEY_CTRL_G = static_cast<int>(Key::KEY_CTRL_G);
+inline constexpr int KEY_CTRL_H = static_cast<int>(Key::KEY_CTRL_H);
+inline constexpr int KEY_CTRL_J = static_cast<int>(Key::KEY_CTRL_J);
+inline constexpr int KEY_CTRL_K = static_cast<int>(Key::KEY_CTRL_K);
+inline constexpr int KEY_CTRL_L = static_cast<int>(Key::KEY_CTRL_L);
+inline constexpr int KEY_CTRL_Z = static_cast<int>(Key::KEY_CTRL_Z);
+inline constexpr int KEY_CTRL_X = static_cast<int>(Key::KEY_CTRL_X);
+inline constexpr int KEY_CTRL_C = static_cast<int>(Key::KEY_CTRL_C);
+inline constexpr int KEY_CTRL_V = static_cast<int>(Key::KEY_CTRL_V);
+inline constexpr int KEY_CTRL_B = static_cast<int>(Key::KEY_CTRL_B);
+inline constexpr int KEY_CTRL_N = static_cast<int>(Key::KEY_CTRL_N);
+inline constexpr int KEY_CTRL_M = static_cast<int>(Key::KEY_CTRL_M);
+inline constexpr int KEY_F1 = static_cast<int>(Key::KEY_F1);
+inline constexpr int KEY_F2 = static_cast<int>(Key::KEY_F2);
+inline constexpr int KEY_F3 = static_cast<int>(Key::KEY_F3);
+inline constexpr int KEY_F4 = static_cast<int>(Key::KEY_F4);
+inline constexpr int KEY_F5 = static_cast<int>(Key::KEY_F5);
+inline constexpr int KEY_F6 = static_cast<int>(Key::KEY_F6);
+inline constexpr int KEY_F7 = static_cast<int>(Key::KEY_F7);
+inline constexpr int KEY_F8 = static_cast<int>(Key::KEY_F8);
+inline constexpr int KEY_F9 = static_cast<int>(Key::KEY_F9);
+inline constexpr int KEY_F10 = static_cast<int>(Key::KEY_F10);
+inline constexpr int KEY_F11 = static_cast<int>(Key::KEY_F11);
+inline constexpr int KEY_F12 = static_cast<int>(Key::KEY_F12);
+inline constexpr int KEY_SHIFT_F1 = static_cast<int>(Key::KEY_SHIFT_F1);
+inline constexpr int KEY_SHIFT_F2 = static_cast<int>(Key::KEY_SHIFT_F2);
+inline constexpr int KEY_SHIFT_F3 = static_cast<int>(Key::KEY_SHIFT_F3);
+inline constexpr int KEY_SHIFT_F4 = static_cast<int>(Key::KEY_SHIFT_F4);
+inline constexpr int KEY_SHIFT_F5 = static_cast<int>(Key::KEY_SHIFT_F5);
+inline constexpr int KEY_SHIFT_F6 = static_cast<int>(Key::KEY_SHIFT_F6);
+inline constexpr int KEY_SHIFT_F7 = static_cast<int>(Key::KEY_SHIFT_F7);
+inline constexpr int KEY_SHIFT_F8 = static_cast<int>(Key::KEY_SHIFT_F8);
+inline constexpr int KEY_SHIFT_F9 = static_cast<int>(Key::KEY_SHIFT_F9);
+inline constexpr int KEY_SHIFT_F10 = static_cast<int>(Key::KEY_SHIFT_F10);
+inline constexpr int KEY_SHIFT_F11 = static_cast<int>(Key::KEY_SHIFT_F11);
+inline constexpr int KEY_SHIFT_F12 = static_cast<int>(Key::KEY_SHIFT_F12);
+inline constexpr int KEY_CTRL_F1 = static_cast<int>(Key::KEY_CTRL_F1);
+inline constexpr int KEY_CTRL_F2 = static_cast<int>(Key::KEY_CTRL_F2);
+inline constexpr int KEY_CTRL_F3 = static_cast<int>(Key::KEY_CTRL_F3);
+inline constexpr int KEY_CTRL_F4 = static_cast<int>(Key::KEY_CTRL_F4);
+inline constexpr int KEY_CTRL_F5 = static_cast<int>(Key::KEY_CTRL_F5);
+inline constexpr int KEY_CTRL_F6 = static_cast<int>(Key::KEY_CTRL_F6);
+inline constexpr int KEY_CTRL_F7 = static_cast<int>(Key::KEY_CTRL_F7);
+inline constexpr int KEY_CTRL_F8 = static_cast<int>(Key::KEY_CTRL_F8);
+inline constexpr int KEY_CTRL_F9 = static_cast<int>(Key::KEY_CTRL_F9);
+inline constexpr int KEY_CTRL_F10 = static_cast<int>(Key::KEY_CTRL_F10);
+inline constexpr int KEY_CTRL_F11 = static_cast<int>(Key::KEY_CTRL_F11);
+inline constexpr int KEY_CTRL_F12 = static_cast<int>(Key::KEY_CTRL_F12);
+inline constexpr int KEY_ALT_F1 = static_cast<int>(Key::KEY_ALT_F1);
+inline constexpr int KEY_ALT_F2 = static_cast<int>(Key::KEY_ALT_F2);
+inline constexpr int KEY_ALT_F3 = static_cast<int>(Key::KEY_ALT_F3);
+inline constexpr int KEY_ALT_F4 = static_cast<int>(Key::KEY_ALT_F4);
+inline constexpr int KEY_ALT_F5 = static_cast<int>(Key::KEY_ALT_F5);
+inline constexpr int KEY_ALT_F6 = static_cast<int>(Key::KEY_ALT_F6);
+inline constexpr int KEY_ALT_F7 = static_cast<int>(Key::KEY_ALT_F7);
+inline constexpr int KEY_ALT_F8 = static_cast<int>(Key::KEY_ALT_F8);
+inline constexpr int KEY_ALT_F9 = static_cast<int>(Key::KEY_ALT_F9);
+inline constexpr int KEY_ALT_F10 = static_cast<int>(Key::KEY_ALT_F10);
+inline constexpr int KEY_ALT_F11 = static_cast<int>(Key::KEY_ALT_F11);
+inline constexpr int KEY_ALT_F12 = static_cast<int>(Key::KEY_ALT_F12);
+inline constexpr int KEY_HOME = static_cast<int>(Key::KEY_HOME);
+inline constexpr int KEY_CTRL_HOME = static_cast<int>(Key::KEY_CTRL_HOME);
+inline constexpr int KEY_ALT_HOME = static_cast<int>(Key::KEY_ALT_HOME);
+inline constexpr int KEY_PAGE_UP = static_cast<int>(Key::KEY_PAGE_UP);
+inline constexpr int KEY_CTRL_PAGE_UP = static_cast<int>(Key::KEY_CTRL_PAGE_UP);
+inline constexpr int KEY_ALT_PAGE_UP = static_cast<int>(Key::KEY_ALT_PAGE_UP);
+inline constexpr int KEY_INSERT = static_cast<int>(Key::KEY_INSERT);
+inline constexpr int KEY_CTRL_INSERT = static_cast<int>(Key::KEY_CTRL_INSERT);
+inline constexpr int KEY_ALT_INSERT = static_cast<int>(Key::KEY_ALT_INSERT);
+inline constexpr int KEY_DELETE = static_cast<int>(Key::KEY_DELETE);
+inline constexpr int KEY_CTRL_DELETE = static_cast<int>(Key::KEY_CTRL_DELETE);
+inline constexpr int KEY_ALT_DELETE = static_cast<int>(Key::KEY_ALT_DELETE);
+inline constexpr int KEY_END = static_cast<int>(Key::KEY_END);
+inline constexpr int KEY_CTRL_END = static_cast<int>(Key::KEY_CTRL_END);
+inline constexpr int KEY_ALT_END = static_cast<int>(Key::KEY_ALT_END);
+inline constexpr int KEY_PAGE_DOWN = static_cast<int>(Key::KEY_PAGE_DOWN);
+inline constexpr int KEY_ALT_PAGE_DOWN = static_cast<int>(Key::KEY_ALT_PAGE_DOWN);
+inline constexpr int KEY_CTRL_PAGE_DOWN = static_cast<int>(Key::KEY_CTRL_PAGE_DOWN);
+inline constexpr int KEY_ARROW_UP = static_cast<int>(Key::KEY_ARROW_UP);
+inline constexpr int KEY_CTRL_ARROW_UP = static_cast<int>(Key::KEY_CTRL_ARROW_UP);
+inline constexpr int KEY_ALT_ARROW_UP = static_cast<int>(Key::KEY_ALT_ARROW_UP);
+inline constexpr int KEY_ARROW_DOWN = static_cast<int>(Key::KEY_ARROW_DOWN);
+inline constexpr int KEY_CTRL_ARROW_DOWN = static_cast<int>(Key::KEY_CTRL_ARROW_DOWN);
+inline constexpr int KEY_ALT_ARROW_DOWN = static_cast<int>(Key::KEY_ALT_ARROW_DOWN);
+inline constexpr int KEY_ARROW_LEFT = static_cast<int>(Key::KEY_ARROW_LEFT);
+inline constexpr int KEY_CTRL_ARROW_LEFT = static_cast<int>(Key::KEY_CTRL_ARROW_LEFT);
+inline constexpr int KEY_ALT_ARROW_LEFT = static_cast<int>(Key::KEY_ALT_ARROW_LEFT);
+inline constexpr int KEY_ARROW_RIGHT = static_cast<int>(Key::KEY_ARROW_RIGHT);
+inline constexpr int KEY_CTRL_ARROW_RIGHT = static_cast<int>(Key::KEY_CTRL_ARROW_RIGHT);
+inline constexpr int KEY_ALT_ARROW_RIGHT = static_cast<int>(Key::KEY_ALT_ARROW_RIGHT);
+inline constexpr int KEY_CTRL_BACKSLASH = static_cast<int>(Key::KEY_CTRL_BACKSLASH);
+inline constexpr int KEY_NUMBERPAD_5 = static_cast<int>(Key::KEY_NUMBERPAD_5);
+inline constexpr int KEY_CTRL_NUMBERPAD_5 = static_cast<int>(Key::KEY_CTRL_NUMBERPAD_5);
+inline constexpr int KEY_ALT_NUMBERPAD_5 = static_cast<int>(Key::KEY_ALT_NUMBERPAD_5);
+inline constexpr int KEY_FIRST_INPUT_CHARACTER = static_cast<int>(Key::KEY_FIRST_INPUT_CHARACTER);
+inline constexpr int KEY_LAST_INPUT_CHARACTER = static_cast<int>(Key::KEY_LAST_INPUT_CHARACTER);
 
 extern unsigned char keys[SDL_NUM_SCANCODES];
 extern int kb_layout;
@@ -364,5 +622,3 @@ void kb_reset_elapsed_time();
 void kb_simulate_key(KeyboardData* data);
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_KB_H_ */

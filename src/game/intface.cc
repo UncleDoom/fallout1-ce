@@ -1,7 +1,7 @@
 #include "game/intface.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
@@ -43,34 +43,34 @@ namespace fallout {
 //
 // There are male connectors on the left, and female connectors on the right.
 // When displaying series of boxes they appear to be plugged into a chain.
-#define INDICATOR_BOX_CONNECTOR_WIDTH 3
+static constexpr int INDICATOR_BOX_CONNECTOR_WIDTH = 3;
 
 // The values of it's members are offsets to beginning of numbers in
 // numbers.frm.
-typedef enum InterfaceNumbersColor {
+enum InterfaceNumbersColor {
     INTERFACE_NUMBERS_COLOR_WHITE = 0,
     INTERFACE_NUMBERS_COLOR_YELLOW = 120,
     INTERFACE_NUMBERS_COLOR_RED = 240,
-} InterfaceNumbersColor;
+};
 
-#define INDICATOR_BOX_WIDTH 130
-#define INDICATOR_BOX_HEIGHT 21
+static constexpr int INDICATOR_BOX_WIDTH = 130;
+static constexpr int INDICATOR_BOX_HEIGHT = 21;
 
 // The maximum number of indicator boxes the indicator bar can display.
-#define INDICATOR_SLOTS_COUNT 4
+static constexpr int INDICATOR_SLOTS_COUNT = 4;
 
 // Available indicators.
 //
 // Indicator boxes in the bar are displayed according to the order of this enum.
-typedef enum Indicator {
+enum Indicator {
     INDICATOR_ADDICT,
     INDICATOR_SNEAK,
     INDICATOR_LEVEL,
     INDICATOR_COUNT,
-} Indicator;
+};
 
 // Provides metadata about indicator boxes.
-typedef struct IndicatorDescription {
+struct IndicatorDescription {
     // An identifier of title in `intrface.msg`.
     int title;
 
@@ -85,9 +85,9 @@ typedef struct IndicatorDescription {
     // center and is green colored if indicator is good, or red otherwise, as
     // denoted by [isBad] property.
     unsigned char* data;
-} IndicatorDescription;
+};
 
-typedef struct InterfaceItemState {
+struct InterfaceItemState {
     Object* item;
     unsigned char isDisabled;
     unsigned char isWeapon;
@@ -95,7 +95,7 @@ typedef struct InterfaceItemState {
     int secondaryHitMode;
     int action;
     int itemFid;
-} InterfaceItemState;
+};
 
 static int intface_init_items();
 static int intface_redraw_items();
@@ -133,73 +133,73 @@ static bool intfaceHidden = false;
 static int inventoryButton = -1;
 
 // 0x50551C
-static CacheEntry* inventoryButtonUpKey = NULL;
+static CacheEntry* inventoryButtonUpKey = nullptr;
 
 // 0x505520
-static CacheEntry* inventoryButtonDownKey = NULL;
+static CacheEntry* inventoryButtonDownKey = nullptr;
 
 // 0x505524
 static int optionsButton = -1;
 
 // 0x505528
-static CacheEntry* optionsButtonUpKey = NULL;
+static CacheEntry* optionsButtonUpKey = nullptr;
 
 // 0x50552C
-static CacheEntry* optionsButtonDownKey = NULL;
+static CacheEntry* optionsButtonDownKey = nullptr;
 
 // 0x505530
 static int skilldexButton = -1;
 
 // 0x505534
-static CacheEntry* skilldexButtonUpKey = NULL;
+static CacheEntry* skilldexButtonUpKey = nullptr;
 
 // 0x505538
-static CacheEntry* skilldexButtonDownKey = NULL;
+static CacheEntry* skilldexButtonDownKey = nullptr;
 
 // 0x50553C
-static CacheEntry* skilldexButtonMaskKey = NULL;
+static CacheEntry* skilldexButtonMaskKey = nullptr;
 
 // 0x505540
 static int automapButton = -1;
 
 // 0x505544
-static CacheEntry* automapButtonUpKey = NULL;
+static CacheEntry* automapButtonUpKey = nullptr;
 
 // 0x505548
-static CacheEntry* automapButtonDownKey = NULL;
+static CacheEntry* automapButtonDownKey = nullptr;
 
 // 0x50554C
-static CacheEntry* automapButtonMaskKey = NULL;
+static CacheEntry* automapButtonMaskKey = nullptr;
 
 // 0x505550
 static int pipboyButton = -1;
 
 // 0x505554
-static CacheEntry* pipboyButtonUpKey = NULL;
+static CacheEntry* pipboyButtonUpKey = nullptr;
 
 // 0x505558
-static CacheEntry* pipboyButtonDownKey = NULL;
+static CacheEntry* pipboyButtonDownKey = nullptr;
 
 // 0x50555C
 static int characterButton = -1;
 
 // 0x505560
-static CacheEntry* characterButtonUpKey = NULL;
+static CacheEntry* characterButtonUpKey = nullptr;
 
 // 0x505564
-static CacheEntry* characterButtonDownKey = NULL;
+static CacheEntry* characterButtonDownKey = nullptr;
 
 // 0x505568
 static int itemButton = -1;
 
 // 0x50556C
-static CacheEntry* itemButtonUpKey = NULL;
+static CacheEntry* itemButtonUpKey = nullptr;
 
 // 0x505570
-static CacheEntry* itemButtonDownKey = NULL;
+static CacheEntry* itemButtonDownKey = nullptr;
 
 // 0x505574
-static CacheEntry* itemButtonDisabledKey = NULL;
+static CacheEntry* itemButtonDisabledKey = nullptr;
 
 // 0x505578
 static int itemCurrentItem = HAND_LEFT;
@@ -211,13 +211,13 @@ static Rect itemButtonRect = { 267, 26, 455, 93 };
 static int toggleButton = -1;
 
 // 0x505590
-static CacheEntry* toggleButtonUpKey = NULL;
+static CacheEntry* toggleButtonUpKey = nullptr;
 
 // 0x505594
-static CacheEntry* toggleButtonDownKey = NULL;
+static CacheEntry* toggleButtonDownKey = nullptr;
 
 // 0x505598
-static CacheEntry* toggleButtonMaskKey = NULL;
+static CacheEntry* toggleButtonMaskKey = nullptr;
 
 // 0x50559C
 static bool endWindowOpen = false;
@@ -231,40 +231,40 @@ static Rect endWindowRect = { 580, 38, 637, 96 };
 static int endTurnButton = -1;
 
 // 0x5055B4
-static CacheEntry* endTurnButtonUpKey = NULL;
+static CacheEntry* endTurnButtonUpKey = nullptr;
 
 // 0x5055B8
-static CacheEntry* endTurnButtonDownKey = NULL;
+static CacheEntry* endTurnButtonDownKey = nullptr;
 
 // 0x5055BC
 static int endCombatButton = -1;
 
 // 0x5055C0
-static CacheEntry* endCombatButtonUpKey = NULL;
+static CacheEntry* endCombatButtonUpKey = nullptr;
 
 // 0x5055C4
-static CacheEntry* endCombatButtonDownKey = NULL;
+static CacheEntry* endCombatButtonDownKey = nullptr;
 
 // 0x5055C8
-static unsigned char* moveLightGreen = NULL;
+static unsigned char* moveLightGreen = nullptr;
 
 // 0x5055CC
-static unsigned char* moveLightYellow = NULL;
+static unsigned char* moveLightYellow = nullptr;
 
 // 0x5055D0
-static unsigned char* moveLightRed = NULL;
+static unsigned char* moveLightRed = nullptr;
 
 // 0x5055D4
 static Rect movePointRect = { 316, 14, 406, 19 };
 
 // 0x5055E4
-static unsigned char* numbersBuffer = NULL;
+static unsigned char* numbersBuffer = nullptr;
 
 // 0x5055E8
 static IndicatorDescription bbox[INDICATOR_COUNT] = {
-    { 102, true, NULL }, // ADDICT
-    { 100, false, NULL }, // SNEAK
-    { 101, false, NULL }, // LEVEL
+    { 102, true, nullptr }, // ADDICT
+    { 100, false, nullptr }, // SNEAK
+    { 101, false, nullptr }, // LEVEL
 };
 
 // 0x50560C
@@ -409,14 +409,14 @@ int intface_init()
     }
 
     interfaceBuffer = win_get_buf(interfaceWindow);
-    if (interfaceBuffer == NULL) {
+    if (interfaceBuffer == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 16, 0, 0, 0);
     backgroundFrmData = art_ptr_lock_data(fid, 0, 0, &backgroundFrmHandle);
-    if (backgroundFrmData == NULL) {
+    if (backgroundFrmData == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
@@ -426,19 +426,19 @@ int intface_init()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 47, 0, 0, 0);
     inventoryButtonUp = art_ptr_lock_data(fid, 0, 0, &inventoryButtonUpKey);
-    if (inventoryButtonUp == NULL) {
+    if (inventoryButtonUp == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 46, 0, 0, 0);
     inventoryButtonDown = art_ptr_lock_data(fid, 0, 0, &inventoryButtonDownKey);
-    if (inventoryButtonDown == NULL) {
+    if (inventoryButtonDown == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
-    inventoryButton = win_register_button(interfaceWindow, 211, 41, 32, 21, -1, -1, -1, KEY_LOWERCASE_I, inventoryButtonUp, inventoryButtonDown, NULL, 0);
+    inventoryButton = win_register_button(interfaceWindow, 211, 41, 32, 21, -1, -1, -1, KEY_LOWERCASE_I, inventoryButtonUp, inventoryButtonDown, nullptr, 0);
     if (inventoryButton == -1) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
@@ -448,19 +448,19 @@ int intface_init()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 18, 0, 0, 0);
     optionsButtonUp = art_ptr_lock_data(fid, 0, 0, &optionsButtonUpKey);
-    if (optionsButtonUp == NULL) {
+    if (optionsButtonUp == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 17, 0, 0, 0);
     optionsButtonDown = art_ptr_lock_data(fid, 0, 0, &optionsButtonDownKey);
-    if (optionsButtonDown == NULL) {
+    if (optionsButtonDown == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
-    optionsButton = win_register_button(interfaceWindow, 210, 62, 34, 34, -1, -1, -1, KEY_LOWERCASE_O, optionsButtonUp, optionsButtonDown, NULL, 0);
+    optionsButton = win_register_button(interfaceWindow, 210, 62, 34, 34, -1, -1, -1, KEY_LOWERCASE_O, optionsButtonUp, optionsButtonDown, nullptr, 0);
     if (optionsButton == -1) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
@@ -470,26 +470,26 @@ int intface_init()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 6, 0, 0, 0);
     skilldexButtonUp = art_ptr_lock_data(fid, 0, 0, &skilldexButtonUpKey);
-    if (skilldexButtonUp == NULL) {
+    if (skilldexButtonUp == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 7, 0, 0, 0);
     skilldexButtonDown = art_ptr_lock_data(fid, 0, 0, &skilldexButtonDownKey);
-    if (skilldexButtonDown == NULL) {
+    if (skilldexButtonDown == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 6, 0, 0, 0);
     skilldexButtonMask = art_ptr_lock_data(fid, 0, 0, &skilldexButtonMaskKey);
-    if (skilldexButtonMask == NULL) {
+    if (skilldexButtonMask == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
-    skilldexButton = win_register_button(interfaceWindow, 523, 7, 22, 21, -1, -1, -1, KEY_LOWERCASE_S, skilldexButtonUp, skilldexButtonDown, NULL, BUTTON_FLAG_TRANSPARENT);
+    skilldexButton = win_register_button(interfaceWindow, 523, 7, 22, 21, -1, -1, -1, KEY_LOWERCASE_S, skilldexButtonUp, skilldexButtonDown, nullptr, BUTTON_FLAG_TRANSPARENT);
     if (skilldexButton == -1) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
@@ -500,26 +500,26 @@ int intface_init()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 13, 0, 0, 0);
     automapButtonUp = art_ptr_lock_data(fid, 0, 0, &automapButtonUpKey);
-    if (automapButtonUp == NULL) {
+    if (automapButtonUp == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 10, 0, 0, 0);
     automapButtonDown = art_ptr_lock_data(fid, 0, 0, &automapButtonDownKey);
-    if (automapButtonDown == NULL) {
+    if (automapButtonDown == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 13, 0, 0, 0);
     automapButtonMask = art_ptr_lock_data(fid, 0, 0, &automapButtonMaskKey);
-    if (automapButtonMask == NULL) {
+    if (automapButtonMask == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
-    automapButton = win_register_button(interfaceWindow, 526, 40, 41, 19, -1, -1, -1, KEY_TAB, automapButtonUp, automapButtonDown, NULL, BUTTON_FLAG_TRANSPARENT);
+    automapButton = win_register_button(interfaceWindow, 526, 40, 41, 19, -1, -1, -1, KEY_TAB, automapButtonUp, automapButtonDown, nullptr, BUTTON_FLAG_TRANSPARENT);
     if (automapButton == -1) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
@@ -530,19 +530,19 @@ int intface_init()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 59, 0, 0, 0);
     pipboyButtonUp = art_ptr_lock_data(fid, 0, 0, &pipboyButtonUpKey);
-    if (pipboyButtonUp == NULL) {
+    if (pipboyButtonUp == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 58, 0, 0, 0);
     pipboyButtonDown = art_ptr_lock_data(fid, 0, 0, &pipboyButtonDownKey);
-    if (pipboyButtonDown == NULL) {
+    if (pipboyButtonDown == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
-    pipboyButton = win_register_button(interfaceWindow, 526, 78, 41, 19, -1, -1, -1, KEY_LOWERCASE_P, pipboyButtonUp, pipboyButtonDown, NULL, 0);
+    pipboyButton = win_register_button(interfaceWindow, 526, 78, 41, 19, -1, -1, -1, KEY_LOWERCASE_P, pipboyButtonUp, pipboyButtonDown, nullptr, 0);
     if (pipboyButton == -1) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
@@ -553,19 +553,19 @@ int intface_init()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 57, 0, 0, 0);
     characterButtonUp = art_ptr_lock_data(fid, 0, 0, &characterButtonUpKey);
-    if (characterButtonUp == NULL) {
+    if (characterButtonUp == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 56, 0, 0, 0);
     characterButtonDown = art_ptr_lock_data(fid, 0, 0, &characterButtonDownKey);
-    if (characterButtonDown == NULL) {
+    if (characterButtonDown == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
-    characterButton = win_register_button(interfaceWindow, 526, 59, 41, 19, -1, -1, -1, KEY_LOWERCASE_C, characterButtonUp, characterButtonDown, NULL, 0);
+    characterButton = win_register_button(interfaceWindow, 526, 59, 41, 19, -1, -1, -1, KEY_LOWERCASE_C, characterButtonUp, characterButtonDown, nullptr, 0);
     if (characterButton == -1) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
@@ -576,21 +576,21 @@ int intface_init()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 32, 0, 0, 0);
     itemButtonUpBlank = art_ptr_lock_data(fid, 0, 0, &itemButtonUpKey);
-    if (itemButtonUpBlank == NULL) {
+    if (itemButtonUpBlank == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 31, 0, 0, 0);
     itemButtonDownBlank = art_ptr_lock_data(fid, 0, 0, &itemButtonDownKey);
-    if (itemButtonDownBlank == NULL) {
+    if (itemButtonDownBlank == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 73, 0, 0, 0);
     itemButtonDisabled = art_ptr_lock_data(fid, 0, 0, &itemButtonDisabledKey);
-    if (itemButtonDisabled == NULL) {
+    if (itemButtonDisabled == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
@@ -598,38 +598,38 @@ int intface_init()
     memcpy(itemButtonUp, itemButtonUpBlank, sizeof(itemButtonUp));
     memcpy(itemButtonDown, itemButtonDownBlank, sizeof(itemButtonDown));
 
-    itemButton = win_register_button(interfaceWindow, 267, 26, 188, 67, -1, -1, -1, -20, itemButtonUp, itemButtonDown, NULL, BUTTON_FLAG_TRANSPARENT);
+    itemButton = win_register_button(interfaceWindow, 267, 26, 188, 67, -1, -1, -1, -20, itemButtonUp, itemButtonDown, nullptr, BUTTON_FLAG_TRANSPARENT);
     if (itemButton == -1) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
-    win_register_right_button(itemButton, -1, KEY_LOWERCASE_N, NULL, NULL);
+    win_register_right_button(itemButton, -1, KEY_LOWERCASE_N, nullptr, nullptr);
     win_register_button_sound_func(itemButton, gsound_lrg_butt_press, gsound_lrg_butt_release);
 
     fid = art_id(OBJ_TYPE_INTERFACE, 6, 0, 0, 0);
     toggleButtonUp = art_ptr_lock_data(fid, 0, 0, &toggleButtonUpKey);
-    if (toggleButtonUp == NULL) {
+    if (toggleButtonUp == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 7, 0, 0, 0);
     toggleButtonDown = art_ptr_lock_data(fid, 0, 0, &toggleButtonDownKey);
-    if (toggleButtonDown == NULL) {
+    if (toggleButtonDown == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 6, 0, 0, 0);
     toggleButtonMask = art_ptr_lock_data(fid, 0, 0, &toggleButtonMaskKey);
-    if (toggleButtonMask == NULL) {
+    if (toggleButtonMask == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     // Swap hands button
-    toggleButton = win_register_button(interfaceWindow, 218, 6, 22, 21, -1, -1, -1, KEY_LOWERCASE_B, toggleButtonUp, toggleButtonDown, NULL, BUTTON_FLAG_TRANSPARENT);
+    toggleButton = win_register_button(interfaceWindow, 218, 6, 22, 21, -1, -1, -1, KEY_LOWERCASE_B, toggleButtonUp, toggleButtonDown, nullptr, BUTTON_FLAG_TRANSPARENT);
     if (toggleButton == -1) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
@@ -640,28 +640,28 @@ int intface_init()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 82, 0, 0, 0);
     numbersBuffer = art_ptr_lock_data(fid, 0, 0, &numbersKey);
-    if (numbersBuffer == NULL) {
+    if (numbersBuffer == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 83, 0, 0, 0);
     moveLightGreen = art_ptr_lock_data(fid, 0, 0, &moveLightGreenKey);
-    if (moveLightGreen == NULL) {
+    if (moveLightGreen == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 84, 0, 0, 0);
     moveLightYellow = art_ptr_lock_data(fid, 0, 0, &moveLightYellowKey);
-    if (moveLightYellow == NULL) {
+    if (moveLightYellow == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 85, 0, 0, 0);
     moveLightRed = art_ptr_lock_data(fid, 0, 0, &moveLightRedKey);
-    if (moveLightRed == NULL) {
+    if (moveLightRed == nullptr) {
         // NOTE: Uninline.
         return intface_fatal_error(-1);
     }
@@ -709,24 +709,24 @@ void intface_exit()
     if (interfaceWindow != -1) {
         display_exit();
 
-        if (moveLightRed != NULL) {
+        if (moveLightRed != nullptr) {
             art_ptr_unlock(moveLightRedKey);
-            moveLightRed = NULL;
+            moveLightRed = nullptr;
         }
 
-        if (moveLightYellow != NULL) {
+        if (moveLightYellow != nullptr) {
             art_ptr_unlock(moveLightYellowKey);
-            moveLightYellow = NULL;
+            moveLightYellow = nullptr;
         }
 
-        if (moveLightGreen != NULL) {
+        if (moveLightGreen != nullptr) {
             art_ptr_unlock(moveLightGreenKey);
-            moveLightGreen = NULL;
+            moveLightGreen = nullptr;
         }
 
-        if (numbersBuffer != NULL) {
+        if (numbersBuffer != nullptr) {
             art_ptr_unlock(numbersKey);
-            numbersBuffer = NULL;
+            numbersBuffer = nullptr;
         }
 
         if (toggleButton != -1) {
@@ -734,22 +734,22 @@ void intface_exit()
             toggleButton = -1;
         }
 
-        if (toggleButtonMask != NULL) {
+        if (toggleButtonMask != nullptr) {
             art_ptr_unlock(toggleButtonMaskKey);
-            toggleButtonMaskKey = NULL;
-            toggleButtonMask = NULL;
+            toggleButtonMaskKey = nullptr;
+            toggleButtonMask = nullptr;
         }
 
-        if (toggleButtonDown != NULL) {
+        if (toggleButtonDown != nullptr) {
             art_ptr_unlock(toggleButtonDownKey);
-            toggleButtonDownKey = NULL;
-            toggleButtonDown = NULL;
+            toggleButtonDownKey = nullptr;
+            toggleButtonDown = nullptr;
         }
 
-        if (toggleButtonUp != NULL) {
+        if (toggleButtonUp != nullptr) {
             art_ptr_unlock(toggleButtonUpKey);
-            toggleButtonUpKey = NULL;
-            toggleButtonUp = NULL;
+            toggleButtonUpKey = nullptr;
+            toggleButtonUp = nullptr;
         }
 
         if (itemButton != -1) {
@@ -757,22 +757,22 @@ void intface_exit()
             itemButton = -1;
         }
 
-        if (itemButtonDisabled != NULL) {
+        if (itemButtonDisabled != nullptr) {
             art_ptr_unlock(itemButtonDisabledKey);
-            itemButtonDisabledKey = NULL;
-            itemButtonDisabled = NULL;
+            itemButtonDisabledKey = nullptr;
+            itemButtonDisabled = nullptr;
         }
 
-        if (itemButtonDownBlank != NULL) {
+        if (itemButtonDownBlank != nullptr) {
             art_ptr_unlock(itemButtonDownKey);
-            itemButtonDownKey = NULL;
-            itemButtonDownBlank = NULL;
+            itemButtonDownKey = nullptr;
+            itemButtonDownBlank = nullptr;
         }
 
-        if (itemButtonUpBlank != NULL) {
+        if (itemButtonUpBlank != nullptr) {
             art_ptr_unlock(itemButtonUpKey);
-            itemButtonUpKey = NULL;
-            itemButtonUpBlank = NULL;
+            itemButtonUpKey = nullptr;
+            itemButtonUpBlank = nullptr;
         }
 
         if (characterButton != -1) {
@@ -780,16 +780,16 @@ void intface_exit()
             characterButton = -1;
         }
 
-        if (characterButtonDown != NULL) {
+        if (characterButtonDown != nullptr) {
             art_ptr_unlock(characterButtonDownKey);
-            characterButtonDownKey = NULL;
-            characterButtonDown = NULL;
+            characterButtonDownKey = nullptr;
+            characterButtonDown = nullptr;
         }
 
-        if (characterButtonUp != NULL) {
+        if (characterButtonUp != nullptr) {
             art_ptr_unlock(characterButtonUpKey);
-            characterButtonUpKey = NULL;
-            characterButtonUp = NULL;
+            characterButtonUpKey = nullptr;
+            characterButtonUp = nullptr;
         }
 
         if (pipboyButton != -1) {
@@ -797,16 +797,16 @@ void intface_exit()
             pipboyButton = -1;
         }
 
-        if (pipboyButtonDown != NULL) {
+        if (pipboyButtonDown != nullptr) {
             art_ptr_unlock(pipboyButtonDownKey);
-            pipboyButtonDownKey = NULL;
-            pipboyButtonDown = NULL;
+            pipboyButtonDownKey = nullptr;
+            pipboyButtonDown = nullptr;
         }
 
-        if (pipboyButtonUp != NULL) {
+        if (pipboyButtonUp != nullptr) {
             art_ptr_unlock(pipboyButtonUpKey);
-            pipboyButtonUpKey = NULL;
-            pipboyButtonUp = NULL;
+            pipboyButtonUpKey = nullptr;
+            pipboyButtonUp = nullptr;
         }
 
         if (automapButton != -1) {
@@ -814,22 +814,22 @@ void intface_exit()
             automapButton = -1;
         }
 
-        if (automapButtonMask != NULL) {
+        if (automapButtonMask != nullptr) {
             art_ptr_unlock(automapButtonMaskKey);
-            automapButtonMaskKey = NULL;
-            automapButtonMask = NULL;
+            automapButtonMaskKey = nullptr;
+            automapButtonMask = nullptr;
         }
 
-        if (automapButtonDown != NULL) {
+        if (automapButtonDown != nullptr) {
             art_ptr_unlock(automapButtonDownKey);
-            automapButtonDownKey = NULL;
-            automapButtonDown = NULL;
+            automapButtonDownKey = nullptr;
+            automapButtonDown = nullptr;
         }
 
-        if (automapButtonUp != NULL) {
+        if (automapButtonUp != nullptr) {
             art_ptr_unlock(automapButtonUpKey);
-            automapButtonUpKey = NULL;
-            automapButtonUp = NULL;
+            automapButtonUpKey = nullptr;
+            automapButtonUp = nullptr;
         }
 
         if (skilldexButton != -1) {
@@ -837,22 +837,22 @@ void intface_exit()
             skilldexButton = -1;
         }
 
-        if (skilldexButtonMask != NULL) {
+        if (skilldexButtonMask != nullptr) {
             art_ptr_unlock(skilldexButtonMaskKey);
-            skilldexButtonMaskKey = NULL;
-            skilldexButtonMask = NULL;
+            skilldexButtonMaskKey = nullptr;
+            skilldexButtonMask = nullptr;
         }
 
-        if (skilldexButtonDown != NULL) {
+        if (skilldexButtonDown != nullptr) {
             art_ptr_unlock(skilldexButtonDownKey);
-            skilldexButtonDownKey = NULL;
-            skilldexButtonDown = NULL;
+            skilldexButtonDownKey = nullptr;
+            skilldexButtonDown = nullptr;
         }
 
-        if (skilldexButtonUp != NULL) {
+        if (skilldexButtonUp != nullptr) {
             art_ptr_unlock(skilldexButtonUpKey);
-            skilldexButtonUpKey = NULL;
-            skilldexButtonUp = NULL;
+            skilldexButtonUpKey = nullptr;
+            skilldexButtonUp = nullptr;
         }
 
         if (optionsButton != -1) {
@@ -860,16 +860,16 @@ void intface_exit()
             optionsButton = -1;
         }
 
-        if (optionsButtonDown != NULL) {
+        if (optionsButtonDown != nullptr) {
             art_ptr_unlock(optionsButtonDownKey);
-            optionsButtonDownKey = NULL;
-            optionsButtonDown = NULL;
+            optionsButtonDownKey = nullptr;
+            optionsButtonDown = nullptr;
         }
 
-        if (optionsButtonUp != NULL) {
+        if (optionsButtonUp != nullptr) {
             art_ptr_unlock(optionsButtonUpKey);
-            optionsButtonUpKey = NULL;
-            optionsButtonUp = NULL;
+            optionsButtonUpKey = nullptr;
+            optionsButtonUp = nullptr;
         }
 
         if (inventoryButton != -1) {
@@ -877,16 +877,16 @@ void intface_exit()
             inventoryButton = -1;
         }
 
-        if (inventoryButtonDown != NULL) {
+        if (inventoryButtonDown != nullptr) {
             art_ptr_unlock(inventoryButtonDownKey);
-            inventoryButtonDownKey = NULL;
-            inventoryButtonDown = NULL;
+            inventoryButtonDownKey = nullptr;
+            inventoryButtonDown = nullptr;
         }
 
-        if (inventoryButtonUp != NULL) {
+        if (inventoryButtonUp != nullptr) {
             art_ptr_unlock(inventoryButtonUpKey);
-            inventoryButtonUpKey = NULL;
-            inventoryButtonUp = NULL;
+            inventoryButtonUpKey = nullptr;
+            inventoryButtonUp = nullptr;
         }
 
         if (interfaceWindow != -1) {
@@ -908,16 +908,16 @@ int intface_load(DB_FILE* stream)
     }
 
     bool enabled;
-    if (db_freadBool(stream, &enabled) == -1) return -1;
+    if (stream->freadBool(&enabled) == -1) return -1;
 
     bool hidden;
-    if (db_freadBool(stream, &hidden) == -1) return -1;
+    if (stream->freadBool(&hidden) == -1) return -1;
 
     int hand;
-    if (db_freadInt32(stream, &hand) == -1) return -1;
+    if (stream->freadInt32(&hand) == -1) return -1;
 
     bool endButtonsVisible;
-    if (db_freadBool(stream, &endButtonsVisible) == -1) return -1;
+    if (stream->freadBool(&endButtonsVisible) == -1) return -1;
 
     if (!intfaceEnabled) {
         intface_enable();
@@ -963,10 +963,10 @@ int intface_save(DB_FILE* stream)
         return -1;
     }
 
-    if (db_fwriteBool(stream, intfaceEnabled) == -1) return -1;
-    if (db_fwriteBool(stream, intfaceHidden) == -1) return -1;
-    if (db_fwriteInt32(stream, itemCurrentItem) == -1) return -1;
-    if (db_fwriteBool(stream, endWindowOpen) == -1) return -1;
+    if (stream->fwriteBool(intfaceEnabled) == -1) return -1;
+    if (stream->fwriteBool(intfaceHidden) == -1) return -1;
+    if (stream->fwriteInt32(itemCurrentItem) == -1) return -1;
+    if (stream->fwriteBool(endWindowOpen) == -1) return -1;
 
     return 0;
 }
@@ -1092,8 +1092,8 @@ void intface_update_hit_points(bool animate)
     int hp = critter_get_hits(obj_dude);
     int maxHp = stat_level(obj_dude, STAT_MAXIMUM_HIT_POINTS);
 
-    int red = (int)((double)maxHp * 0.25);
-    int yellow = (int)((double)maxHp * 0.5);
+    int red = static_cast<int>((double)maxHp * 0.25);
+    int yellow = static_cast<int>((double)maxHp * 0.5);
 
     int color;
     if (hp < red) {
@@ -1262,14 +1262,14 @@ int intface_update_items(bool animated)
 
     InterfaceItemState* leftItemState = &(itemButtonItems[HAND_LEFT]);
     Object* item1 = inven_left_hand(obj_dude);
-    if (item1 == leftItemState->item && leftItemState->item != NULL) {
-        if (leftItemState->item != NULL) {
+    if (item1 == leftItemState->item && leftItemState->item != nullptr) {
+        if (leftItemState->item != nullptr) {
             leftItemState->isDisabled = item_grey(item1);
             leftItemState->itemFid = item_inv_fid(item1);
         }
     } else {
         leftItemState->item = item1;
-        if (item1 != NULL) {
+        if (item1 != nullptr) {
             leftItemState->isDisabled = item_grey(item1);
             leftItemState->primaryHitMode = HIT_MODE_LEFT_WEAPON_PRIMARY;
             leftItemState->secondaryHitMode = HIT_MODE_LEFT_WEAPON_SECONDARY;
@@ -1291,15 +1291,15 @@ int intface_update_items(bool animated)
     InterfaceItemState* rightItemState = &(itemButtonItems[HAND_RIGHT]);
 
     Object* item2 = inven_right_hand(obj_dude);
-    if (item2 == rightItemState->item && rightItemState->item != NULL) {
-        if (rightItemState->item != NULL) {
+    if (item2 == rightItemState->item && rightItemState->item != nullptr) {
+        if (rightItemState->item != nullptr) {
             rightItemState->isDisabled = item_grey(rightItemState->item);
             rightItemState->itemFid = item_inv_fid(rightItemState->item);
         }
     } else {
         rightItemState->item = item2;
 
-        if (item2 != NULL) {
+        if (item2 != nullptr) {
             rightItemState->isDisabled = item_grey(item2);
             rightItemState->primaryHitMode = HIT_MODE_RIGHT_WEAPON_PRIMARY;
             rightItemState->secondaryHitMode = HIT_MODE_RIGHT_WEAPON_SECONDARY;
@@ -1322,7 +1322,7 @@ int intface_update_items(bool animated)
         Object* newCurrentItem = itemButtonItems[itemCurrentItem].item;
         if (newCurrentItem != oldCurrentItem) {
             int animationCode = 0;
-            if (newCurrentItem != NULL) {
+            if (newCurrentItem != nullptr) {
                 if (item_get_type(newCurrentItem) == ITEM_TYPE_WEAPON) {
                     animationCode = item_w_anim_code(newCurrentItem);
                 }
@@ -1351,7 +1351,7 @@ int intface_toggle_items(bool animated)
     if (animated) {
         Object* item = itemButtonItems[itemCurrentItem].item;
         int animationCode = 0;
-        if (item != NULL) {
+        if (item != nullptr) {
             if (item_get_type(item) == ITEM_TYPE_WEAPON) {
                 animationCode = item_w_anim_code(item);
             }
@@ -1461,7 +1461,7 @@ void intface_use_item()
             gmouse_set_cursor(MOUSE_CURSOR_CROSSHAIR);
             gmouse_3d_set_mode(GAME_MOUSE_MODE_CROSSHAIR);
             if (!isInCombat()) {
-                combat(NULL);
+                CombatSequenceParams::combat_no_params();
             }
         }
     } else if (proto_action_can_use_on(ptr->item->pid)) {
@@ -1522,7 +1522,7 @@ int intface_update_ammo_lights()
         int maximum = item_w_max_ammo(p->item);
         if (maximum > 0) {
             int current = item_w_curr_ammo(p->item);
-            ratio = (int)((double)current / (double)maximum * 70.0);
+            ratio = static_cast<int>((double)current / (double)maximum * 70.0);
         }
     } else {
         if (item_get_type(p->item) == ITEM_TYPE_MISC) {
@@ -1530,7 +1530,7 @@ int intface_update_ammo_lights()
             int maximum = item_m_max_charges(p->item);
             if (maximum > 0) {
                 int current = item_m_curr_charges(p->item);
-                ratio = (int)((double)current / (double)maximum * 70.0);
+                ratio = static_cast<int>((double)current / (double)maximum * 70.0);
             }
         }
     }
@@ -1554,23 +1554,23 @@ void intface_end_window_open(bool animated)
     int fid = art_id(OBJ_TYPE_INTERFACE, 104, 0, 0, 0);
     CacheEntry* handle;
     Art* art = art_ptr_lock(fid, &handle);
-    if (art == NULL) {
+    if (art == nullptr) {
         return;
     }
 
-    int frameCount = art_frame_max_frame(art);
+    int frameCount = art->maxFrame();
     gsound_play_sfx_file("iciboxx1");
 
     if (animated) {
-        unsigned int delay = 1000 / art_frame_fps(art);
+        unsigned int delay = 1000 / art->fps();
         int time = 0;
         int frame = 0;
         while (frame < frameCount) {
             sharedFpsLimiter.mark();
 
             if (elapsed_time(time) >= delay) {
-                unsigned char* src = art_frame_data(art, frame, 0);
-                if (src != NULL) {
+                unsigned char* src = art->frameData(frame, 0);
+                if (src != nullptr) {
                     buf_to_buf(src, 57, 58, 57, interfaceBuffer + 640 * 38 + 580, 640);
                     win_draw_rect(interfaceWindow, &endWindowRect);
                 }
@@ -1584,7 +1584,7 @@ void intface_end_window_open(bool animated)
             sharedFpsLimiter.throttle();
         }
     } else {
-        unsigned char* src = art_frame_data(art, frameCount - 1, 0);
+        unsigned char* src = art->frameData(frameCount - 1, 0);
         buf_to_buf(src, 57, 58, 57, interfaceBuffer + 640 * 38 + 580, 640);
         win_draw_rect(interfaceWindow, &endWindowRect);
     }
@@ -1611,7 +1611,7 @@ void intface_end_window_close(bool animated)
     int fid = art_id(OBJ_TYPE_INTERFACE, 104, 0, 0, 0);
     CacheEntry* handle;
     Art* art = art_ptr_lock(fid, &handle);
-    if (art == NULL) {
+    if (art == nullptr) {
         return;
     }
 
@@ -1620,17 +1620,17 @@ void intface_end_window_close(bool animated)
     gsound_play_sfx_file("icibcxx1");
 
     if (animated) {
-        unsigned int delay = 1000 / art_frame_fps(art);
+        unsigned int delay = 1000 / art->fps();
         unsigned int time = 0;
-        int frame = art_frame_max_frame(art);
+        int frame = art->maxFrame();
 
         while (frame != 0) {
             sharedFpsLimiter.mark();
 
             if (elapsed_time(time) >= delay) {
-                unsigned char* src = art_frame_data(art, frame - 1, 0);
+                unsigned char* src = art->frameData(frame - 1, 0);
                 unsigned char* dest = interfaceBuffer + 640 * 38 + 580;
-                if (src != NULL) {
+                if (src != nullptr) {
                     buf_to_buf(src, 57, 58, 57, dest, 640);
                     win_draw_rect(interfaceWindow, &endWindowRect);
                 }
@@ -1645,7 +1645,7 @@ void intface_end_window_close(bool animated)
         }
     } else {
         unsigned char* dest = interfaceBuffer + 640 * 38 + 580;
-        unsigned char* src = art_frame_data(art, 0, 0);
+        unsigned char* src = art->frameData(0, 0);
         buf_to_buf(src, 57, 58, 57, dest, 640);
         win_draw_rect(interfaceWindow, &endWindowRect);
     }
@@ -1665,7 +1665,7 @@ void intface_end_buttons_enable()
         int lightsFid = art_id(OBJ_TYPE_INTERFACE, 109, 0, 0, 0);
         CacheEntry* lightsFrmHandle;
         unsigned char* lightsFrmData = art_ptr_lock_data(lightsFid, 0, 0, &lightsFrmHandle);
-        if (lightsFrmData == NULL) {
+        if (lightsFrmData == nullptr) {
             return;
         }
 
@@ -1688,7 +1688,7 @@ void intface_end_buttons_disable()
         // endltred.frm - red lights around end turn/combat window
         int lightsFid = art_id(OBJ_TYPE_INTERFACE, 110, 0, 0, 0);
         unsigned char* lightsFrmData = art_ptr_lock_data(lightsFid, 0, 0, &lightsFrmHandle);
-        if (lightsFrmData == NULL) {
+        if (lightsFrmData == nullptr) {
             return;
         }
 
@@ -1705,8 +1705,8 @@ static int intface_init_items()
 {
     // FIXME: For unknown reason these values initialized with -1. It's never
     // checked for -1, so I have no explanation for this.
-    itemButtonItems[HAND_LEFT].item = (Object*)-1;
-    itemButtonItems[HAND_RIGHT].item = (Object*)-1;
+    itemButtonItems[HAND_LEFT].item = reinterpret_cast<Object*>(-1);
+    itemButtonItems[HAND_RIGHT].item = reinterpret_cast<Object*>(-1);
 
     return 0;
 }
@@ -1742,10 +1742,10 @@ static int intface_redraw_items()
             if (fid != -1) {
                 CacheEntry* useTextFrmHandle;
                 Art* useTextFrm = art_ptr_lock(fid, &useTextFrmHandle);
-                if (useTextFrm != NULL) {
-                    int width = art_frame_width(useTextFrm, 0, 0);
-                    int height = art_frame_length(useTextFrm, 0, 0);
-                    unsigned char* data = art_frame_data(useTextFrm, 0, 0);
+                if (useTextFrm != nullptr) {
+                    int width = useTextFrm->frameWidth(0, 0);
+                    int height = useTextFrm->frameLength(0, 0);
+                    unsigned char* data = useTextFrm->frameData(0, 0);
                     trans_buf_to_buf(data, width, height, width, itemButtonUp + 188 * 7 + 181 - width, 188);
                     dark_trans_buf_to_buf(data, width, height, width, itemButtonDown, 181 - width + 1, 5, 188, 59641);
                     art_ptr_unlock(useTextFrmHandle);
@@ -1782,10 +1782,10 @@ static int intface_redraw_items()
             if (bullseyeFid != -1) {
                 CacheEntry* bullseyeFrmHandle;
                 Art* bullseyeFrm = art_ptr_lock(bullseyeFid, &bullseyeFrmHandle);
-                if (bullseyeFrm != NULL) {
-                    int width = art_frame_width(bullseyeFrm, 0, 0);
-                    int height = art_frame_length(bullseyeFrm, 0, 0);
-                    unsigned char* data = art_frame_data(bullseyeFrm, 0, 0);
+                if (bullseyeFrm != nullptr) {
+                    int width = bullseyeFrm->frameWidth(0, 0);
+                    int height = bullseyeFrm->frameLength(0, 0);
+                    unsigned char* data = bullseyeFrm->frameData(0, 0);
                     trans_buf_to_buf(data, width, height, width, itemButtonUp + 188 * (60 - height) + (181 - width), 188);
 
                     int v9 = 60 - height - 2;
@@ -1833,10 +1833,10 @@ static int intface_redraw_items()
             if (primaryFid != -1) {
                 CacheEntry* primaryFrmHandle;
                 Art* primaryFrm = art_ptr_lock(primaryFid, &primaryFrmHandle);
-                if (primaryFrm != NULL) {
-                    int width = art_frame_width(primaryFrm, 0, 0);
-                    int height = art_frame_length(primaryFrm, 0, 0);
-                    unsigned char* data = art_frame_data(primaryFrm, 0, 0);
+                if (primaryFrm != nullptr) {
+                    int width = primaryFrm->frameWidth(0, 0);
+                    int height = primaryFrm->frameLength(0, 0);
+                    unsigned char* data = primaryFrm->frameData(0, 0);
                     trans_buf_to_buf(data, width, height, width, itemButtonUp + 188 * 7 + 181 - width, 188);
                     dark_trans_buf_to_buf(data, width, height, width, itemButtonDown, 181 - width + 1, 5, 188, 59641);
                     art_ptr_unlock(primaryFrmHandle);
@@ -1851,10 +1851,10 @@ static int intface_redraw_items()
 
         CacheEntry* handle;
         Art* art = art_ptr_lock(fid, &handle);
-        if (art != NULL) {
-            int width = art_frame_width(art, 0, 0);
-            int height = art_frame_length(art, 0, 0);
-            unsigned char* data = art_frame_data(art, 0, 0);
+        if (art != nullptr) {
+            int width = art->frameWidth(0, 0);
+            int height = art->frameLength(0, 0);
+            unsigned char* data = art->frameData(0, 0);
 
             trans_buf_to_buf(data, width, height, width, itemButtonUp + 188 * (60 - height) + 7, 188);
 
@@ -1872,10 +1872,10 @@ static int intface_redraw_items()
             // movement point numbers - ten numbers 0 to 9, each 10 pixels wide.
             fid = art_id(OBJ_TYPE_INTERFACE, 290, 0, 0, 0);
             art = art_ptr_lock(fid, &handle);
-            if (art != NULL) {
-                width = art_frame_width(art, 0, 0);
-                height = art_frame_length(art, 0, 0);
-                data = art_frame_data(art, 0, 0);
+            if (art != nullptr) {
+                width = art->frameWidth(0, 0);
+                height = art->frameLength(0, 0);
+                data = art->frameData(0, 0);
 
                 trans_buf_to_buf(data + actionPoints * 10, 10, height, width, itemButtonUp + 188 * (60 - height) + 7 + offset, 188);
 
@@ -1897,10 +1897,10 @@ static int intface_redraw_items()
     if (itemState->itemFid != -1) {
         CacheEntry* itemFrmHandle;
         Art* itemFrm = art_ptr_lock(itemState->itemFid, &itemFrmHandle);
-        if (itemFrm != NULL) {
-            int width = art_frame_width(itemFrm, 0, 0);
-            int height = art_frame_length(itemFrm, 0, 0);
-            unsigned char* data = art_frame_data(itemFrm, 0, 0);
+        if (itemFrm != nullptr) {
+            int width = itemFrm->frameWidth(0, 0);
+            int height = itemFrm->frameLength(0, 0);
+            unsigned char* data = itemFrm->frameData(0, 0);
 
             int v46 = (188 - width) / 2;
             int v47 = (67 - height) / 2 - 2;
@@ -1961,7 +1961,7 @@ static void intface_change_fid_animate(int previousWeaponAnimationCode, int weap
         register_object_animate(obj_dude, ANIM_PUT_AWAY, 0);
     }
 
-    register_object_must_call(NULL, NULL, (AnimationCallback*)intface_redraw_items_callback, -1);
+    register_object_must_call(nullptr, nullptr, reinterpret_cast<AnimationCallback*>(intface_redraw_items_callback), -1);
 
     if (weaponAnimationCode != 0) {
         register_object_take_out(obj_dude, weaponAnimationCode, -1);
@@ -1970,7 +1970,7 @@ static void intface_change_fid_animate(int previousWeaponAnimationCode, int weap
         register_object_change_fid(obj_dude, fid, -1);
     }
 
-    register_object_must_call(NULL, NULL, (AnimationCallback*)intface_change_fid_callback, -1);
+    register_object_must_call(nullptr, nullptr, reinterpret_cast<AnimationCallback*>(intface_change_fid_callback), -1);
 
     if (register_end() == -1) {
         return;
@@ -2020,17 +2020,17 @@ static int intface_create_end_turn_button()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 105, 0, 0, 0);
     endTurnButtonUp = art_ptr_lock_data(fid, 0, 0, &endTurnButtonUpKey);
-    if (endTurnButtonUp == NULL) {
+    if (endTurnButtonUp == nullptr) {
         return -1;
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 106, 0, 0, 0);
     endTurnButtonDown = art_ptr_lock_data(fid, 0, 0, &endTurnButtonDownKey);
-    if (endTurnButtonDown == NULL) {
+    if (endTurnButtonDown == nullptr) {
         return -1;
     }
 
-    endTurnButton = win_register_button(interfaceWindow, 590, 43, 38, 22, -1, -1, -1, 32, endTurnButtonUp, endTurnButtonDown, NULL, 0);
+    endTurnButton = win_register_button(interfaceWindow, 590, 43, 38, 22, -1, -1, -1, 32, endTurnButtonUp, endTurnButtonDown, nullptr, 0);
     if (endTurnButton == -1) {
         return -1;
     }
@@ -2055,14 +2055,14 @@ static int intface_destroy_end_turn_button()
 
     if (endTurnButtonDown) {
         art_ptr_unlock(endTurnButtonDownKey);
-        endTurnButtonDownKey = NULL;
-        endTurnButtonDown = NULL;
+        endTurnButtonDownKey = nullptr;
+        endTurnButtonDown = nullptr;
     }
 
     if (endTurnButtonUp) {
         art_ptr_unlock(endTurnButtonUpKey);
-        endTurnButtonUpKey = NULL;
-        endTurnButtonUp = NULL;
+        endTurnButtonUpKey = nullptr;
+        endTurnButtonUp = nullptr;
     }
 
     return 0;
@@ -2083,17 +2083,17 @@ static int intface_create_end_combat_button()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 107, 0, 0, 0);
     endCombatButtonUp = art_ptr_lock_data(fid, 0, 0, &endCombatButtonUpKey);
-    if (endCombatButtonUp == NULL) {
+    if (endCombatButtonUp == nullptr) {
         return -1;
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 108, 0, 0, 0);
     endCombatButtonDown = art_ptr_lock_data(fid, 0, 0, &endCombatButtonDownKey);
-    if (endCombatButtonDown == NULL) {
+    if (endCombatButtonDown == nullptr) {
         return -1;
     }
 
-    endCombatButton = win_register_button(interfaceWindow, 590, 65, 38, 22, -1, -1, -1, 13, endCombatButtonUp, endCombatButtonDown, NULL, 0);
+    endCombatButton = win_register_button(interfaceWindow, 590, 65, 38, 22, -1, -1, -1, 13, endCombatButtonUp, endCombatButtonDown, nullptr, 0);
     if (endCombatButton == -1) {
         return -1;
     }
@@ -2116,16 +2116,16 @@ static int intface_destroy_end_combat_button()
         endCombatButton = -1;
     }
 
-    if (endCombatButtonDown != NULL) {
+    if (endCombatButtonDown != nullptr) {
         art_ptr_unlock(endCombatButtonDownKey);
-        endCombatButtonDownKey = NULL;
-        endCombatButtonDown = NULL;
+        endCombatButtonDownKey = nullptr;
+        endCombatButtonDown = nullptr;
     }
 
-    if (endCombatButtonUp != NULL) {
+    if (endCombatButtonUp != nullptr) {
         art_ptr_unlock(endCombatButtonUpKey);
-        endCombatButtonUpKey = NULL;
-        endCombatButtonUp = NULL;
+        endCombatButtonUpKey = nullptr;
+        endCombatButtonUp = nullptr;
     }
 
     return 0;
@@ -2184,7 +2184,7 @@ static int intface_item_reload()
         return -1;
     }
 
-    const char* sfx = gsnd_build_weapon_sfx_name(WEAPON_SOUND_EFFECT_READY, itemButtonItems[itemCurrentItem].item, HIT_MODE_RIGHT_WEAPON_PRIMARY, NULL);
+    const char* sfx = gsnd_build_weapon_sfx_name(WEAPON_SOUND_EFFECT_READY, itemButtonItems[itemCurrentItem].item, HIT_MODE_RIGHT_WEAPON_PRIMARY, nullptr);
     gsound_play_sfx_file(sfx);
 
     return 0;
@@ -2332,7 +2332,7 @@ static int construct_box_bar_win()
     MessageList messageList;
     MessageListItem messageListItem;
     int rc = 0;
-    if (!message_init(&messageList)) {
+    if (!messageList.init()) {
         rc = -1;
     }
 
@@ -2340,7 +2340,7 @@ static int construct_box_bar_win()
     snprintf(path, sizeof(path), "%s%s", msg_path, "intrface.msg");
 
     if (rc != -1) {
-        if (!message_load(&messageList, path)) {
+        if (!messageList.load(path)) {
             rc = -1;
         }
     }
@@ -2355,24 +2355,24 @@ static int construct_box_bar_win()
     int height;
     int indicatorBoxFid = art_id(OBJ_TYPE_INTERFACE, 126, 0, 0, 0);
     unsigned char* indicatorBoxFrmData = art_lock(indicatorBoxFid, &indicatorBoxFrmHandle, &width, &height);
-    if (indicatorBoxFrmData == NULL) {
+    if (indicatorBoxFrmData == nullptr) {
         debug_printf("\nINTRFACE: Error initializing indicator box graphics! **\n");
-        message_exit(&messageList);
+        messageList.exit();
         return -1;
     }
 
     for (int index = 0; index < INDICATOR_COUNT; index++) {
         IndicatorDescription* indicatorDescription = &(bbox[index]);
 
-        indicatorDescription->data = (unsigned char*)mem_malloc(INDICATOR_BOX_WIDTH * INDICATOR_BOX_HEIGHT);
-        if (indicatorDescription->data == NULL) {
+        indicatorDescription->data = static_cast<unsigned char*>(mem_malloc(INDICATOR_BOX_WIDTH * INDICATOR_BOX_HEIGHT));
+        if (indicatorDescription->data == nullptr) {
             debug_printf("\nINTRFACE: Error initializing indicator box graphics! **");
 
             while (--index >= 0) {
                 mem_free(bbox[index].data);
             }
 
-            message_exit(&messageList);
+            messageList.exit();
             art_ptr_unlock(indicatorBoxFrmHandle);
 
             return -1;
@@ -2385,7 +2385,7 @@ static int construct_box_bar_win()
         IndicatorDescription* indicator = &(bbox[index]);
 
         char text[1024];
-        strcpy(text, getmsg(&messageList, &messageListItem, indicator->title));
+        strcpy(text, messageList.getMessage(&messageListItem, indicator->title));
 
         int color = indicator->isBad ? colorTable[31744] : colorTable[992];
 
@@ -2404,7 +2404,7 @@ static int construct_box_bar_win()
     box_status_flag = true;
     refresh_box_bar_win();
 
-    message_exit(&messageList);
+    messageList.exit();
     art_ptr_unlock(indicatorBoxFrmHandle);
     text_font(oldFont);
 
@@ -2421,9 +2421,9 @@ static void deconstruct_box_bar_win()
 
     for (int index = 0; index < INDICATOR_COUNT; index++) {
         IndicatorDescription* indicatorBoxDescription = &(bbox[index]);
-        if (indicatorBoxDescription->data != NULL) {
+        if (indicatorBoxDescription->data != nullptr) {
             mem_free(indicatorBoxDescription->data);
-            indicatorBoxDescription->data = NULL;
+            indicatorBoxDescription->data = nullptr;
         }
     }
 }
@@ -2506,8 +2506,8 @@ int refresh_box_bar_win()
 // 0x456B68
 static int bbox_comp(const void* a, const void* b)
 {
-    int indicatorBox1 = *(int*)a;
-    int indicatorBox2 = *(int*)b;
+    int indicatorBox1 = *reinterpret_cast<const int*>(a);
+    int indicatorBox2 = *reinterpret_cast<const int*>(b);
 
     if (indicatorBox1 == indicatorBox2) {
         return 0;

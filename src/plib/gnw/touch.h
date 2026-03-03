@@ -1,23 +1,33 @@
-#ifndef FALLOUT_PLIB_GNW_TOUCH_H
-#define FALLOUT_PLIB_GNW_TOUCH_H
+#pragma once
+
 
 #include <SDL.h>
 
 namespace fallout {
 
-enum GestureType {
-    kUnrecognized,
-    kTap,
-    kLongPress,
-    kPan,
+enum class GestureType : int {
+    Unrecognized = 0,
+    Tap = 1,
+    LongPress = 2,
+    Pan = 3,
 };
 
-enum GestureState {
-    kPossible,
-    kBegan,
-    kChanged,
-    kEnded,
+inline constexpr int kUnrecognized = static_cast<int>(GestureType::Unrecognized);
+inline constexpr int kTap = static_cast<int>(GestureType::Tap);
+inline constexpr int kLongPress = static_cast<int>(GestureType::LongPress);
+inline constexpr int kPan = static_cast<int>(GestureType::Pan);
+
+enum class GestureState : int {
+    Possible = 0,
+    Began = 1,
+    Changed = 2,
+    Ended = 3,
 };
+
+inline constexpr int kPossible = static_cast<int>(GestureState::Possible);
+inline constexpr int kBegan = static_cast<int>(GestureState::Began);
+inline constexpr int kChanged = static_cast<int>(GestureState::Changed);
+inline constexpr int kEnded = static_cast<int>(GestureState::Ended);
 
 struct Gesture {
     GestureType type;
@@ -34,5 +44,3 @@ void touch_process_gesture();
 bool touch_get_gesture(Gesture* gesture);
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_TOUCH_H */

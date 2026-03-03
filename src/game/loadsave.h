@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_LOADSAVE_H_
-#define FALLOUT_GAME_LOADSAVE_H_
+#pragma once
+
 
 #include "game/art.h"
 #include "game/message.h"
@@ -8,16 +8,20 @@
 
 namespace fallout {
 
-typedef enum LoadSaveMode {
+enum class LoadSaveMode : int {
     // Special case - loading game from main menu.
-    LOAD_SAVE_MODE_FROM_MAIN_MENU,
+    FromMainMenu = 0,
 
     // Normal (full-screen) save/load screen.
-    LOAD_SAVE_MODE_NORMAL,
+    Normal = 1,
 
     // Quick load/save.
-    LOAD_SAVE_MODE_QUICK,
-} LoadSaveMode;
+    Quick = 2,
+};
+
+inline constexpr int LOAD_SAVE_MODE_FROM_MAIN_MENU = static_cast<int>(LoadSaveMode::FromMainMenu);
+inline constexpr int LOAD_SAVE_MODE_NORMAL = static_cast<int>(LoadSaveMode::Normal);
+inline constexpr int LOAD_SAVE_MODE_QUICK = static_cast<int>(LoadSaveMode::Quick);
 
 void InitLoadSave();
 void ResetLoadSave();
@@ -29,5 +33,3 @@ int MapDirErase(const char* path, const char* a2);
 int MapDirEraseFile(const char* a1, const char* a2);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_LOADSAVE_H_ */

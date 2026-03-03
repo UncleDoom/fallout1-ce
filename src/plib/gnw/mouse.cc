@@ -43,13 +43,13 @@ static unsigned char or_mask[MOUSE_DEFAULT_CURSOR_SIZE] = {
 static int mouse_idling = 0;
 
 // 0x539DC4
-static unsigned char* mouse_buf = NULL;
+static unsigned char* mouse_buf = nullptr;
 
 // 0x539DC8
-static unsigned char* mouse_shape = NULL;
+static unsigned char* mouse_shape = nullptr;
 
 // 0x539DCC
-static unsigned char* mouse_fptr = NULL;
+static unsigned char* mouse_fptr = nullptr;
 
 // 0x539DD0
 static double mouse_sensitivity = 1.0;
@@ -133,7 +133,7 @@ int GNW_mouse_init()
 
     mouse_colorize();
 
-    if (mouse_set_shape(NULL, 0, 0, 0, 0, 0, 0) == -1) {
+    if (mouse_set_shape(nullptr, 0, 0, 0, 0, 0, 0) == -1) {
         return -1;
     }
 
@@ -156,14 +156,14 @@ void GNW_mouse_exit()
 {
     dxinput_unacquire_mouse();
 
-    if (mouse_buf != NULL) {
+    if (mouse_buf != nullptr) {
         mem_free(mouse_buf);
-        mouse_buf = NULL;
+        mouse_buf = nullptr;
     }
 
-    if (mouse_fptr != NULL) {
+    if (mouse_fptr != nullptr) {
         remove_bk_process(mouse_anim);
-        mouse_fptr = NULL;
+        mouse_fptr = nullptr;
     }
 }
 
@@ -209,7 +209,7 @@ int mouse_set_shape(unsigned char* buf, int width, int length, int full, int hot
     v8 = hoty;
     v9 = buf;
 
-    if (buf == NULL) {
+    if (buf == nullptr) {
         // NOTE: Original code looks tail recursion optimization.
         return mouse_set_shape(or_mask, MOUSE_DEFAULT_CURSOR_WIDTH, MOUSE_DEFAULT_CURSOR_HEIGHT, MOUSE_DEFAULT_CURSOR_WIDTH, 1, 1, colorTable[0]);
     }
@@ -222,15 +222,15 @@ int mouse_set_shape(unsigned char* buf, int width, int length, int full, int hot
     }
 
     if (width != mouse_width || length != mouse_length) {
-        unsigned char* buf = (unsigned char*)mem_malloc(width * length);
-        if (buf == NULL) {
+        unsigned char* buf = static_cast<unsigned char*>(mem_malloc(width * length));
+        if (buf == nullptr) {
             if (!cursorWasHidden) {
                 mouse_show();
             }
             return -1;
         }
 
-        if (mouse_buf != NULL) {
+        if (mouse_buf != nullptr) {
             mem_free(mouse_buf);
         }
 
@@ -245,7 +245,7 @@ int mouse_set_shape(unsigned char* buf, int width, int length, int full, int hot
 
     if (mouse_fptr) {
         remove_bk_process(mouse_anim);
-        mouse_fptr = NULL;
+        mouse_fptr = nullptr;
     }
 
     v11 = mouse_hotx - v7;
@@ -273,7 +273,7 @@ int mouse_set_shape(unsigned char* buf, int width, int length, int full, int hot
 // 0x4B4A4C
 int mouse_get_anim(unsigned char** frames, int* num_frames, int* width, int* length, int* hotx, int* hoty, char* trans, int* speed)
 {
-    if (mouse_fptr == NULL) {
+    if (mouse_fptr == nullptr) {
         return -1;
     }
 
@@ -434,27 +434,27 @@ void mouse_info()
         static int prevy;
 
         switch (gesture.type) {
-        case kTap:
+        case GestureType::Tap:
             if (gesture.numberOfTouches == 1) {
                 mouse_simulate_input(0, 0, MOUSE_STATE_LEFT_BUTTON_DOWN);
             } else if (gesture.numberOfTouches == 2) {
                 mouse_simulate_input(0, 0, MOUSE_STATE_RIGHT_BUTTON_DOWN);
             }
             break;
-        case kLongPress:
-        case kPan:
-            if (gesture.state == kBegan) {
+        case GestureType::LongPress:
+        case GestureType::Pan:
+            if (gesture.state == GestureState::Began) {
                 prevx = gesture.x;
                 prevy = gesture.y;
             }
 
-            if (gesture.type == kLongPress) {
+            if (gesture.type == GestureType::LongPress) {
                 if (gesture.numberOfTouches == 1) {
                     mouse_simulate_input(gesture.x - prevx, gesture.y - prevy, MOUSE_STATE_LEFT_BUTTON_DOWN);
                 } else if (gesture.numberOfTouches == 2) {
                     mouse_simulate_input(gesture.x - prevx, gesture.y - prevy, MOUSE_STATE_RIGHT_BUTTON_DOWN);
                 }
-            } else if (gesture.type == kPan) {
+            } else if (gesture.type == GestureType::Pan) {
                 if (gesture.numberOfTouches == 1) {
                     mouse_simulate_input(gesture.x - prevx, gesture.y - prevy, 0);
                 } else if (gesture.numberOfTouches == 2) {
@@ -498,8 +498,8 @@ void mouse_info()
     }
 
     // Adjust for mouse senstivity.
-    x = (int)(x * mouse_sensitivity);
-    y = (int)(y * mouse_sensitivity);
+    x = static_cast<int>(x * mouse_sensitivity);
+    y = static_cast<int>(y * mouse_sensitivity);
 
     if (vcr_state == VCR_STATE_PLAYING) {
         if (((vcr_terminate_flags & VCR_TERMINATE_ON_MOUSE_PRESS) != 0 && buttons != 0)
@@ -833,7 +833,7 @@ void mouseGetPositionInWindow(int win, int* x, int* y)
     mouse_get_position(x, y);
 
     Window* window = GNW_find(win);
-    if (window != NULL) {
+    if (window != nullptr) {
         *x -= window->rect.ulx;
         *y -= window->rect.uly;
     }
@@ -842,7 +842,7 @@ void mouseGetPositionInWindow(int win, int* x, int* y)
 bool mouseHitTestInWindow(int win, int left, int top, int right, int bottom)
 {
     Window* window = GNW_find(win);
-    if (window != NULL) {
+    if (window != nullptr) {
         left += window->rect.ulx;
         top += window->rect.uly;
         right += window->rect.ulx;

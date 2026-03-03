@@ -1,6 +1,6 @@
 #include "plib/gnw/rect.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <algorithm>
 
@@ -9,14 +9,14 @@
 namespace fallout {
 
 // 0x539D58
-static RectPtr rlist = NULL;
+static RectPtr rlist = nullptr;
 
 // 0x4B29B0
 void GNW_rect_exit()
 {
     RectPtr temp;
 
-    while (rlist != NULL) {
+    while (rlist != nullptr) {
         temp = rlist->next;
         mem_free(rlist);
         rlist = temp;
@@ -26,18 +26,16 @@ void GNW_rect_exit()
 // 0x4B29D4
 void rect_clip_list(RectPtr* pCur, Rect* bound)
 {
-    Rect v1;
-    rectCopy(&v1, bound);
+    Rect v1 = *bound;
 
     // NOTE: Original code is slightly different.
-    while (*pCur != NULL) {
+    while (*pCur != nullptr) {
         RectPtr rectListNode = *pCur;
         if (v1.lrx >= rectListNode->rect.ulx
             && v1.lry >= rectListNode->rect.uly
             && v1.ulx <= rectListNode->rect.lrx
             && v1.uly <= rectListNode->rect.lry) {
-            Rect v2;
-            rectCopy(&v2, &(rectListNode->rect));
+            Rect v2 = rectListNode->rect;
 
             *pCur = rectListNode->next;
 
@@ -46,11 +44,11 @@ void rect_clip_list(RectPtr* pCur, Rect* bound)
 
             if (v2.uly < v1.uly) {
                 RectPtr newRectListNode = rect_malloc();
-                if (newRectListNode == NULL) {
+                if (newRectListNode == nullptr) {
                     return;
                 }
 
-                rectCopy(&(newRectListNode->rect), &v2);
+                newRectListNode->rect = v2;
                 newRectListNode->rect.lry = v1.uly - 1;
                 newRectListNode->next = *pCur;
 
@@ -62,11 +60,11 @@ void rect_clip_list(RectPtr* pCur, Rect* bound)
 
             if (v2.lry > v1.lry) {
                 RectPtr newRectListNode = rect_malloc();
-                if (newRectListNode == NULL) {
+                if (newRectListNode == nullptr) {
                     return;
                 }
 
-                rectCopy(&(newRectListNode->rect), &v2);
+                newRectListNode->rect = v2;
                 newRectListNode->rect.uly = v1.lry + 1;
                 newRectListNode->next = *pCur;
 
@@ -78,11 +76,11 @@ void rect_clip_list(RectPtr* pCur, Rect* bound)
 
             if (v2.ulx < v1.ulx) {
                 RectPtr newRectListNode = rect_malloc();
-                if (newRectListNode == NULL) {
+                if (newRectListNode == nullptr) {
                     return;
                 }
 
-                rectCopy(&(newRectListNode->rect), &v2);
+                newRectListNode->rect = v2;
                 newRectListNode->rect.lrx = v1.ulx - 1;
                 newRectListNode->next = *pCur;
 
@@ -92,11 +90,11 @@ void rect_clip_list(RectPtr* pCur, Rect* bound)
 
             if (v2.lrx > v1.lrx) {
                 RectPtr newRectListNode = rect_malloc();
-                if (newRectListNode == NULL) {
+                if (newRectListNode == nullptr) {
                     return;
                 }
 
-                rectCopy(&(newRectListNode->rect), &v2);
+                newRectListNode->rect = v2;
                 newRectListNode->rect.ulx = v1.lrx + 1;
                 newRectListNode->next = *pCur;
 
@@ -118,9 +116,9 @@ RectPtr rect_clip(Rect* b, Rect* t)
     Rect clipped_b[4];
     int k;
 
-    list = NULL;
+    list = nullptr;
 
-    if (rect_inside_bound(t, b, &clipped_t) == 0) {
+    if (t->insideBound(*b, clipped_t) == 0) {
         clipped_b[0].ulx = b->ulx;
         clipped_b[0].uly = b->uly;
         clipped_b[0].lrx = b->lrx;
@@ -146,24 +144,24 @@ RectPtr rect_clip(Rect* b, Rect* t)
             if (clipped_b[k].lrx >= clipped_b[k].ulx && clipped_b[k].lry >= clipped_b[k].uly) {
                 list = rect_malloc();
                 *next = list;
-                if (list == NULL) {
-                    return NULL;
+                if (list == nullptr) {
+                    return nullptr;
                 }
 
                 list->rect = clipped_b[k];
-                list->next = NULL;
+                list->next = nullptr;
 
                 next = &list;
             }
         }
     } else {
         list = rect_malloc();
-        if (list != NULL) {
+        if (list != nullptr) {
             list->rect.ulx = b->ulx;
             list->rect.uly = b->uly;
             list->rect.lrx = b->lrx;
             list->rect.lry = b->lry;
-            list->next = NULL;
+            list->next = nullptr;
         }
     }
 
@@ -176,10 +174,10 @@ RectPtr rect_malloc()
     RectPtr temp;
     int i;
 
-    if (rlist == NULL) {
+    if (rlist == nullptr) {
         for (i = 0; i < 10; i++) {
-            temp = (RectPtr)mem_malloc(sizeof(*temp));
-            if (temp == NULL) {
+            temp = static_cast<RectPtr>(mem_malloc(sizeof(*temp)));
+            if (temp == nullptr) {
                 break;
             }
 
@@ -188,8 +186,8 @@ RectPtr rect_malloc()
         }
     }
 
-    if (rlist == NULL) {
-        return NULL;
+    if (rlist == nullptr) {
+        return nullptr;
     }
 
     temp = rlist;
@@ -205,45 +203,29 @@ void rect_free(RectPtr ptr)
     rlist = ptr;
 }
 
-// Calculates a union of two source rectangles and places it into result
-// rectangle.
-//
-// 0x4B2CC8
-void rect_min_bound(const Rect* r1, const Rect* r2, Rect* min_bound)
-{
-    min_bound->ulx = std::min(r1->ulx, r2->ulx);
-    min_bound->uly = std::min(r1->uly, r2->uly);
-    min_bound->lrx = std::max(r1->lrx, r2->lrx);
-    min_bound->lry = std::max(r1->lry, r2->lry);
-}
-
-// Calculates intersection of two source rectangles and places it into third
-// rectangle and returns 0. If two source rectangles do not have intersection
-// it returns -1 and resulting rectangle is a copy of r1.
-//
 // 0x4B2D18
-int rect_inside_bound(const Rect* r1, const Rect* bound, Rect* r2)
+int Rect::insideBound(const Rect& bound, Rect& result) const noexcept
 {
-    r2->ulx = r1->ulx;
-    r2->uly = r1->uly;
-    r2->lrx = r1->lrx;
-    r2->lry = r1->lry;
+    result.ulx = ulx;
+    result.uly = uly;
+    result.lrx = lrx;
+    result.lry = lry;
 
-    if (r1->ulx <= bound->lrx && bound->ulx <= r1->lrx && bound->lry >= r1->uly && bound->uly <= r1->lry) {
-        if (bound->ulx > r1->ulx) {
-            r2->ulx = bound->ulx;
+    if (ulx <= bound.lrx && bound.ulx <= lrx && bound.lry >= uly && bound.uly <= lry) {
+        if (bound.ulx > ulx) {
+            result.ulx = bound.ulx;
         }
 
-        if (bound->lrx < r1->lrx) {
-            r2->lrx = bound->lrx;
+        if (bound.lrx < lrx) {
+            result.lrx = bound.lrx;
         }
 
-        if (bound->uly > r1->uly) {
-            r2->uly = bound->uly;
+        if (bound.uly > uly) {
+            result.uly = bound.uly;
         }
 
-        if (bound->lry < r1->lry) {
-            r2->lry = bound->lry;
+        if (bound.lry < lry) {
+            result.lry = bound.lry;
         }
 
         return 0;
@@ -251,5 +233,7 @@ int rect_inside_bound(const Rect* r1, const Rect* bound, Rect* r2)
 
     return -1;
 }
+
+
 
 } // namespace fallout

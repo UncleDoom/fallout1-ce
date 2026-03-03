@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_PROTO_H_
-#define FALLOUT_GAME_PROTO_H_
+#pragma once
+
 
 #include "game/message.h"
 #include "game/object_types.h"
@@ -11,91 +11,158 @@
 
 namespace fallout {
 
-typedef enum ItemDataMember {
-    ITEM_DATA_MEMBER_PID = 0,
-    ITEM_DATA_MEMBER_NAME = 1,
-    ITEM_DATA_MEMBER_DESCRIPTION = 2,
-    ITEM_DATA_MEMBER_FID = 3,
-    ITEM_DATA_MEMBER_LIGHT_DISTANCE = 4,
-    ITEM_DATA_MEMBER_LIGHT_INTENSITY = 5,
-    ITEM_DATA_MEMBER_FLAGS = 6,
-    ITEM_DATA_MEMBER_EXTENDED_FLAGS = 7,
-    ITEM_DATA_MEMBER_SID = 8,
-    ITEM_DATA_MEMBER_TYPE = 9,
-    ITEM_DATA_MEMBER_MATERIAL = 11,
-    ITEM_DATA_MEMBER_SIZE = 12,
-    ITEM_DATA_MEMBER_WEIGHT = 13,
-    ITEM_DATA_MEMBER_COST = 14,
-    ITEM_DATA_MEMBER_INVENTORY_FID = 15,
-} ItemDataMember;
+enum class ItemDataMember : int {
+    Pid = 0,
+    Name = 1,
+    Description = 2,
+    Fid = 3,
+    LightDistance = 4,
+    LightIntensity = 5,
+    Flags = 6,
+    ExtendedFlags = 7,
+    Sid = 8,
+    Type = 9,
+    Material = 11,
+    Size = 12,
+    Weight = 13,
+    Cost = 14,
+    InventoryFid = 15,
+};
 
-typedef enum CritterDataMember {
-    CRITTER_DATA_MEMBER_PID = 0,
-    CRITTER_DATA_MEMBER_NAME = 1,
-    CRITTER_DATA_MEMBER_DESCRIPTION = 2,
-    CRITTER_DATA_MEMBER_FID = 3,
-    CRITTER_DATA_MEMBER_LIGHT_DISTANCE = 4,
-    CRITTER_DATA_MEMBER_LIGHT_INTENSITY = 5,
-    CRITTER_DATA_MEMBER_FLAGS = 6,
-    CRITTER_DATA_MEMBER_EXTENDED_FLAGS = 7,
-    CRITTER_DATA_MEMBER_SID = 8,
-    CRITTER_DATA_MEMBER_DATA = 9,
-    CRITTER_DATA_MEMBER_HEAD_FID = 10,
-} CritterDataMember;
+inline constexpr int ITEM_DATA_MEMBER_PID = static_cast<int>(ItemDataMember::Pid);
+inline constexpr int ITEM_DATA_MEMBER_NAME = static_cast<int>(ItemDataMember::Name);
+inline constexpr int ITEM_DATA_MEMBER_DESCRIPTION = static_cast<int>(ItemDataMember::Description);
+inline constexpr int ITEM_DATA_MEMBER_FID = static_cast<int>(ItemDataMember::Fid);
+inline constexpr int ITEM_DATA_MEMBER_LIGHT_DISTANCE = static_cast<int>(ItemDataMember::LightDistance);
+inline constexpr int ITEM_DATA_MEMBER_LIGHT_INTENSITY = static_cast<int>(ItemDataMember::LightIntensity);
+inline constexpr int ITEM_DATA_MEMBER_FLAGS = static_cast<int>(ItemDataMember::Flags);
+inline constexpr int ITEM_DATA_MEMBER_EXTENDED_FLAGS = static_cast<int>(ItemDataMember::ExtendedFlags);
+inline constexpr int ITEM_DATA_MEMBER_SID = static_cast<int>(ItemDataMember::Sid);
+inline constexpr int ITEM_DATA_MEMBER_TYPE = static_cast<int>(ItemDataMember::Type);
+inline constexpr int ITEM_DATA_MEMBER_MATERIAL = static_cast<int>(ItemDataMember::Material);
+inline constexpr int ITEM_DATA_MEMBER_SIZE = static_cast<int>(ItemDataMember::Size);
+inline constexpr int ITEM_DATA_MEMBER_WEIGHT = static_cast<int>(ItemDataMember::Weight);
+inline constexpr int ITEM_DATA_MEMBER_COST = static_cast<int>(ItemDataMember::Cost);
+inline constexpr int ITEM_DATA_MEMBER_INVENTORY_FID = static_cast<int>(ItemDataMember::InventoryFid);
 
-typedef enum SceneryDataMember {
-    SCENERY_DATA_MEMBER_PID = 0,
-    SCENERY_DATA_MEMBER_NAME = 1,
-    SCENERY_DATA_MEMBER_DESCRIPTION = 2,
-    SCENERY_DATA_MEMBER_FID = 3,
-    SCENERY_DATA_MEMBER_LIGHT_DISTANCE = 4,
-    SCENERY_DATA_MEMBER_LIGHT_INTENSITY = 5,
-    SCENERY_DATA_MEMBER_FLAGS = 6,
-    SCENERY_DATA_MEMBER_EXTENDED_FLAGS = 7,
-    SCENERY_DATA_MEMBER_SID = 8,
-    SCENERY_DATA_MEMBER_TYPE = 9,
-    SCENERY_DATA_MEMBER_DATA = 10,
-    SCENERY_DATA_MEMBER_MATERIAL = 11,
-} SceneryDataMember;
+enum class CritterDataMember : int {
+    Pid = 0,
+    Name = 1,
+    Description = 2,
+    Fid = 3,
+    LightDistance = 4,
+    LightIntensity = 5,
+    Flags = 6,
+    ExtendedFlags = 7,
+    Sid = 8,
+    Data = 9,
+    HeadFid = 10,
+};
 
-typedef enum WallDataMember {
-    WALL_DATA_MEMBER_PID = 0,
-    WALL_DATA_MEMBER_NAME = 1,
-    WALL_DATA_MEMBER_DESCRIPTION = 2,
-    WALL_DATA_MEMBER_FID = 3,
-    WALL_DATA_MEMBER_LIGHT_DISTANCE = 4,
-    WALL_DATA_MEMBER_LIGHT_INTENSITY = 5,
-    WALL_DATA_MEMBER_FLAGS = 6,
-    WALL_DATA_MEMBER_EXTENDED_FLAGS = 7,
-    WALL_DATA_MEMBER_SID = 8,
-    WALL_DATA_MEMBER_MATERIAL = 9,
-} WallDataMember;
+inline constexpr int CRITTER_DATA_MEMBER_PID = static_cast<int>(CritterDataMember::Pid);
+inline constexpr int CRITTER_DATA_MEMBER_NAME = static_cast<int>(CritterDataMember::Name);
+inline constexpr int CRITTER_DATA_MEMBER_DESCRIPTION = static_cast<int>(CritterDataMember::Description);
+inline constexpr int CRITTER_DATA_MEMBER_FID = static_cast<int>(CritterDataMember::Fid);
+inline constexpr int CRITTER_DATA_MEMBER_LIGHT_DISTANCE = static_cast<int>(CritterDataMember::LightDistance);
+inline constexpr int CRITTER_DATA_MEMBER_LIGHT_INTENSITY = static_cast<int>(CritterDataMember::LightIntensity);
+inline constexpr int CRITTER_DATA_MEMBER_FLAGS = static_cast<int>(CritterDataMember::Flags);
+inline constexpr int CRITTER_DATA_MEMBER_EXTENDED_FLAGS = static_cast<int>(CritterDataMember::ExtendedFlags);
+inline constexpr int CRITTER_DATA_MEMBER_SID = static_cast<int>(CritterDataMember::Sid);
+inline constexpr int CRITTER_DATA_MEMBER_DATA = static_cast<int>(CritterDataMember::Data);
+inline constexpr int CRITTER_DATA_MEMBER_HEAD_FID = static_cast<int>(CritterDataMember::HeadFid);
 
-typedef enum MiscDataMember {
-    MISC_DATA_MEMBER_PID = 0,
-    MISC_DATA_MEMBER_NAME = 1,
-    MISC_DATA_MEMBER_DESCRIPTION = 2,
-    MISC_DATA_MEMBER_FID = 3,
-    MISC_DATA_MEMBER_LIGHT_DISTANCE = 4,
-    MISC_DATA_MEMBER_LIGHT_INTENSITY = 5,
-    MISC_DATA_MEMBER_FLAGS = 6,
-    MISC_DATA_MEMBER_EXTENDED_FLAGS = 7,
-} MiscDataMember;
+enum class SceneryDataMember : int {
+    Pid = 0,
+    Name = 1,
+    Description = 2,
+    Fid = 3,
+    LightDistance = 4,
+    LightIntensity = 5,
+    Flags = 6,
+    ExtendedFlags = 7,
+    Sid = 8,
+    Type = 9,
+    Data = 10,
+    Material = 11,
+};
 
-typedef enum ProtoDataMemberType {
-    PROTO_DATA_MEMBER_TYPE_INT = 1,
-    PROTO_DATA_MEMBER_TYPE_STRING = 2,
-} ProtoDataMemberType;
+inline constexpr int SCENERY_DATA_MEMBER_PID = static_cast<int>(SceneryDataMember::Pid);
+inline constexpr int SCENERY_DATA_MEMBER_NAME = static_cast<int>(SceneryDataMember::Name);
+inline constexpr int SCENERY_DATA_MEMBER_DESCRIPTION = static_cast<int>(SceneryDataMember::Description);
+inline constexpr int SCENERY_DATA_MEMBER_FID = static_cast<int>(SceneryDataMember::Fid);
+inline constexpr int SCENERY_DATA_MEMBER_LIGHT_DISTANCE = static_cast<int>(SceneryDataMember::LightDistance);
+inline constexpr int SCENERY_DATA_MEMBER_LIGHT_INTENSITY = static_cast<int>(SceneryDataMember::LightIntensity);
+inline constexpr int SCENERY_DATA_MEMBER_FLAGS = static_cast<int>(SceneryDataMember::Flags);
+inline constexpr int SCENERY_DATA_MEMBER_EXTENDED_FLAGS = static_cast<int>(SceneryDataMember::ExtendedFlags);
+inline constexpr int SCENERY_DATA_MEMBER_SID = static_cast<int>(SceneryDataMember::Sid);
+inline constexpr int SCENERY_DATA_MEMBER_TYPE = static_cast<int>(SceneryDataMember::Type);
+inline constexpr int SCENERY_DATA_MEMBER_DATA = static_cast<int>(SceneryDataMember::Data);
+inline constexpr int SCENERY_DATA_MEMBER_MATERIAL = static_cast<int>(SceneryDataMember::Material);
 
-typedef union ProtoDataMemberValue {
+enum class WallDataMember : int {
+    Pid = 0,
+    Name = 1,
+    Description = 2,
+    Fid = 3,
+    LightDistance = 4,
+    LightIntensity = 5,
+    Flags = 6,
+    ExtendedFlags = 7,
+    Sid = 8,
+    Material = 9,
+};
+
+inline constexpr int WALL_DATA_MEMBER_PID = static_cast<int>(WallDataMember::Pid);
+inline constexpr int WALL_DATA_MEMBER_NAME = static_cast<int>(WallDataMember::Name);
+inline constexpr int WALL_DATA_MEMBER_DESCRIPTION = static_cast<int>(WallDataMember::Description);
+inline constexpr int WALL_DATA_MEMBER_FID = static_cast<int>(WallDataMember::Fid);
+inline constexpr int WALL_DATA_MEMBER_LIGHT_DISTANCE = static_cast<int>(WallDataMember::LightDistance);
+inline constexpr int WALL_DATA_MEMBER_LIGHT_INTENSITY = static_cast<int>(WallDataMember::LightIntensity);
+inline constexpr int WALL_DATA_MEMBER_FLAGS = static_cast<int>(WallDataMember::Flags);
+inline constexpr int WALL_DATA_MEMBER_EXTENDED_FLAGS = static_cast<int>(WallDataMember::ExtendedFlags);
+inline constexpr int WALL_DATA_MEMBER_SID = static_cast<int>(WallDataMember::Sid);
+inline constexpr int WALL_DATA_MEMBER_MATERIAL = static_cast<int>(WallDataMember::Material);
+
+enum class MiscDataMember : int {
+    Pid = 0,
+    Name = 1,
+    Description = 2,
+    Fid = 3,
+    LightDistance = 4,
+    LightIntensity = 5,
+    Flags = 6,
+    ExtendedFlags = 7,
+};
+
+inline constexpr int MISC_DATA_MEMBER_PID = static_cast<int>(MiscDataMember::Pid);
+inline constexpr int MISC_DATA_MEMBER_NAME = static_cast<int>(MiscDataMember::Name);
+inline constexpr int MISC_DATA_MEMBER_DESCRIPTION = static_cast<int>(MiscDataMember::Description);
+inline constexpr int MISC_DATA_MEMBER_FID = static_cast<int>(MiscDataMember::Fid);
+inline constexpr int MISC_DATA_MEMBER_LIGHT_DISTANCE = static_cast<int>(MiscDataMember::LightDistance);
+inline constexpr int MISC_DATA_MEMBER_LIGHT_INTENSITY = static_cast<int>(MiscDataMember::LightIntensity);
+inline constexpr int MISC_DATA_MEMBER_FLAGS = static_cast<int>(MiscDataMember::Flags);
+inline constexpr int MISC_DATA_MEMBER_EXTENDED_FLAGS = static_cast<int>(MiscDataMember::ExtendedFlags);
+
+enum class ProtoDataMemberType : int {
+    Int = 1,
+    String = 2,
+};
+
+inline constexpr int PROTO_DATA_MEMBER_TYPE_INT = static_cast<int>(ProtoDataMemberType::Int);
+inline constexpr int PROTO_DATA_MEMBER_TYPE_STRING = static_cast<int>(ProtoDataMemberType::String);
+
+union ProtoDataMemberValue {
     int integerValue;
     char* stringValue;
-} ProtoDataMemberValue;
+};
 
-typedef enum PrototypeMessage {
-    PROTOTYPE_MESSAGE_NAME,
-    PROTOTYPE_MESSAGE_DESCRIPTION,
-} PrototypeMesage;
+enum class PrototypeMessage : int {
+    Name = 0,
+    Description = 1,
+};
+
+inline constexpr int PROTOTYPE_MESSAGE_NAME = static_cast<int>(PrototypeMessage::Name);
+inline constexpr int PROTOTYPE_MESSAGE_DESCRIPTION = static_cast<int>(PrototypeMessage::Description);
 
 extern char cd_path_base[];
 extern char proto_path_base[];
@@ -148,5 +215,3 @@ int proto_max_id(int a1);
 int ResetPlayer();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_PROTO_H_ */

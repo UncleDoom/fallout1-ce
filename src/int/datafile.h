@@ -1,10 +1,10 @@
-#ifndef FALLOUT_INT_DATAFILE_H_
-#define FALLOUT_INT_DATAFILE_H_
+#pragma once
+
 
 namespace fallout {
 
-typedef unsigned char*(DatafileLoader)(char* path, unsigned char* palette, int* widthPtr, int* heightPtr);
-typedef char*(DatafileNameMangler)(char* path);
+using DatafileLoader = unsigned char*(char* path, unsigned char* palette, int* widthPtr, int* heightPtr);
+using DatafileNameMangler = char*(char* path);
 
 void datafileSetFilenameFunc(DatafileNameMangler* mangler);
 void setBitmapLoadFunc(DatafileLoader* loader);
@@ -18,5 +18,3 @@ unsigned char* datafileGetPalette();
 unsigned char* datafileLoadBlock(char* path, int* sizePtr);
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_DATAFILE_H_ */

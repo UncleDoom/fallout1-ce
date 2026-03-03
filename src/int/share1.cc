@@ -1,7 +1,7 @@
 #include "int/share1.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "plib/db/db.h"
 
@@ -21,10 +21,10 @@ static int compare(const void* a1, const void* a2)
 char** getFileList(const char* pattern, int* fileNameListLengthPtr)
 {
     char** fileNameList;
-    int fileNameListLength = db_get_file_list(pattern, &fileNameList, NULL, 0);
+    int fileNameListLength = db_get_file_list(pattern, &fileNameList, nullptr, 0);
     *fileNameListLengthPtr = fileNameListLength;
     if (fileNameListLength == 0) {
-        return NULL;
+        return nullptr;
     }
 
     qsort(fileNameList, fileNameListLength, sizeof(*fileNameList), compare);
@@ -35,7 +35,7 @@ char** getFileList(const char* pattern, int* fileNameListLengthPtr)
 // 0x49814C
 void freeFileList(char** fileList)
 {
-    db_free_file_list(&fileList, NULL);
+    db_free_file_list(&fileList, nullptr);
 }
 
 } // namespace fallout

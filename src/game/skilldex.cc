@@ -1,7 +1,7 @@
 #include "game/skilldex.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "game/art.h"
 #include "game/cycle.h"
@@ -27,12 +27,13 @@
 
 namespace fallout {
 
-#define SKILLDEX_WINDOW_RIGHT_MARGIN 4
-#define SKILLDEX_WINDOW_BOTTOM_MARGIN 6
+static constexpr int SKILLDEX_WINDOW_RIGHT_MARGIN = 4;
+static constexpr int SKILLDEX_WINDOW_BOTTOM_MARGIN = 6;
 
+// Uses SKILLDEX_SKILL_COUNT from enum below — keep as macro.
 #define SKILLDEX_SKILL_BUTTON_BUFFER_COUNT (SKILLDEX_SKILL_COUNT * 2)
 
-typedef enum SkilldexFrm {
+enum SkilldexFrm {
     SKILLDEX_FRM_BACKGROUND,
     SKILLDEX_FRM_BUTTON_ON,
     SKILLDEX_FRM_BUTTON_OFF,
@@ -40,9 +41,9 @@ typedef enum SkilldexFrm {
     SKILLDEX_FRM_LITTLE_RED_BUTTON_DOWN,
     SKILLDEX_FRM_BIG_NUMBERS,
     SKILLDEX_FRM_COUNT,
-} SkilldexFrm;
+};
 
-typedef enum SkilldexSkill {
+enum SkilldexSkill {
     SKILLDEX_SKILL_SNEAK,
     SKILLDEX_SKILL_LOCKPICK,
     SKILLDEX_SKILL_STEAL,
@@ -52,7 +53,7 @@ typedef enum SkilldexSkill {
     SKILLDEX_SKILL_SCIENCE,
     SKILLDEX_SKILL_REPAIR,
     SKILLDEX_SKILL_COUNT,
-} SkilldexSkill;
+};
 
 static int skilldex_start();
 static void skilldex_end();
@@ -158,14 +159,14 @@ static int skilldex_start()
     gmouse_3d_off();
     gmouse_set_cursor(MOUSE_CURSOR_ARROW);
 
-    if (!message_init(&skldxmsg)) {
+    if (!skldxmsg.init()) {
         return -1;
     }
 
     char path[COMPAT_MAX_PATH];
     snprintf(path, sizeof(path), "%s%s", msg_path, "skilldex.msg");
 
-    if (!message_load(&skldxmsg, path)) {
+    if (!skldxmsg.load(path)) {
         return -1;
     }
 
@@ -173,7 +174,7 @@ static int skilldex_start()
     for (frmIndex = 0; frmIndex < SKILLDEX_FRM_COUNT; frmIndex++) {
         int fid = art_id(OBJ_TYPE_INTERFACE, grphfid[frmIndex], 0, 0, 0);
         skldxbmp[frmIndex] = art_lock(fid, &(grphkey[frmIndex]), &(ginfo[frmIndex].width), &(ginfo[frmIndex].height));
-        if (skldxbmp[frmIndex] == NULL) {
+        if (skldxbmp[frmIndex] == nullptr) {
             break;
         }
     }
@@ -183,7 +184,7 @@ static int skilldex_start()
             art_ptr_unlock(grphkey[frmIndex]);
         }
 
-        message_exit(&skldxmsg);
+        skldxmsg.exit();
 
         return -1;
     }
@@ -191,8 +192,8 @@ static int skilldex_start()
     bool cycle = false;
     int buttonDataIndex;
     for (buttonDataIndex = 0; buttonDataIndex < SKILLDEX_SKILL_BUTTON_BUFFER_COUNT; buttonDataIndex++) {
-        skldxbtn[buttonDataIndex] = (unsigned char*)mem_malloc(ginfo[SKILLDEX_FRM_BUTTON_ON].height * ginfo[SKILLDEX_FRM_BUTTON_ON].width + 512);
-        if (skldxbtn[buttonDataIndex] == NULL) {
+        skldxbtn[buttonDataIndex] = static_cast<unsigned char*>(mem_malloc(ginfo[SKILLDEX_FRM_BUTTON_ON].height * ginfo[SKILLDEX_FRM_BUTTON_ON].width + 512));
+        if (skldxbtn[buttonDataIndex] == nullptr) {
             break;
         }
 
@@ -221,7 +222,7 @@ static int skilldex_start()
             art_ptr_unlock(grphkey[index]);
         }
 
-        message_exit(&skldxmsg);
+        skldxmsg.exit();
 
         return -1;
     }
@@ -243,7 +244,7 @@ static int skilldex_start()
             art_ptr_unlock(grphkey[index]);
         }
 
-        message_exit(&skldxmsg);
+        skldxmsg.exit();
 
         return -1;
     }
@@ -261,7 +262,7 @@ static int skilldex_start()
     text_font(103);
 
     // Render "SKILLDEX" title.
-    char* title = getmsg(&skldxmsg, &mesg, 100);
+    char* title = skldxmsg.getMessage(&mesg, 100);
     text_to_buf(winbuf + 14 * ginfo[SKILLDEX_FRM_BACKGROUND].width + 55,
         title,
         ginfo[SKILLDEX_FRM_BACKGROUND].width,
@@ -310,7 +311,7 @@ static int skilldex_start()
     int nameY = ((ginfo[SKILLDEX_FRM_BUTTON_OFF].height - lineHeight) / 2) + 1;
     for (int index = 0; index < SKILLDEX_SKILL_COUNT; index++) {
         char name[MESSAGE_LIST_ITEM_FIELD_MAX_SIZE];
-        strcpy(name, getmsg(&skldxmsg, &mesg, 102 + index));
+        strcpy(name, skldxmsg.getMessage(&mesg, 102 + index));
 
         int nameX = ((ginfo[SKILLDEX_FRM_BUTTON_OFF].width - text_width(name)) / 2) + 1;
         if (nameX < 0) {
@@ -340,7 +341,7 @@ static int skilldex_start()
             501 + index,
             skldxbtn[index * 2],
             skldxbtn[index * 2 + 1],
-            NULL,
+            nullptr,
             BUTTON_FLAG_TRANSPARENT);
         if (btn != -1) {
             win_register_button_sound_func(btn, gsound_lrg_butt_press, gsound_lrg_butt_release);
@@ -350,7 +351,7 @@ static int skilldex_start()
     }
 
     // Render "CANCEL" button.
-    char* cancel = getmsg(&skldxmsg, &mesg, 101);
+    char* cancel = skldxmsg.getMessage(&mesg, 101);
     text_to_buf(winbuf + ginfo[SKILLDEX_FRM_BACKGROUND].width * 337 + 72,
         cancel,
         ginfo[SKILLDEX_FRM_BACKGROUND].width,
@@ -368,7 +369,7 @@ static int skilldex_start()
         500,
         skldxbmp[SKILLDEX_FRM_LITTLE_RED_BUTTON_UP],
         skldxbmp[SKILLDEX_FRM_LITTLE_RED_BUTTON_DOWN],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (cancelBtn != -1) {
         win_register_button_sound_func(cancelBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -392,7 +393,7 @@ static void skilldex_end()
         art_ptr_unlock(grphkey[index]);
     }
 
-    message_exit(&skldxmsg);
+    skldxmsg.exit();
 
     text_font(fontsave);
 

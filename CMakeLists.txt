@@ -22,11 +22,27 @@ set(CMAKE_CXX_EXTENSIONS NO)
 
 option(ASAN "Enable address sanitizer" OFF)
 option(UBSAN "Enable undefined behaviour sanitizer" OFF)
+option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
 
 if (ANDROID)
     add_library(${EXECUTABLE_NAME} SHARED)
 else()
     add_executable(${EXECUTABLE_NAME} WIN32 MACOSX_BUNDLE)
+endif()
+
+if(STRICT_WARNINGS)
+    if(MSVC)
+        target_compile_options(${EXECUTABLE_NAME} PRIVATE /W4)
+    else()
+        target_compile_options(${EXECUTABLE_NAME} PRIVATE
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wno-unused-parameter
+            -Wno-missing-field-initializers
+            -Wno-sign-compare
+        )
+    endif()
 endif()
 
 if(ASAN)
@@ -76,6 +92,7 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/game/elevator.h"
     "src/game/endgame.cc"
     "src/game/endgame.h"
+    "src/game/enum_utils.h"
     "src/game/fontmgr.cc"
     "src/game/fontmgr.h"
     "src/game/game_vars.h"
@@ -136,6 +153,14 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/game/perk.h"
     "src/game/pipboy.cc"
     "src/game/pipboy.h"
+    "src/game/message_helpers.cc"
+    "src/game/message_helpers.h"
+    "src/game/object_actions.cc"
+    "src/game/object_actions.h"
+    "src/game/object_instance.cc"
+    "src/game/object_instance.h"
+    "src/game/object_lock_state.cc"
+    "src/game/object_lock_state.h"
     "src/game/protinst.cc"
     "src/game/protinst.h"
     "src/game/proto_types.h"
@@ -145,6 +170,7 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/game/queue.h"
     "src/game/reaction.cc"
     "src/game/reaction.h"
+    "src/game/result.h"
     "src/game/roll.cc"
     "src/game/roll.h"
     "src/game/scripts.cc"
@@ -221,6 +247,7 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/plib/color/color.h"
     "src/plib/db/db.cc"
     "src/plib/db/db.h"
+    "src/plib/db/db_file.h"
     "src/plib/db/lzss.cc"
     "src/plib/db/lzss.h"
     "src/plib/gnw/button.cc"

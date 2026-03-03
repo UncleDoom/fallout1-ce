@@ -1,7 +1,7 @@
-#ifndef FALLOUT_GAME_COMBATAI_H_
-#define FALLOUT_GAME_COMBATAI_H_
+#pragma once
 
-#include <stddef.h>
+
+#include <cstddef>
 
 #include "game/combat_defs.h"
 #include "game/message.h"
@@ -11,15 +11,21 @@
 
 namespace fallout {
 
-typedef enum AiMessageType {
-    AI_MESSAGE_TYPE_RUN,
-    AI_MESSAGE_TYPE_MOVE,
-    AI_MESSAGE_TYPE_ATTACK,
-    AI_MESSAGE_TYPE_MISS,
-    AI_MESSAGE_TYPE_HIT,
-} AiMessageType;
+enum class AiMessageType : int {
+    Run = 0,
+    Move = 1,
+    Attack = 2,
+    Miss = 3,
+    Hit = 4,
+};
 
-typedef struct AiPacket {
+inline constexpr int AI_MESSAGE_TYPE_RUN = static_cast<int>(AiMessageType::Run);
+inline constexpr int AI_MESSAGE_TYPE_MOVE = static_cast<int>(AiMessageType::Move);
+inline constexpr int AI_MESSAGE_TYPE_ATTACK = static_cast<int>(AiMessageType::Attack);
+inline constexpr int AI_MESSAGE_TYPE_MISS = static_cast<int>(AiMessageType::Miss);
+inline constexpr int AI_MESSAGE_TYPE_HIT = static_cast<int>(AiMessageType::Hit);
+
+struct AiPacket {
     char* name;
     int packet_num;
     int max_dist;
@@ -39,7 +45,7 @@ typedef struct AiPacket {
     int miss_start;
     int hit_start[HIT_LOCATION_SPECIFIC_COUNT];
     int last_msg;
-} AiPacket;
+};
 
 int combat_ai_init();
 void combat_ai_reset();
@@ -56,7 +62,6 @@ Object* combat_ai(Object* critter, Object* target);
 bool combatai_want_to_join(Object* critter);
 bool combatai_want_to_stop(Object* critter);
 int combatai_switch_team(Object* critter, int team);
-int combatai_msg(Object* critter, Attack* attack, int message_type, int delay);
 Object* combat_ai_random_target(Attack* attack);
 void combatai_check_retaliation(Object* critter, Object* candidate);
 bool is_within_perception(Object* critter1, Object* critter2);
@@ -65,5 +70,3 @@ void combatai_notify_onlookers(Object* critter);
 void combatai_delete_critter(Object* critter);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_COMBATAI_H_ */

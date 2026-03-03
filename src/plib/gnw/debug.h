@@ -1,9 +1,9 @@
-#ifndef FALLOUT_PLIB_GNW_DEBUG_H_
-#define FALLOUT_PLIB_GNW_DEBUG_H_
+#pragma once
+
 
 namespace fallout {
 
-typedef int(DebugFunc)(char* string);
+using DebugFunc = int(char* string);
 
 void GNW_debug_init();
 void debug_register_mono();
@@ -16,5 +16,3 @@ int debug_puts(char* string);
 void debug_clear();
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_DEBUG_H_ */

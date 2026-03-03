@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_PIPBOY_H_
-#define FALLOUT_GAME_PIPBOY_H_
+#pragma once
+
 
 #include "game/art.h"
 #include "game/message.h"
@@ -8,12 +8,15 @@
 
 namespace fallout {
 
-typedef enum PipboyOpenIntent {
-    PIPBOY_OPEN_INTENT_UNSPECIFIED = 0,
-    PIPBOY_OPEN_INTENT_REST = 1,
-} PipboyOpenIntent;
+enum class PipboyOpenIntent : int {
+    Unspecified = 0,
+    Rest = 1,
+};
 
-typedef void(PipboyRenderProc)(int a1);
+inline constexpr int PIPBOY_OPEN_INTENT_UNSPECIFIED = static_cast<int>(PipboyOpenIntent::Unspecified);
+inline constexpr int PIPBOY_OPEN_INTENT_REST = static_cast<int>(PipboyOpenIntent::Rest);
+
+using PipboyRenderProc = void(int a1);
 
 int pipboy(int intent);
 void pip_init();
@@ -21,5 +24,3 @@ int save_pipboy(DB_FILE* stream);
 int load_pipboy(DB_FILE* stream);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_PIPBOY_H_ */

@@ -1,8 +1,8 @@
 #include "int/audio.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 
 #include <adecode/adecode.h>
 
@@ -13,12 +13,12 @@
 
 namespace fallout {
 
-typedef enum AudioFlags {
+enum AudioFlags {
     AUDIO_FILE_IN_USE = 0x01,
     AUDIO_FILE_COMPRESSED = 0x02,
-} AudioFlags;
+};
 
-typedef struct Audio {
+struct Audio {
     int flags;
     DB_FILE* stream;
     AudioDecoder* audioDecoder;
@@ -26,7 +26,7 @@ typedef struct Audio {
     int sampleRate;
     int channels;
     int position;
-} Audio;
+};
 
 static bool defaultCompressionFunc(char* filePath);
 static unsigned int decodeRead(void* stream, void* buf, unsigned int size);
@@ -44,7 +44,7 @@ static Audio* audio;
 static bool defaultCompressionFunc(char* filePath)
 {
     char* pch = strrchr(filePath, '.');
-    if (pch != NULL) {
+    if (pch != nullptr) {
         strcpy(pch + 1, "raw");
     }
 
@@ -54,7 +54,7 @@ static bool defaultCompressionFunc(char* filePath)
 // 0x419910
 static unsigned int decodeRead(void* stream, void* buffer, unsigned int size)
 {
-    return db_fread(buffer, 1, size, (DB_FILE*)stream);
+    return reinterpret_cast<DB_FILE*>(stream)->fread(buffer, 1, size);
 }
 
 // 0x41992C
@@ -92,7 +92,7 @@ int audioOpen(const char* fname, int flags)
     }
 
     DB_FILE* stream = db_fopen(path, mode);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         debug_printf("AudioOpen: Couldn't open %s for read\n", path);
         return -1;
     }
@@ -105,10 +105,10 @@ int audioOpen(const char* fname, int flags)
     }
 
     if (index == numAudio) {
-        if (audio != NULL) {
-            audio = (Audio*)myrealloc(audio, sizeof(*audio) * (numAudio + 1), __FILE__, __LINE__); // "..\int\audio.c", 216
+        if (audio != nullptr) {
+            audio = static_cast<Audio*>(myrealloc(audio, sizeof(*audio) * (numAudio + 1), __FILE__, __LINE__)); // "..\int\audio.c", 216
         } else {
-            audio = (Audio*)mymalloc(sizeof(*audio), __FILE__, __LINE__); // "..\int\audio.c", 218
+            audio = static_cast<Audio*>(mymalloc(sizeof(*audio), __FILE__, __LINE__)); // "..\int\audio.c", 218
         }
         numAudio++;
     }
@@ -122,7 +122,7 @@ int audioOpen(const char* fname, int flags)
         audioFile->audioDecoder = Create_AudioDecoder(decodeRead, audioFile->stream, &(audioFile->channels), &(audioFile->sampleRate), &(audioFile->fileSize));
         audioFile->fileSize *= 2;
     } else {
-        audioFile->fileSize = db_filelength(stream);
+        audioFile->fileSize = stream->filelength();
     }
 
     audioFile->position = 0;
@@ -134,7 +134,7 @@ int audioOpen(const char* fname, int flags)
 int audioCloseFile(int fileHandle)
 {
     Audio* audioFile = &(audio[fileHandle - 1]);
-    db_fclose(audioFile->stream);
+    audioFile->stream->fclose();
 
     if ((audioFile->flags & AUDIO_FILE_COMPRESSED) != 0) {
         AudioDecoder_Close(audioFile->audioDecoder);
@@ -154,7 +154,7 @@ int audioRead(int fileHandle, void* buffer, unsigned int size)
     if ((audioFile->flags & AUDIO_FILE_COMPRESSED) != 0) {
         bytesRead = AudioDecoder_Read(audioFile->audioDecoder, buffer, size);
     } else {
-        bytesRead = db_fread(buffer, 1, size, audioFile->stream);
+        bytesRead = audioFile->stream->fread(buffer, 1, size);
     }
 
     audioFile->position += bytesRead;
@@ -188,13 +188,13 @@ long audioSeek(int fileHandle, long offset, int origin)
     if ((audioFile->flags & AUDIO_FILE_COMPRESSED) != 0) {
         if (pos < audioFile->position) {
             AudioDecoder_Close(audioFile->audioDecoder);
-            db_fseek(audioFile->stream, 0, SEEK_SET);
+            audioFile->stream->fseek(0, SEEK_SET);
             audioFile->audioDecoder = Create_AudioDecoder(decodeRead, audioFile->stream, &(audioFile->channels), &(audioFile->sampleRate), &(audioFile->fileSize));
             audioFile->position = 0;
             audioFile->fileSize *= 2;
 
             if (pos != 0) {
-                buf = (unsigned char*)mymalloc(4096, __FILE__, __LINE__); // "..\int\audio.c", 361
+                buf = static_cast<unsigned char*>(mymalloc(4096, __FILE__, __LINE__)); // "..\int\audio.c", 361
                 while (pos > 4096) {
                     pos -= 4096;
                     audioRead(fileHandle, buf, 4096);
@@ -207,7 +207,7 @@ long audioSeek(int fileHandle, long offset, int origin)
                 myfree(buf, __FILE__, __LINE__); // // "..\int\audio.c", 367
             }
         } else {
-            buf = (unsigned char*)mymalloc(1024, __FILE__, __LINE__); // "..\int\audio.c", 321
+            buf = static_cast<unsigned char*>(mymalloc(1024, __FILE__, __LINE__)); // "..\int\audio.c", 321
             v10 = audioFile->position - pos;
             while (v10 > 1024) {
                 v10 -= 1024;
@@ -223,7 +223,7 @@ long audioSeek(int fileHandle, long offset, int origin)
 
         return audioFile->position;
     } else {
-        return db_fseek(audioFile->stream, offset, origin);
+        return audioFile->stream->fseek(offset, origin);
     }
 }
 
@@ -252,7 +252,7 @@ int audioWrite(int handle, const void* buf, unsigned int size)
 int initAudio(AudioQueryCompressedFunc* isCompressedProc)
 {
     queryCompressedFunc = isCompressedProc;
-    audio = NULL;
+    audio = nullptr;
     numAudio = 0;
 
     return soundSetDefaultFileIO(audioOpen, audioCloseFile, audioRead, audioWrite, audioSeek, audioTell, audioFileSize);
@@ -261,12 +261,12 @@ int initAudio(AudioQueryCompressedFunc* isCompressedProc)
 // 0x419E58
 void audioClose()
 {
-    if (audio != NULL) {
+    if (audio != nullptr) {
         myfree(audio, __FILE__, __LINE__); // "..\int\audio.c", 406
     }
 
     numAudio = 0;
-    audio = NULL;
+    audio = nullptr;
 }
 
 } // namespace fallout

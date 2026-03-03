@@ -1,11 +1,11 @@
-#ifndef FALLOUT_INT_INTLIB_H_
-#define FALLOUT_INT_INTLIB_H_
+#pragma once
+
 
 #include "int/intrpret.h"
 
 namespace fallout {
 
-typedef void(IntLibProgramDeleteCallback)(Program*);
+using IntLibProgramDeleteCallback = void(Program*);
 
 void interpretFadePalette(unsigned char* oldPalette, unsigned char* newPalette, int a3, float duration);
 int intlibGetFadeIn();
@@ -25,5 +25,3 @@ void interpretRegisterProgramDeleteCallback(IntLibProgramDeleteCallback* callbac
 void removeProgramReferences(Program* program);
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_INTLIB_H_ */

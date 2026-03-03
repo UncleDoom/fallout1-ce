@@ -1,197 +1,316 @@
-#ifndef FALLOUT_GAME_OBJECT_TYPES_H_
-#define FALLOUT_GAME_OBJECT_TYPES_H_
+#pragma once
+
+#include "game/enum_utils.h"
 
 namespace fallout {
 
-// Rotation
-typedef enum Rotation {
-    ROTATION_NE, // 0
-    ROTATION_E, // 1
-    ROTATION_SE, // 2
-    ROTATION_SW, // 3
-    ROTATION_W, // 4
-    ROTATION_NW, // 5
-    ROTATION_COUNT,
-} Rotation;
+class DB_FILE;
+struct Rect;
 
-enum {
-    OBJ_TYPE_ITEM,
-    OBJ_TYPE_CRITTER,
-    OBJ_TYPE_SCENERY,
-    OBJ_TYPE_WALL,
-    OBJ_TYPE_TILE,
-    OBJ_TYPE_MISC,
-    OBJ_TYPE_INTERFACE,
-    OBJ_TYPE_INVENTORY,
-    OBJ_TYPE_HEAD,
-    OBJ_TYPE_BACKGROUND,
-    OBJ_TYPE_SKILLDEX,
-    OBJ_TYPE_COUNT,
+// Rotation directions on the hex grid.
+enum class Rotation : int {
+    NE = 0, // 0
+    E = 1, // 1
+    SE = 2, // 2
+    SW = 3, // 3
+    W = 4, // 4
+    NW = 5, // 5
+    Count = 6,
 };
 
-#define FID_TYPE(value) ((value) & 0xF000000) >> 24
-#define PID_TYPE(value) (value) >> 24
-#define SID_TYPE(value) (value) >> 24
+// Legacy constants for backward compatibility during migration.
+// Prefer Rotation::NE etc. in new code.
+inline constexpr int ROTATION_NE = static_cast<int>(Rotation::NE);
+inline constexpr int ROTATION_E = static_cast<int>(Rotation::E);
+inline constexpr int ROTATION_SE = static_cast<int>(Rotation::SE);
+inline constexpr int ROTATION_SW = static_cast<int>(Rotation::SW);
+inline constexpr int ROTATION_W = static_cast<int>(Rotation::W);
+inline constexpr int ROTATION_NW = static_cast<int>(Rotation::NW);
+inline constexpr int ROTATION_COUNT = static_cast<int>(Rotation::Count);
 
-typedef enum OutlineType {
-    OUTLINE_TYPE_HOSTILE = 1,
-    OUTLINE_TYPE_2 = 2,
-    OUTLINE_TYPE_4 = 4,
-    OUTLINE_TYPE_FRIENDLY = 8,
-    OUTLINE_TYPE_ITEM = 16,
-} OutlineType;
+enum class ObjectType : int {
+    Item = 0,
+    Critter = 1,
+    Scenery = 2,
+    Wall = 3,
+    Tile = 4,
+    Misc = 5,
+    Interface = 6,
+    Inventory = 7,
+    Head = 8,
+    Background = 9,
+    Skilldex = 10,
+    Count = 11,
+};
 
-typedef enum ObjectFlags {
-    OBJECT_HIDDEN = 0x01,
+// Legacy constants for backward compatibility during migration.
+inline constexpr int OBJ_TYPE_ITEM = static_cast<int>(ObjectType::Item);
+inline constexpr int OBJ_TYPE_CRITTER = static_cast<int>(ObjectType::Critter);
+inline constexpr int OBJ_TYPE_SCENERY = static_cast<int>(ObjectType::Scenery);
+inline constexpr int OBJ_TYPE_WALL = static_cast<int>(ObjectType::Wall);
+inline constexpr int OBJ_TYPE_TILE = static_cast<int>(ObjectType::Tile);
+inline constexpr int OBJ_TYPE_MISC = static_cast<int>(ObjectType::Misc);
+inline constexpr int OBJ_TYPE_INTERFACE = static_cast<int>(ObjectType::Interface);
+inline constexpr int OBJ_TYPE_INVENTORY = static_cast<int>(ObjectType::Inventory);
+inline constexpr int OBJ_TYPE_HEAD = static_cast<int>(ObjectType::Head);
+inline constexpr int OBJ_TYPE_BACKGROUND = static_cast<int>(ObjectType::Background);
+inline constexpr int OBJ_TYPE_SKILLDEX = static_cast<int>(ObjectType::Skilldex);
+inline constexpr int OBJ_TYPE_COUNT = static_cast<int>(ObjectType::Count);
+
+constexpr int FID_TYPE(int value) { return ((value) & 0xF000000) >> 24; }
+constexpr int PID_TYPE(int value) { return (value) >> 24; }
+constexpr int SID_TYPE(int value) { return (value) >> 24; }
+
+enum class OutlineType : unsigned int {
+    None = 0,
+    Hostile = 1,
+    Unknown2 = 2,
+    Unknown4 = 4,
+    Friendly = 8,
+    Item = 16,
+};
+DEFINE_ENUM_FLAG_OPERATORS(OutlineType)
+
+// Legacy constants for backward compatibility.
+inline constexpr unsigned int OUTLINE_TYPE_HOSTILE = 1;
+inline constexpr unsigned int OUTLINE_TYPE_2 = 2;
+inline constexpr unsigned int OUTLINE_TYPE_4 = 4;
+inline constexpr unsigned int OUTLINE_TYPE_FRIENDLY = 8;
+inline constexpr unsigned int OUTLINE_TYPE_ITEM = 16;
+
+enum class ObjectFlags : unsigned int {
+    None = 0x00,
+    Hidden = 0x01,
 
     // Specifies that the object should not be saved to the savegame file.
-    //
-    // This flag is used in these situations:
-    //  - To prevent saving of system objects like dude (which has separate
-    // saving routine), egg, mouse cursors, etc.
-    //  - To prevent saving of temporary objects (projectiles, explosion
-    // effects, etc.).
-    //  - To prevent saving of objects which cannot be removed for some reason,
-    // like objects trying to delete themselves from scripting engine (used
-    // together with `OBJECT_HIDDEN` to prevent affecting game world).
-    OBJECT_NO_SAVE = 0x04,
-    OBJECT_FLAT = 0x08,
-    OBJECT_NO_BLOCK = 0x10,
-    OBJECT_LIGHTING = 0x20,
+    NoSave = 0x04,
+    Flat = 0x08,
+    NoBlock = 0x10,
+    Lighting = 0x20,
 
     // Specifies that the object should not be removed (freed) from the game
     // world for whatever reason.
-    //
-    // This flag is used to prevent freeing of system objects like dude, egg,
-    // mouse cursors, etc.
-    OBJECT_NO_REMOVE = 0x400,
-    OBJECT_MULTIHEX = 0x800,
-    OBJECT_NO_HIGHLIGHT = 0x1000,
-    OBJECT_USED = 0x2000,
-    OBJECT_TRANS_RED = 0x4000,
-    OBJECT_TRANS_NONE = 0x8000,
-    OBJECT_TRANS_WALL = 0x10000,
-    OBJECT_TRANS_GLASS = 0x20000,
-    OBJECT_TRANS_STEAM = 0x40000,
-    OBJECT_TRANS_ENERGY = 0x80000,
-    OBJECT_IN_LEFT_HAND = 0x1000000,
-    OBJECT_IN_RIGHT_HAND = 0x2000000,
-    OBJECT_WORN = 0x4000000,
-    OBJECT_WALL_TRANS_END = 0x10000000,
-    OBJECT_LIGHT_THRU = 0x20000000,
-    OBJECT_SEEN = 0x40000000,
-    OBJECT_SHOOT_THRU = 0x80000000,
+    NoRemove = 0x400,
+    MultiHex = 0x800,
+    NoHighlight = 0x1000,
+    Used = 0x2000,
+    TransRed = 0x4000,
+    TransNone = 0x8000,
+    TransWall = 0x10000,
+    TransGlass = 0x20000,
+    TransSteam = 0x40000,
+    TransEnergy = 0x80000,
+    InLeftHand = 0x1000000,
+    InRightHand = 0x2000000,
+    Worn = 0x4000000,
+    WallTransEnd = 0x10000000,
+    LightThru = 0x20000000,
+    Seen = 0x40000000,
+    ShootThru = 0x80000000,
 
-    OBJECT_IN_ANY_HAND = OBJECT_IN_LEFT_HAND | OBJECT_IN_RIGHT_HAND,
-    OBJECT_EQUIPPED = OBJECT_IN_ANY_HAND | OBJECT_WORN,
-    OBJECT_FLAG_0xFC000 = OBJECT_TRANS_ENERGY | OBJECT_TRANS_STEAM | OBJECT_TRANS_GLASS | OBJECT_TRANS_WALL | OBJECT_TRANS_NONE | OBJECT_TRANS_RED,
-    OBJECT_OPEN_DOOR = OBJECT_SHOOT_THRU | OBJECT_LIGHT_THRU | OBJECT_NO_BLOCK,
-} ObjectFlags;
+    InAnyHand = InLeftHand | InRightHand,
+    Equipped = InAnyHand | Worn,
+    TransMask = TransEnergy | TransSteam | TransGlass | TransWall | TransNone | TransRed,
+    OpenDoor = ShootThru | LightThru | NoBlock,
+};
+DEFINE_ENUM_FLAG_OPERATORS(ObjectFlags)
 
-typedef enum CritterFlags {
-    CRITTER_BARTER = 0x02,
-    CRITTER_NO_STEAL = 0x20,
-    CRITTER_NO_DROP = 0x40,
-    CRITTER_NO_LIMBS = 0x80,
-    CRITTER_NO_AGE = 0x100,
-    CRITTER_NO_HEAL = 0x200,
-    CRITTER_INVULNERABLE = 0x400,
-    CRITTER_FLAT = 0x800,
-    CRITTER_SPECIAL_DEATH = 0x1000,
-    CRITTER_LONG_LIMBS = 0x2000,
-    CRITTER_NO_KNOCKBACK = 0x4000,
-} CritterFlags;
+// Legacy constants for backward compatibility.
+inline constexpr unsigned int OBJECT_HIDDEN = 0x01;
+inline constexpr unsigned int OBJECT_NO_SAVE = 0x04;
+inline constexpr unsigned int OBJECT_FLAT = 0x08;
+inline constexpr unsigned int OBJECT_NO_BLOCK = 0x10;
+inline constexpr unsigned int OBJECT_LIGHTING = 0x20;
+inline constexpr unsigned int OBJECT_NO_REMOVE = 0x400;
+inline constexpr unsigned int OBJECT_MULTIHEX = 0x800;
+inline constexpr unsigned int OBJECT_NO_HIGHLIGHT = 0x1000;
+inline constexpr unsigned int OBJECT_USED = 0x2000;
+inline constexpr unsigned int OBJECT_TRANS_RED = 0x4000;
+inline constexpr unsigned int OBJECT_TRANS_NONE = 0x8000;
+inline constexpr unsigned int OBJECT_TRANS_WALL = 0x10000;
+inline constexpr unsigned int OBJECT_TRANS_GLASS = 0x20000;
+inline constexpr unsigned int OBJECT_TRANS_STEAM = 0x40000;
+inline constexpr unsigned int OBJECT_TRANS_ENERGY = 0x80000;
+inline constexpr unsigned int OBJECT_IN_LEFT_HAND = 0x1000000;
+inline constexpr unsigned int OBJECT_IN_RIGHT_HAND = 0x2000000;
+inline constexpr unsigned int OBJECT_WORN = 0x4000000;
+inline constexpr unsigned int OBJECT_WALL_TRANS_END = 0x10000000;
+inline constexpr unsigned int OBJECT_LIGHT_THRU = 0x20000000;
+inline constexpr unsigned int OBJECT_SEEN = 0x40000000;
+inline constexpr unsigned int OBJECT_SHOOT_THRU = 0x80000000;
+inline constexpr unsigned int OBJECT_IN_ANY_HAND = OBJECT_IN_LEFT_HAND | OBJECT_IN_RIGHT_HAND;
+inline constexpr unsigned int OBJECT_EQUIPPED = OBJECT_IN_ANY_HAND | OBJECT_WORN;
+inline constexpr unsigned int OBJECT_FLAG_0xFC000 = OBJECT_TRANS_ENERGY | OBJECT_TRANS_STEAM | OBJECT_TRANS_GLASS | OBJECT_TRANS_WALL | OBJECT_TRANS_NONE | OBJECT_TRANS_RED;
+inline constexpr unsigned int OBJECT_OPEN_DOOR = OBJECT_SHOOT_THRU | OBJECT_LIGHT_THRU | OBJECT_NO_BLOCK;
 
-#define OUTLINE_TYPE_MASK 0xFFFFFF
-#define OUTLINE_PALETTED 0x40000000
-#define OUTLINE_DISABLED 0x80000000
+
+enum class CritterFlags : unsigned int {
+    None = 0x00,
+    Barter = 0x02,
+    NoSteal = 0x20,
+    NoDrop = 0x40,
+    NoLimbs = 0x80,
+    NoAge = 0x100,
+    NoHeal = 0x200,
+    Invulnerable = 0x400,
+    Flat = 0x800,
+    SpecialDeath = 0x1000,
+    LongLimbs = 0x2000,
+    NoKnockback = 0x4000,
+};
+DEFINE_ENUM_FLAG_OPERATORS(CritterFlags)
+
+// Legacy constants for backward compatibility.
+inline constexpr unsigned int CRITTER_BARTER = 0x02;
+inline constexpr unsigned int CRITTER_NO_STEAL = 0x20;
+inline constexpr unsigned int CRITTER_NO_DROP = 0x40;
+inline constexpr unsigned int CRITTER_NO_LIMBS = 0x80;
+inline constexpr unsigned int CRITTER_NO_AGE = 0x100;
+inline constexpr unsigned int CRITTER_NO_HEAL = 0x200;
+inline constexpr unsigned int CRITTER_INVULNERABLE = 0x400;
+inline constexpr unsigned int CRITTER_FLAT = 0x800;
+inline constexpr unsigned int CRITTER_SPECIAL_DEATH = 0x1000;
+inline constexpr unsigned int CRITTER_LONG_LIMBS = 0x2000;
+inline constexpr unsigned int CRITTER_NO_KNOCKBACK = 0x4000;
+
+
+constexpr int OUTLINE_TYPE_MASK = 0xFFFFFF;
+constexpr int OUTLINE_PALETTED = 0x40000000;
+constexpr unsigned int OUTLINE_DISABLED = 0x80000000;
 
 // These two values are the same but stored in different fields.
-#define CONTAINER_FLAG_JAMMED 0x04000000
-#define DOOR_FLAG_JAMMGED 0x04000000
+constexpr int CONTAINER_FLAG_JAMMED = 0x04000000;
+constexpr int DOOR_FLAG_JAMMGED = 0x04000000;
 
-#define CONTAINER_FLAG_LOCKED 0x02000000
-#define DOOR_FLAG_LOCKED 0x02000000
+constexpr int CONTAINER_FLAG_LOCKED = 0x02000000;
+constexpr int DOOR_FLAG_LOCKED = 0x02000000;
 
-typedef enum CritterManeuver {
-    CRITTER_MANEUVER_NONE = 0,
-    CRITTER_MANEUVER_ENGAGING = 0x01,
-    CRITTER_MANEUVER_DISENGAGING = 0x02,
-    CRITTER_MANUEVER_FLEEING = 0x04,
-} CritterManeuver;
+enum class CritterManeuver : unsigned int {
+    None = 0x00,
+    Engaging = 0x01,
+    Disengaging = 0x02,
+    Fleeing = 0x04,
+};
+DEFINE_ENUM_FLAG_OPERATORS(CritterManeuver)
 
-typedef enum Dam {
-    DAM_KNOCKED_OUT = 0x01,
-    DAM_KNOCKED_DOWN = 0x02,
-    DAM_CRIP_LEG_LEFT = 0x04,
-    DAM_CRIP_LEG_RIGHT = 0x08,
-    DAM_CRIP_ARM_LEFT = 0x10,
-    DAM_CRIP_ARM_RIGHT = 0x20,
-    DAM_BLIND = 0x40,
-    DAM_DEAD = 0x80,
-    DAM_HIT = 0x100,
-    DAM_CRITICAL = 0x200,
-    DAM_ON_FIRE = 0x400,
-    DAM_BYPASS = 0x800,
-    DAM_EXPLODE = 0x1000,
-    DAM_DESTROY = 0x2000,
-    DAM_DROP = 0x4000,
-    DAM_LOSE_TURN = 0x8000,
-    DAM_HIT_SELF = 0x10000,
-    DAM_LOSE_AMMO = 0x20000,
-    DAM_DUD = 0x40000,
-    DAM_HURT_SELF = 0x80000,
-    DAM_RANDOM_HIT = 0x100000,
-    DAM_CRIP_RANDOM = 0x200000,
-    DAM_BACKWASH = 0x400000,
-    DAM_PERFORM_REVERSE = 0x800000,
-    DAM_CRIP_LEG_ANY = DAM_CRIP_LEG_LEFT | DAM_CRIP_LEG_RIGHT,
-    DAM_CRIP_ARM_ANY = DAM_CRIP_ARM_LEFT | DAM_CRIP_ARM_RIGHT,
-    DAM_CRIP = DAM_CRIP_LEG_ANY | DAM_CRIP_ARM_ANY | DAM_BLIND,
-} Dam;
+// Legacy constants for backward compatibility.
+inline constexpr unsigned int CRITTER_MANEUVER_NONE = 0;
+inline constexpr unsigned int CRITTER_MANEUVER_ENGAGING = 0x01;
+inline constexpr unsigned int CRITTER_MANEUVER_DISENGAGING = 0x02;
+inline constexpr unsigned int CRITTER_MANUEVER_FLEEING = 0x04;
 
-#define OBJ_LOCKED 0x02000000
-#define OBJ_JAMMED 0x04000000
 
-typedef struct Object Object;
+enum class DamageFlags : unsigned int {
+    None = 0x00,
+    KnockedOut = 0x01,
+    KnockedDown = 0x02,
+    CripLegLeft = 0x04,
+    CripLegRight = 0x08,
+    CripArmLeft = 0x10,
+    CripArmRight = 0x20,
+    Blind = 0x40,
+    Dead = 0x80,
+    Hit = 0x100,
+    Critical = 0x200,
+    OnFire = 0x400,
+    Bypass = 0x800,
+    Explode = 0x1000,
+    Destroy = 0x2000,
+    Drop = 0x4000,
+    LoseTurn = 0x8000,
+    HitSelf = 0x10000,
+    LoseAmmo = 0x20000,
+    Dud = 0x40000,
+    HurtSelf = 0x80000,
+    RandomHit = 0x100000,
+    CripRandom = 0x200000,
+    Backwash = 0x400000,
+    PerformReverse = 0x800000,
+    CripLegAny = CripLegLeft | CripLegRight,
+    CripArmAny = CripArmLeft | CripArmRight,
+    Crip = CripLegAny | CripArmAny | Blind,
+};
+DEFINE_ENUM_FLAG_OPERATORS(DamageFlags)
 
-typedef struct InventoryItem {
+// Legacy constants for backward compatibility (Dam -> DamageFlags).
+using Dam = DamageFlags;
+inline constexpr unsigned int DAM_KNOCKED_OUT = 0x01;
+inline constexpr unsigned int DAM_KNOCKED_DOWN = 0x02;
+inline constexpr unsigned int DAM_CRIP_LEG_LEFT = 0x04;
+inline constexpr unsigned int DAM_CRIP_LEG_RIGHT = 0x08;
+inline constexpr unsigned int DAM_CRIP_ARM_LEFT = 0x10;
+inline constexpr unsigned int DAM_CRIP_ARM_RIGHT = 0x20;
+inline constexpr unsigned int DAM_BLIND = 0x40;
+inline constexpr unsigned int DAM_DEAD = 0x80;
+inline constexpr unsigned int DAM_HIT = 0x100;
+inline constexpr unsigned int DAM_CRITICAL = 0x200;
+inline constexpr unsigned int DAM_ON_FIRE = 0x400;
+inline constexpr unsigned int DAM_BYPASS = 0x800;
+inline constexpr unsigned int DAM_EXPLODE = 0x1000;
+inline constexpr unsigned int DAM_DESTROY = 0x2000;
+inline constexpr unsigned int DAM_DROP = 0x4000;
+inline constexpr unsigned int DAM_LOSE_TURN = 0x8000;
+inline constexpr unsigned int DAM_HIT_SELF = 0x10000;
+inline constexpr unsigned int DAM_LOSE_AMMO = 0x20000;
+inline constexpr unsigned int DAM_DUD = 0x40000;
+inline constexpr unsigned int DAM_HURT_SELF = 0x80000;
+inline constexpr unsigned int DAM_RANDOM_HIT = 0x100000;
+inline constexpr unsigned int DAM_CRIP_RANDOM = 0x200000;
+inline constexpr unsigned int DAM_BACKWASH = 0x400000;
+inline constexpr unsigned int DAM_PERFORM_REVERSE = 0x800000;
+inline constexpr unsigned int DAM_CRIP_LEG_ANY = DAM_CRIP_LEG_LEFT | DAM_CRIP_LEG_RIGHT;
+inline constexpr unsigned int DAM_CRIP_ARM_ANY = DAM_CRIP_ARM_LEFT | DAM_CRIP_ARM_RIGHT;
+inline constexpr unsigned int DAM_CRIP = DAM_CRIP_LEG_ANY | DAM_CRIP_ARM_ANY | DAM_BLIND;
+
+
+constexpr int OBJ_LOCKED = 0x02000000;
+constexpr int OBJ_JAMMED = 0x04000000;
+
+struct Object;
+
+struct InventoryItem {
     Object* item;
     int quantity;
-} InventoryItem;
+};
 
 // Represents inventory of the object.
-typedef struct Inventory {
+class Inventory {
+public:
     int length;
     int capacity;
     InventoryItem* items;
-} Inventory;
 
-typedef struct WeaponObjectData {
+    void compact(int inventoryItemIndex);
+    int inven_free();
+    void display_target(int first_item_index, int selected_index, int inventoryWindowType);
+};
+
+struct WeaponObjectData {
     int ammoQuantity; // obj_pudg.pudweapon.cur_ammo_quantity
     int ammoTypePid; // obj_pudg.pudweapon.cur_ammo_type_pid
-} WeaponObjectData;
+};
 
-typedef struct AmmoItemData {
+struct AmmoItemData {
     int quantity; // obj_pudg.pudammo.cur_ammo_quantity
-} AmmoItemData;
+};
 
-typedef struct MiscItemData {
+struct MiscItemData {
     int charges; // obj_pudg.pudmisc_item.curr_charges
-} MiscItemData;
+};
 
-typedef struct KeyItemData {
+struct KeyItemData {
     int keyCode; // obj_pudg.pudkey_item.cur_key_code
-} KeyItemData;
+};
 
-typedef union ItemObjectData {
+union ItemObjectData {
     WeaponObjectData weapon;
     AmmoItemData ammo;
     MiscItemData misc;
     KeyItemData key;
-} ItemObjectData;
+};
 
-typedef struct CritterCombatData {
+class CritterCombatData {
+public:
     int maneuver; // obj_pud.combat_data.maneuver
     int ap; // obj_pud.combat_data.curr_mp
     int results; // obj_pud.combat_data.results
@@ -202,49 +321,52 @@ typedef struct CritterCombatData {
         Object* whoHitMe; // obj_pud.combat_data.who_hit_me
         int whoHitMeCid;
     };
-} CritterCombatData;
 
-typedef struct CritterObjectData {
+    int readCombatData(DB_FILE* stream);
+    int writeCombatData(DB_FILE* stream);
+};
+
+struct CritterObjectData {
     int field_0; // obj_pud.reaction_to_pc
     CritterCombatData combat; // obj_pud.combat_data
     int hp; // obj_pud.curr_hp
     int radiation; // obj_pud.curr_rad
     int poison; // obj_pud.curr_poison
-} CritterObjectData;
+};
 
-typedef struct DoorSceneryData {
+struct DoorSceneryData {
     int openFlags; // obj_pudg.pudportal.cur_open_flags
-} DoorSceneryData;
+};
 
-typedef struct StairsSceneryData {
+struct StairsSceneryData {
     int destinationMap; // obj_pudg.pudstairs.destMap
     int destinationBuiltTile; // obj_pudg.pudstairs.destBuiltTile
-} StairsSceneryData;
+};
 
-typedef struct ElevatorSceneryData {
+struct ElevatorSceneryData {
     int type;
     int level;
-} ElevatorSceneryData;
+};
 
-typedef struct LadderSceneryData {
+struct LadderSceneryData {
     int destinationBuiltTile;
-} LadderSceneryData;
+};
 
-typedef union SceneryObjectData {
+union SceneryObjectData {
     DoorSceneryData door;
     StairsSceneryData stairs;
     ElevatorSceneryData elevator;
     LadderSceneryData ladder;
-} SceneryObjectData;
+};
 
-typedef struct MiscObjectData {
+struct MiscObjectData {
     int map;
     int tile;
     int elevation;
     int rotation;
-} MiscObjectData;
+};
 
-typedef struct ObjectData {
+struct ObjectData {
     Inventory inventory;
     union {
         CritterObjectData critter;
@@ -257,9 +379,9 @@ typedef struct ObjectData {
             };
         };
     };
-} ObjectData;
+};
 
-typedef struct Object {
+struct Object {
     int id; // obj_id
     int tile; // obj_tile_num
     int x; // obj_x
@@ -283,20 +405,25 @@ typedef struct Object {
     int sid; // obj_sid
     Object* owner;
     int field_80;
-} Object;
+};
 
-typedef struct ObjectListNode {
+class ObjectListNode {
+public:
     Object* obj;
-    struct ObjectListNode* next;
-} ObjectListNode;
+    ObjectListNode* next;
 
-#define BUILT_TILE_TILE_MASK 0x3FFFFFF
-#define BUILT_TILE_ELEVATION_MASK 0xE0000000
-#define BUILT_TILE_ELEVATION_SHIFT 29
-#define BUILT_TILE_ROTATION_MASK 0x1C000000
-#define BUILT_TILE_ROTATION_SHIFT 26
+    void insert();
+    int remove(ObjectListNode* prev);
+    int connect_to_tile(int tile, int elevation, Rect* rect);
+};
 
-static inline int builtTileGetTile(int builtTile)
+constexpr int BUILT_TILE_TILE_MASK = 0x3FFFFFF;
+constexpr unsigned int BUILT_TILE_ELEVATION_MASK = 0xE0000000;
+constexpr int BUILT_TILE_ELEVATION_SHIFT = 29;
+constexpr int BUILT_TILE_ROTATION_MASK = 0x1C000000;
+constexpr int BUILT_TILE_ROTATION_SHIFT = 26;
+
+constexpr int builtTileGetTile(int builtTile)
 {
     return builtTile & BUILT_TILE_TILE_MASK;
 }
@@ -317,5 +444,3 @@ static inline int builtTileCreate(int tile, int elevation)
 }
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_OBJECT_TYPES_H_ */

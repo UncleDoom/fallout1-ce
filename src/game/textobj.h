@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_TEXTOBJ_H_
-#define FALLOUT_GAME_TEXTOBJ_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "plib/gnw/rect.h"
@@ -22,5 +22,3 @@ int text_object_count();
 void text_object_remove(Object* object);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_TEXTOBJ_H_ */

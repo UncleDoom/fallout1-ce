@@ -1,8 +1,8 @@
 #include "game/pipboy.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <string.h>
+#include <cctype>
+#include <cstdio>
+#include <cstring>
 
 #include "game/automap.h"
 #include "game/bmpdlog.h"
@@ -37,44 +37,44 @@
 
 namespace fallout {
 
-#define PIPBOY_RAND_MAX 32767
+static constexpr int PIPBOY_RAND_MAX = 32767;
 
-#define PIPBOY_WINDOW_WIDTH 640
-#define PIPBOY_WINDOW_HEIGHT 480
+static constexpr int PIPBOY_WINDOW_WIDTH = 640;
+static constexpr int PIPBOY_WINDOW_HEIGHT = 480;
 
-#define PIPBOY_WINDOW_DAY_X 20
-#define PIPBOY_WINDOW_DAY_Y 17
+static constexpr int PIPBOY_WINDOW_DAY_X = 20;
+static constexpr int PIPBOY_WINDOW_DAY_Y = 17;
 
-#define PIPBOY_WINDOW_MONTH_X 46
-#define PIPBOY_WINDOW_MONTH_Y 18
+static constexpr int PIPBOY_WINDOW_MONTH_X = 46;
+static constexpr int PIPBOY_WINDOW_MONTH_Y = 18;
 
-#define PIPBOY_WINDOW_YEAR_X 83
-#define PIPBOY_WINDOW_YEAR_Y 17
+static constexpr int PIPBOY_WINDOW_YEAR_X = 83;
+static constexpr int PIPBOY_WINDOW_YEAR_Y = 17;
 
-#define PIPBOY_WINDOW_TIME_X 155
-#define PIPBOY_WINDOW_TIME_Y 17
+static constexpr int PIPBOY_WINDOW_TIME_X = 155;
+static constexpr int PIPBOY_WINDOW_TIME_Y = 17;
 
-#define PIPBOY_WINDOW_NOTE_X 32
-#define PIPBOY_WINDOW_NOTE_Y 83
+static constexpr int PIPBOY_WINDOW_NOTE_X = 32;
+static constexpr int PIPBOY_WINDOW_NOTE_Y = 83;
 
-#define PIPBOY_HOLODISK_LINES_MAX 35
+static constexpr int PIPBOY_HOLODISK_LINES_MAX = 35;
 
-#define PIPBOY_WINDOW_CONTENT_VIEW_X 254
-#define PIPBOY_WINDOW_CONTENT_VIEW_Y 46
-#define PIPBOY_WINDOW_CONTENT_VIEW_WIDTH 374
-#define PIPBOY_WINDOW_CONTENT_VIEW_HEIGHT 410
+static constexpr int PIPBOY_WINDOW_CONTENT_VIEW_X = 254;
+static constexpr int PIPBOY_WINDOW_CONTENT_VIEW_Y = 46;
+static constexpr int PIPBOY_WINDOW_CONTENT_VIEW_WIDTH = 374;
+static constexpr int PIPBOY_WINDOW_CONTENT_VIEW_HEIGHT = 410;
 
-#define PIPBOY_IDLE_TIMEOUT 120000
+static constexpr int PIPBOY_IDLE_TIMEOUT = 120000;
 
-#define PIPBOY_BOMB_COUNT 16
+static constexpr int PIPBOY_BOMB_COUNT = 16;
 
-#define BACK_BUTTON_INDEX 20
+static constexpr int BACK_BUTTON_INDEX = 20;
 
-#define QUEST_LOCATION_COUNT 12
-#define QUEST_PER_LOCATION_COUNT 9
-#define HOLODISK_COUNT 18
+static constexpr int QUEST_LOCATION_COUNT = 12;
+static constexpr int QUEST_PER_LOCATION_COUNT = 9;
+static constexpr int HOLODISK_COUNT = 18;
 
-typedef enum Holiday {
+enum Holiday {
     HOLIDAY_NEW_YEAR,
     HOLIDAY_VALENTINES_DAY,
     HOLIDAY_FOOLS_DAY,
@@ -84,10 +84,10 @@ typedef enum Holiday {
     HOLIDAY_THANKSGIVING_DAY,
     HOLIDAY_CRISTMAS,
     HOLIDAY_COUNT,
-} Holiday;
+};
 
 // Options used to render Pipboy texts.
-typedef enum PipboyTextOptions {
+enum PipboyTextOptions {
     // Specifies that text should be rendered in the center of the Pipboy
     // monitor.
     //
@@ -119,9 +119,9 @@ typedef enum PipboyTextOptions {
 
     // Specifies that text should be rendered with no (minimal) indentation.
     PIPBOY_TEXT_NO_INDENT = 0x80,
-} PipboyTextOptions;
+};
 
-typedef enum PipboyRestDuration {
+enum PipboyRestDuration {
     PIPBOY_REST_DURATION_TEN_MINUTES,
     PIPBOY_REST_DURATION_THIRTY_MINUTES,
     PIPBOY_REST_DURATION_ONE_HOUR,
@@ -138,9 +138,9 @@ typedef enum PipboyRestDuration {
     PIPBOY_REST_DURATION_UNTIL_PARTY_HEALED,
     PIPBOY_REST_DURATION_COUNT,
     PIPBOY_REST_DURATION_COUNT_WITHOUT_PARTY = PIPBOY_REST_DURATION_COUNT - 1,
-} PipboyRestDuration;
+};
 
-typedef enum PipboyFrm {
+enum PipboyFrm {
     PIPBOY_FRM_LITTLE_RED_BUTTON_UP,
     PIPBOY_FRM_LITTLE_RED_BUTTON_DOWN,
     PIPBOY_FRM_NUMBERS,
@@ -153,27 +153,27 @@ typedef enum PipboyFrm {
     PIPBOY_FRM_LOGO,
     PIPBOY_FRM_BOMB,
     PIPBOY_FRM_COUNT,
-} PipboyFrm;
+};
 
-typedef struct HolidayDescription {
+struct HolidayDescription {
     short month;
     short day;
     short textId;
-} HolidayDescription;
+};
 
-typedef struct PipboySortableEntry {
+struct PipboySortableEntry {
     char* name;
     short value;
     short field_6;
-} PipboySortableEntry;
+};
 
-typedef struct PipboyBomb {
+struct PipboyBomb {
     int x;
     int y;
     float field_8;
     float field_C;
     unsigned char field_10;
-} PipboyBomb;
+};
 
 static int StartPipboy(int intent);
 static void EndPipboy();
@@ -621,14 +621,14 @@ static int StartPipboy(int intent)
     hot_line_start = 0;
     hot_back_line = 0;
 
-    if (!message_init(&pipboy_message_file)) {
+    if (!pipboy_message_file.init()) {
         return -1;
     }
 
     char path[COMPAT_MAX_PATH];
     snprintf(path, sizeof(path), "%s%s", msg_path, "pipboy.msg");
 
-    if (!(message_load(&pipboy_message_file, path))) {
+    if (!(pipboy_message_file.load(path))) {
         return -1;
     }
 
@@ -636,7 +636,7 @@ static int StartPipboy(int intent)
     for (index = 0; index < PIPBOY_FRM_COUNT; index++) {
         int fid = art_id(OBJ_TYPE_INTERFACE, pipgrphs[index], 0, 0, 0);
         pipbmp[index] = art_lock(fid, &(grphkey[index]), &(ginfo[index].width), &(ginfo[index].height));
-        if (pipbmp[index] == NULL) {
+        if (pipbmp[index] == nullptr) {
             break;
         }
     }
@@ -680,7 +680,7 @@ static int StartPipboy(int intent)
         504,
         pipbmp[PIPBOY_FRM_ALARM_UP],
         pipbmp[PIPBOY_FRM_ALARM_DOWN],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (alarmButton != -1) {
         win_register_button_sound_func(alarmButton, gsound_med_butt_press, gsound_med_butt_release);
@@ -701,7 +701,7 @@ static int StartPipboy(int intent)
                 eventCode,
                 pipbmp[PIPBOY_FRM_LITTLE_RED_BUTTON_UP],
                 pipbmp[PIPBOY_FRM_LITTLE_RED_BUTTON_DOWN],
-                NULL,
+                nullptr,
                 BUTTON_FLAG_TRANSPARENT);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -738,7 +738,7 @@ static int StartPipboy(int intent)
 
             if (holiday != HOLIDAY_COUNT) {
                 const HolidayDescription* holidayDescription = &(SpclDate[holiday]);
-                const char* holidayName = getmsg(&pipboy_message_file, &pipmesg, holidayDescription->textId);
+                const char* holidayName = pipboy_message_file.getMessage(&pipmesg, holidayDescription->textId);
                 char holidayNameCopy[256];
                 strcpy(holidayNameCopy, holidayName);
 
@@ -754,8 +754,8 @@ static int StartPipboy(int intent)
 
             gsound_play_sfx_file("iisxxxx1");
 
-            const char* text = getmsg(&pipboy_message_file, &pipmesg, 215);
-            dialog_out(text, NULL, 0, 192, 135, colorTable[32328], 0, colorTable[32328], DIALOG_BOX_LARGE);
+            const char* text = pipboy_message_file.getMessage(&pipmesg, 215);
+            dialog_out(text, nullptr, 0, 192, 135, colorTable[32328], 0, colorTable[32328], DIALOG_BOX_LARGE);
 
             intent = PIPBOY_OPEN_INTENT_UNSPECIFIED;
         }
@@ -783,7 +783,7 @@ static int StartPipboy(int intent)
 
         if (holiday != HOLIDAY_COUNT) {
             const HolidayDescription* holidayDescription = &(SpclDate[holiday]);
-            const char* holidayName = getmsg(&pipboy_message_file, &pipmesg, holidayDescription->textId);
+            const char* holidayName = pipboy_message_file.getMessage(&pipmesg, holidayDescription->textId);
             char holidayNameCopy[256];
             strcpy(holidayNameCopy, holidayName);
 
@@ -808,7 +808,7 @@ static int StartPipboy(int intent)
 static void EndPipboy()
 {
     bool showScriptMessages = false;
-    configGetBool(&game_config, GAME_CONFIG_DEBUG_KEY, GAME_CONFIG_SHOW_SCRIPT_MESSAGES_KEY, &showScriptMessages);
+    game_config.getBool(GAME_CONFIG_DEBUG_KEY, GAME_CONFIG_SHOW_SCRIPT_MESSAGES_KEY, &showScriptMessages);
 
     if (showScriptMessages) {
         debug_printf("\nScript <Map Update>");
@@ -818,7 +818,7 @@ static void EndPipboy()
 
     win_delete(pip_win);
 
-    message_exit(&pipboy_message_file);
+    pipboy_message_file.exit();
 
     for (int index = 0; index < PIPBOY_FRM_COUNT; index++) {
         art_ptr_unlock(grphkey[index]);
@@ -940,7 +940,7 @@ static void pip_back(int color)
     buf_to_buf(pipbmp[PIPBOY_FRM_BACKGROUND] + PIPBOY_WINDOW_WIDTH * 436 + 254, 350, 20, PIPBOY_WINDOW_WIDTH, scrn_buf + PIPBOY_WINDOW_WIDTH * 436 + 254, PIPBOY_WINDOW_WIDTH);
 
     // BACK
-    const char* text = getmsg(&pipboy_message_file, &pipmesg, 201);
+    const char* text = pipboy_message_file.getMessage(&pipmesg, 201);
     pip_print(text, PIPBOY_TEXT_ALIGNMENT_CENTER, color);
 }
 
@@ -987,7 +987,7 @@ static void PipStatus(int a1)
         ListStatLines(-1);
 
         if (statcount == 0) {
-            const char* text = getmsg(&pipboy_message_file, &pipmesg, 203);
+            const char* text = pipboy_message_file.getMessage(&pipmesg, 203);
             pip_print(text, 0, colorTable[992]);
         }
 
@@ -1063,7 +1063,7 @@ static void PipStatus(int a1)
                     }
 
                     // Back
-                    const char* text1 = getmsg(&pipboy_message_file, &pipmesg, 201);
+                    const char* text1 = pipboy_message_file.getMessage(&pipmesg, 201);
                     pip_print(text1, PIPBOY_TEXT_ALIGNMENT_LEFT_COLUMN_CENTER, colorTable[992]);
 
                     if (bottom_line >= 0) {
@@ -1071,7 +1071,7 @@ static void PipStatus(int a1)
                     }
 
                     // Done
-                    const char* text2 = getmsg(&pipboy_message_file, &pipmesg, 214);
+                    const char* text2 = pipboy_message_file.getMessage(&pipmesg, 214);
                     pip_print(text2, PIPBOY_TEXT_ALIGNMENT_RIGHT_COLUMN_CENTER, colorTable[992]);
 
                     win_draw_rect(pip_win, &pip_rect);
@@ -1087,7 +1087,7 @@ static void PipStatus(int a1)
                 }
 
                 // Back
-                const char* text1 = getmsg(&pipboy_message_file, &pipmesg, 201);
+                const char* text1 = pipboy_message_file.getMessage(&pipmesg, 201);
                 pip_print(text1, PIPBOY_TEXT_ALIGNMENT_LEFT_COLUMN_CENTER, colorTable[992]);
 
                 if (bottom_line >= 0) {
@@ -1095,7 +1095,7 @@ static void PipStatus(int a1)
                 }
 
                 // More
-                const char* text2 = getmsg(&pipboy_message_file, &pipmesg, 200);
+                const char* text2 = pipboy_message_file.getMessage(&pipmesg, 200);
                 pip_print(text2, PIPBOY_TEXT_ALIGNMENT_RIGHT_COLUMN_CENTER, colorTable[992]);
 
                 win_draw_rect(pip_win, &pip_rect);
@@ -1117,7 +1117,7 @@ static void PipStatus(int a1)
             }
 
             // Back
-            const char* text1 = getmsg(&pipboy_message_file, &pipmesg, 201);
+            const char* text1 = pipboy_message_file.getMessage(&pipmesg, 201);
             pip_print(text1, PIPBOY_TEXT_ALIGNMENT_LEFT_COLUMN_CENTER, colorTable[992]);
 
             if (bottom_line >= 0) {
@@ -1125,7 +1125,7 @@ static void PipStatus(int a1)
             }
 
             // More
-            const char* text2 = getmsg(&pipboy_message_file, &pipmesg, 200);
+            const char* text2 = pipboy_message_file.getMessage(&pipmesg, 200);
             pip_print(text2, PIPBOY_TEXT_ALIGNMENT_RIGHT_COLUMN_CENTER, colorTable[992]);
 
             win_draw_rect(pip_win, &pip_rect);
@@ -1150,7 +1150,7 @@ static void PipStatus(int a1)
             }
 
             // Back
-            const char* text1 = getmsg(&pipboy_message_file, &pipmesg, 201);
+            const char* text1 = pipboy_message_file.getMessage(&pipmesg, 201);
             pip_print(text1, PIPBOY_TEXT_ALIGNMENT_LEFT_COLUMN_CENTER, colorTable[992]);
 
             if (bottom_line >= 0) {
@@ -1158,7 +1158,7 @@ static void PipStatus(int a1)
             }
 
             // More
-            const char* text2 = getmsg(&pipboy_message_file, &pipmesg, 200);
+            const char* text2 = pipboy_message_file.getMessage(&pipmesg, 200);
             pip_print(text2, PIPBOY_TEXT_ALIGNMENT_RIGHT_COLUMN_CENTER, colorTable[992]);
 
             win_draw_rect(pip_win, &pip_rect);
@@ -1221,8 +1221,8 @@ static void PipStatus(int a1)
 
         AddHotLines(0, 0, true);
 
-        const char* text1 = getmsg(&pipboy_message_file, &pipmesg, 210);
-        const char* text2 = getmsg(&pipboy_message_file, &pipmesg, 700 + 10 * location);
+        const char* text1 = pipboy_message_file.getMessage(&pipmesg, 210);
+        const char* text2 = pipboy_message_file.getMessage(&pipmesg, 700 + 10 * location);
         char formattedText[1024];
         snprintf(formattedText, sizeof(formattedText), "%s %s", text2, text1);
         pip_print(formattedText, PIPBOY_TEXT_STYLE_UNDERLINE, colorTable[992]);
@@ -1247,7 +1247,7 @@ static void PipStatus(int a1)
             }
 
             if (value > 0) {
-                const char* text = getmsg(&pipboy_message_file, &pipmesg, 701 + 10 * location + quest);
+                const char* text = pipboy_message_file.getMessage(&pipmesg, 701 + 10 * location + quest);
                 char formattedText[1024];
                 snprintf(formattedText, sizeof(formattedText), "%d. %s", number, text);
                 number += 1;
@@ -1301,7 +1301,7 @@ static void ListStatLines(int a1)
     flags |= PIPBOY_TEXT_STYLE_UNDERLINE;
 
     // STATUS
-    const char* statusText = getmsg(&pipboy_message_file, &pipmesg, 202);
+    const char* statusText = pipboy_message_file.getMessage(&pipmesg, 202);
     pip_print(statusText, flags, colorTable[992]);
 
     if (bottom_line >= 2) {
@@ -1321,7 +1321,7 @@ static void ListStatLines(int a1)
                 int color = (cursor_line - 1) / 2 == (a1 - 1) ? colorTable[32747] : colorTable[992];
 
                 // Render location.
-                const char* questLocation = getmsg(&pipboy_message_file, &pipmesg, 700 + 10 * location);
+                const char* questLocation = pipboy_message_file.getMessage(&pipmesg, 700 + 10 * location);
                 pip_print(questLocation, 0, color);
 
                 cursor_line += 1;
@@ -1353,7 +1353,7 @@ static void ShowHoloDisk()
     holopages = 0;
 
     for (holodiskTextId = 1000 * holodisk + 1000; holodiskTextId < 1000 * holodisk + 1500; holodiskTextId += 1) {
-        const char* text = getmsg(&pipboy_message_file, &pipmesg, holodiskTextId);
+        const char* text = pipboy_message_file.getMessage(&pipmesg, holodiskTextId);
         if (strcmp(text, "**END-DISK**") == 0) {
             break;
         }
@@ -1375,7 +1375,7 @@ static void ShowHoloDisk()
         int page = 0;
         int numberOfLines = 0;
         for (; holodiskTextId < 1000 * holodisk + 1500; holodiskTextId += 1) {
-            const char* line = getmsg(&pipboy_message_file, &pipmesg, holodiskTextId);
+            const char* line = pipboy_message_file.getMessage(&pipmesg, holodiskTextId);
             if (strcmp(line, "**END-DISK**") == 0) {
                 debug_printf("\nPIPBOY: Premature page end in holodisk page search!\n");
                 break;
@@ -1398,13 +1398,13 @@ static void ShowHoloDisk()
             debug_printf("\nPIPBOY: #2 Holodisk text end not found!\n");
         }
     } else {
-        const char* name = getmsg(&pipboy_message_file, &pipmesg, holodisk + 400);
+        const char* name = pipboy_message_file.getMessage(&pipmesg, holodisk + 400);
         pip_print(name, PIPBOY_TEXT_ALIGNMENT_CENTER | PIPBOY_TEXT_STYLE_UNDERLINE, colorTable[992]);
     }
 
     if (holopages != 0) {
         // of
-        const char* of = getmsg(&pipboy_message_file, &pipmesg, 212);
+        const char* of = pipboy_message_file.getMessage(&pipmesg, 212);
         char formattedText[60]; // TODO: Size is probably wrong.
         snprintf(formattedText, sizeof(formattedText), "%d %s %d", view_page + 1, of, holopages + 1);
 
@@ -1417,7 +1417,7 @@ static void ShowHoloDisk()
     }
 
     for (int line = 0; line < PIPBOY_HOLODISK_LINES_MAX; line += 1) {
-        const char* text = getmsg(&pipboy_message_file, &pipmesg, holodiskTextId);
+        const char* text = pipboy_message_file.getMessage(&pipmesg, holodiskTextId);
         if (strcmp(text, "**END-DISK**") == 0) {
             break;
         }
@@ -1437,7 +1437,7 @@ static void ShowHoloDisk()
             cursor_line = bottom_line;
         }
 
-        const char* back = getmsg(&pipboy_message_file, &pipmesg, 201);
+        const char* back = pipboy_message_file.getMessage(&pipmesg, 201);
         pip_print(back, PIPBOY_TEXT_ALIGNMENT_LEFT_COLUMN_CENTER, colorTable[992]);
 
         if (bottom_line >= 0) {
@@ -1450,7 +1450,7 @@ static void ShowHoloDisk()
             cursor_line = bottom_line;
         }
 
-        const char* back = getmsg(&pipboy_message_file, &pipmesg, 201);
+        const char* back = pipboy_message_file.getMessage(&pipmesg, 201);
         pip_print(back, PIPBOY_TEXT_ALIGNMENT_LEFT_COLUMN_CENTER, colorTable[992]);
 
         if (bottom_line >= 0) {
@@ -1460,7 +1460,7 @@ static void ShowHoloDisk()
         moreOrDoneTextId = 200;
     }
 
-    const char* moreOrDoneText = getmsg(&pipboy_message_file, &pipmesg, moreOrDoneTextId);
+    const char* moreOrDoneText = pipboy_message_file.getMessage(&pipmesg, moreOrDoneTextId);
     pip_print(moreOrDoneText, PIPBOY_TEXT_ALIGNMENT_RIGHT_COLUMN_CENTER, colorTable[992]);
     win_draw(pip_win);
 }
@@ -1482,7 +1482,7 @@ static int ListHoloDiskTitles(int a1)
                 color = colorTable[992];
             }
 
-            const char* text = getmsg(&pipboy_message_file, &pipmesg, 400 + index);
+            const char* text = pipboy_message_file.getMessage(&pipmesg, 400 + index);
             pip_print(text, PIPBOY_TEXT_ALIGNMENT_RIGHT_COLUMN, color);
 
             cursor_line++;
@@ -1495,7 +1495,7 @@ static int ListHoloDiskTitles(int a1)
             cursor_line = 0;
         }
 
-        const char* text = getmsg(&pipboy_message_file, &pipmesg, 211); // DATA
+        const char* text = pipboy_message_file.getMessage(&pipmesg, 211); // DATA
         pip_print(text, PIPBOY_TEXT_ALIGNMENT_RIGHT_COLUMN_CENTER | PIPBOY_TEXT_STYLE_UNDERLINE, colorTable[992]);
     }
 
@@ -1505,8 +1505,8 @@ static int ListHoloDiskTitles(int a1)
 // 0x4886C4
 static int qscmp(const void* a1, const void* a2)
 {
-    PipboySortableEntry* v1 = (PipboySortableEntry*)a1;
-    PipboySortableEntry* v2 = (PipboySortableEntry*)a2;
+    const PipboySortableEntry* v1 = reinterpret_cast<const PipboySortableEntry*>(a1);
+    const PipboySortableEntry* v2 = reinterpret_cast<const PipboySortableEntry*>(a2);
 
     return strcmp(v1->name, v2->name);
 }
@@ -1527,7 +1527,7 @@ static void PipAutomaps(int a1)
             cursor_line = 0;
         }
 
-        const char* title = getmsg(&pipboy_message_file, &pipmesg, 205);
+        const char* title = pipboy_message_file.getMessage(&pipmesg, 205);
         pip_print(title, PIPBOY_TEXT_ALIGNMENT_CENTER | PIPBOY_TEXT_STYLE_UNDERLINE, colorTable[992]);
 
         actcnt = PrintAMList(-1);
@@ -1612,7 +1612,7 @@ static int PrintAMelevList(int a1)
         cursor_line = 0;
     }
 
-    const char* msg = getmsg(&pipboy_message_file, &pipmesg, 205);
+    const char* msg = pipboy_message_file.getMessage(&pipmesg, 205);
     pip_print(msg, PIPBOY_TEXT_ALIGNMENT_CENTER | PIPBOY_TEXT_STYLE_UNDERLINE, colorTable[992]);
 
     if (bottom_line >= 2) {
@@ -1703,7 +1703,7 @@ static int PrintAMList(int a1)
             cursor_line = 0;
         }
 
-        const char* msg = getmsg(&pipboy_message_file, &pipmesg, 205);
+        const char* msg = pipboy_message_file.getMessage(&pipmesg, 205);
         pip_print(msg, PIPBOY_TEXT_ALIGNMENT_CENTER | PIPBOY_TEXT_STYLE_UNDERLINE, colorTable[992]);
 
         if (bottom_line >= 2) {
@@ -1781,7 +1781,7 @@ static int ListArchive(int a1)
     }
 
     // VIDEO ARCHIVES
-    text = getmsg(&pipboy_message_file, &pipmesg, 206);
+    text = pipboy_message_file.getMessage(&pipmesg, 206);
     pip_print(text, PIPBOY_TEXT_ALIGNMENT_CENTER | PIPBOY_TEXT_STYLE_UNDERLINE, colorTable[992]);
 
     if (bottom_line >= 2) {
@@ -1798,7 +1798,7 @@ static int ListArchive(int a1)
                 color = colorTable[992];
             }
 
-            text = getmsg(&pipboy_message_file, &pipmesg, 500 + movie);
+            text = pipboy_message_file.getMessage(&pipmesg, 500 + movie);
             pip_print(text, 0, color);
 
             cursor_line++;
@@ -1822,8 +1822,8 @@ static void PipAlarm(int a1)
             gsound_play_sfx_file("iisxxxx1");
 
             // You cannot rest at this location!
-            const char* text = getmsg(&pipboy_message_file, &pipmesg, 215);
-            dialog_out(text, NULL, 0, 192, 135, colorTable[32328], 0, colorTable[32328], DIALOG_BOX_LARGE);
+            const char* text = pipboy_message_file.getMessage(&pipmesg, 215);
+            dialog_out(text, nullptr, 0, 192, 135, colorTable[32328], 0, colorTable[32328], DIALOG_BOX_LARGE);
         }
     } else if (a1 >= 4 && a1 <= 17) {
         gsound_play_sfx_file("ib1p1xx1");
@@ -1896,7 +1896,7 @@ static void DrawAlarmText(int a1)
     }
 
     // ALARM CLOCK
-    text = getmsg(&pipboy_message_file, &pipmesg, 300);
+    text = pipboy_message_file.getMessage(&pipmesg, 300);
     pip_print(text, PIPBOY_TEXT_ALIGNMENT_CENTER | PIPBOY_TEXT_STYLE_UNDERLINE, colorTable[992]);
 
     if (bottom_line >= 5) {
@@ -1911,7 +1911,7 @@ static void DrawAlarmText(int a1)
         // 302 - Rest for ten minutes
         // ...
         // 315 - Rest until party is healed
-        text = getmsg(&pipboy_message_file, &pipmesg, 302 + option - 1);
+        text = pipboy_message_file.getMessage(&pipmesg, 302 + option - 1);
         int color = option == a1 ? colorTable[32747] : colorTable[992];
 
         pip_print(text, 0, color);
@@ -1940,7 +1940,7 @@ static void DrawAlrmHitPnts()
 
     max_hp = stat_level(obj_dude, STAT_MAXIMUM_HIT_POINTS);
     cur_hp = critter_get_hits(obj_dude);
-    text = getmsg(&pipboy_message_file, &pipmesg, 301); // Hit Points
+    text = pipboy_message_file.getMessage(&pipmesg, 301); // Hit Points
     snprintf(msg, sizeof(msg), "%s %d/%d", text, cur_hp, max_hp);
     len = text_width(msg);
     text_to_buf(scrn_buf + 66 * PIPBOY_WINDOW_WIDTH + 254 + (350 - len) / 2, msg, PIPBOY_WINDOW_WIDTH, PIPBOY_WINDOW_WIDTH, colorTable[992]);
@@ -1985,9 +1985,9 @@ static void AddHotLines(int start, int count, bool add_back_button)
                 -1,
                 -1,
                 eventCode,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 BUTTON_FLAG_TRANSPARENT);
             y += height * 2;
             eventCode += 1;
@@ -2004,9 +2004,9 @@ static void AddHotLines(int start, int count, bool add_back_button)
             -1,
             -1,
             528,
-            NULL,
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
+            nullptr,
             BUTTON_FLAG_TRANSPARENT);
     }
 }
@@ -2042,15 +2042,15 @@ static bool TimedRest(int hours, int minutes, int duration)
 
     if (duration == 0) {
         int hoursInMinutes = hours * 60;
-        double v1 = (double)hoursInMinutes + (double)minutes;
+        double v1 = static_cast<double>(hoursInMinutes) + static_cast<double>(minutes);
         double v2 = v1 * (1.0 / 1440.0) * 3.5 + 0.25;
-        double v3 = (double)minutes / v1 * v2;
+        double v3 = static_cast<double>(minutes) / v1 * v2;
         if (minutes != 0) {
             int gameTime = game_time();
 
             double v4 = v3 * 20.0;
             int v5 = 0;
-            for (int v5 = 0; v5 < (int)v4; v5++) {
+            for (int v5 = 0; v5 < static_cast<int>(v4); v5++) {
                 sharedFpsLimiter.mark();
 
                 if (rc) {
@@ -2059,7 +2059,7 @@ static bool TimedRest(int hours, int minutes, int duration)
 
                 unsigned int start = get_time();
 
-                unsigned int v6 = (unsigned int)((double)v5 / v4 * ((double)minutes * 600.0) + (double)gameTime);
+                unsigned int v6 = static_cast<unsigned int>((double)v5 / v4 * ((double)minutes * 600.0) + (double)gameTime);
                 unsigned int nextEventTime = queue_next_time();
                 if (v6 >= nextEventTime) {
                     set_game_time(nextEventTime + 1);
@@ -2114,7 +2114,7 @@ static bool TimedRest(int hours, int minutes, int duration)
             int gameTime = game_time();
             double v7 = (v2 - v3) * 20.0;
 
-            for (int hour = 0; hour < (int)v7; hour++) {
+            for (int hour = 0; hour < static_cast<int>(v7); hour++) {
                 sharedFpsLimiter.mark();
 
                 if (rc) {
@@ -2127,7 +2127,7 @@ static bool TimedRest(int hours, int minutes, int duration)
                     rc = true;
                 }
 
-                unsigned int v8 = (unsigned int)((double)hour / v7 * (hours * GAME_TIME_TICKS_PER_HOUR) + gameTime);
+                unsigned int v8 = static_cast<unsigned int>((double)hour / v7 * (hours * GAME_TIME_TICKS_PER_HOUR) + gameTime);
                 unsigned int nextEventTime = queue_next_time();
                 if (!rc && v8 >= nextEventTime) {
                     set_game_time(nextEventTime + 1);
@@ -2147,7 +2147,7 @@ static bool TimedRest(int hours, int minutes, int duration)
                 if (!rc) {
                     set_game_time(v8);
 
-                    int healthToAdd = (int)((double)hoursInMinutes / v7);
+                    int healthToAdd = static_cast<int>((double)hoursInMinutes / v7);
                     if (Check4Health(healthToAdd)) {
                         // NOTE: Uninline.
                         AddHealth();
@@ -2184,7 +2184,7 @@ static bool TimedRest(int hours, int minutes, int duration)
             // First pass - healing dude is the top priority.
             int hpToHeal = maxHp - currentHp;
             int healingRate = stat_level(obj_dude, STAT_HEALING_RATE);
-            int hoursToHeal = (int)((double)hpToHeal / (double)healingRate * 3.0);
+            int hoursToHeal = static_cast<int>((double)hpToHeal / (double)healingRate * 3.0);
             while (!rc && hoursToHeal != 0) {
                 if (hoursToHeal <= 24) {
                     rc = TimedRest(hoursToHeal, 0, 0);
@@ -2306,8 +2306,8 @@ static int ScreenSaver()
 
     gmouse_disable(0);
 
-    unsigned char* buf = (unsigned char*)mem_malloc(412 * 374);
-    if (buf == NULL) {
+    unsigned char* buf = static_cast<unsigned char*>(mem_malloc(412 * 374));
+    if (buf == nullptr) {
         return -1;
     }
 
@@ -2351,7 +2351,7 @@ static int ScreenSaver()
             if (index < PIPBOY_BOMB_COUNT) {
                 PipboyBomb* bomb = &(bombs[index]);
                 int v27 = (350 - ginfo[PIPBOY_FRM_BOMB].width / 4) + (406 - ginfo[PIPBOY_FRM_BOMB].height / 4);
-                int v5 = (int)((double)roll_random(0, PIPBOY_RAND_MAX) / (double)PIPBOY_RAND_MAX * (double)v27);
+                int v5 = static_cast<int>((double)roll_random(0, PIPBOY_RAND_MAX) / (double)PIPBOY_RAND_MAX * (double)v27);
                 int v6 = ginfo[PIPBOY_FRM_BOMB].height / 4;
                 if (PIPBOY_WINDOW_CONTENT_VIEW_HEIGHT - v6 >= v5) {
                     bomb->x = 602;
@@ -2362,7 +2362,7 @@ static int ScreenSaver()
                 }
 
                 bomb->field_10 = 1;
-                bomb->field_8 = (float)((double)roll_random(0, PIPBOY_RAND_MAX) * (2.75 / PIPBOY_RAND_MAX) + 0.15);
+                bomb->field_8 = static_cast<float>((double)roll_random(0, PIPBOY_RAND_MAX) * (2.75 / PIPBOY_RAND_MAX) + 0.15);
                 bomb->field_C = 0;
             }
         }
@@ -2434,8 +2434,8 @@ static int ScreenSaver()
 
             bomb->field_C += bomb->field_8;
             if (bomb->field_C >= 1.0) {
-                bomb->x = (int)((float)bomb->x - bomb->field_C);
-                bomb->y = (int)((float)bomb->y + bomb->field_C);
+                bomb->x = static_cast<int>((float)bomb->x - bomb->field_C);
+                bomb->y = static_cast<int>((float)bomb->y + bomb->field_C);
                 bomb->field_C = 0.0;
             }
         }

@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_PARTY_H_
-#define FALLOUT_GAME_PARTY_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "plib/db/db.h"
@@ -23,5 +23,3 @@ int getPartyMemberCount();
 int partyMemberPrepItemSaveAll();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_PARTY_H_ */

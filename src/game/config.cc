@@ -1,9 +1,9 @@
 #include "game/config.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "platform_compat.h"
 #include "plib/db/db.h"
@@ -11,24 +11,10 @@
 
 namespace fallout {
 
-#define CONFIG_FILE_MAX_LINE_LENGTH 256
-
-// The initial number of sections (or key-value) pairs in the config.
-#define CONFIG_INITIAL_CAPACITY 10
-
-static bool config_parse_line(Config* config, char* string);
-static bool config_split_line(char* string, char* key, char* value);
-static bool config_add_section(Config* config, const char* sectionKey);
-static bool config_strip_white_space(char* string);
-
 // 0x426540
-bool config_init(Config* config)
+bool Config::init()
 {
-    if (config == NULL) {
-        return false;
-    }
-
-    if (assoc_init(config, CONFIG_INITIAL_CAPACITY, sizeof(ConfigSection), NULL) != 0) {
+    if (data_.init(INITIAL_CAPACITY, sizeof(ConfigSection)) != 0) {
         return false;
     }
 
@@ -36,31 +22,27 @@ bool config_init(Config* config)
 }
 
 // 0x42656C
-void config_exit(Config* config)
+void Config::exit()
 {
-    if (config == NULL) {
-        return;
-    }
+    for (int sectionIndex = 0; sectionIndex < data_.getSize(); sectionIndex++) {
+        assoc_pair& sectionEntry = data_.getEntry(sectionIndex);
 
-    for (int sectionIndex = 0; sectionIndex < config->size; sectionIndex++) {
-        assoc_pair* sectionEntry = &(config->list[sectionIndex]);
+        auto* section = static_cast<ConfigSection*>(sectionEntry.data);
+        for (int keyValueIndex = 0; keyValueIndex < section->getSize(); keyValueIndex++) {
+            assoc_pair& keyValueEntry = section->getEntry(keyValueIndex);
 
-        ConfigSection* section = (ConfigSection*)sectionEntry->data;
-        for (int keyValueIndex = 0; keyValueIndex < section->size; keyValueIndex++) {
-            assoc_pair* keyValueEntry = &(section->list[keyValueIndex]);
-
-            char** value = (char**)keyValueEntry->data;
+            char** value = static_cast<char**>(keyValueEntry.data);
             mem_free(*value);
-            *value = NULL;
+            *value = nullptr;
         }
 
-        assoc_free(section);
+        section->destroy();
     }
 
-    assoc_free(config);
+    data_.destroy();
 }
 
-// Parses command line argments and adds them into the config.
+// Parses command line arguments and adds them into the config.
 //
 // The expected format of [argv] elements are "[section]key=value", otherwise
 // the element is silently ignored.
@@ -69,19 +51,15 @@ void config_exit(Config* config)
 // I don't know if this is intentional or it's bug.
 //
 // 0x4265D0
-bool config_cmd_line_parse(Config* config, int argc, char** argv)
+bool Config::cmdLineParse(int argc, char** argv)
 {
-    if (config == NULL) {
-        return false;
-    }
-
     for (int arg = 0; arg < argc; arg++) {
         char* pch;
         char* string = argv[arg];
 
         // Find opening bracket.
         pch = strchr(string, '[');
-        if (pch == NULL) {
+        if (pch == nullptr) {
             continue;
         }
 
@@ -89,7 +67,7 @@ bool config_cmd_line_parse(Config* config, int argc, char** argv)
 
         // Find closing bracket.
         pch = strchr(sectionKey, ']');
-        if (pch == NULL) {
+        if (pch == nullptr) {
             continue;
         }
 
@@ -97,8 +75,8 @@ bool config_cmd_line_parse(Config* config, int argc, char** argv)
 
         char key[260];
         char value[260];
-        if (config_split_line(pch + 1, key, value)) {
-            if (!config_set_string(config, sectionKey, key, value)) {
+        if (splitLine(pch + 1, key, value)) {
+            if (!setString(sectionKey, key, value)) {
                 *pch = ']';
                 return false;
             }
@@ -111,66 +89,66 @@ bool config_cmd_line_parse(Config* config, int argc, char** argv)
 }
 
 // 0x4266E0
-bool config_get_string(Config* config, const char* sectionKey, const char* key, char** valuePtr)
+bool Config::getString(const char* sectionKey, const char* key, char** valuePtr)
 {
-    if (config == NULL || sectionKey == NULL || key == NULL || valuePtr == NULL) {
+    if (sectionKey == nullptr || key == nullptr || valuePtr == nullptr) {
         return false;
     }
 
-    int sectionIndex = assoc_search(config, sectionKey);
+    int sectionIndex = data_.search(sectionKey);
     if (sectionIndex == -1) {
         return false;
     }
 
-    assoc_pair* sectionEntry = &(config->list[sectionIndex]);
-    ConfigSection* section = (ConfigSection*)sectionEntry->data;
+    assoc_pair& sectionEntry = data_.getEntry(sectionIndex);
+    auto* section = static_cast<ConfigSection*>(sectionEntry.data);
 
-    int index = assoc_search(section, key);
+    int index = section->search(key);
     if (index == -1) {
         return false;
     }
 
-    assoc_pair* keyValueEntry = &(section->list[index]);
-    *valuePtr = *(char**)keyValueEntry->data;
+    assoc_pair& keyValueEntry = section->getEntry(index);
+    *valuePtr = *static_cast<char**>(keyValueEntry.data);
 
     return true;
 }
 
 // 0x426728
-bool config_set_string(Config* config, const char* sectionKey, const char* key, const char* value)
+bool Config::setString(const char* sectionKey, const char* key, const char* value)
 {
-    if (config == NULL || sectionKey == NULL || key == NULL || value == NULL) {
+    if (sectionKey == nullptr || key == nullptr || value == nullptr) {
         return false;
     }
 
-    int sectionIndex = assoc_search(config, sectionKey);
+    int sectionIndex = data_.search(sectionKey);
     if (sectionIndex == -1) {
-        if (!config_add_section(config, sectionKey)) {
+        if (!addSection(sectionKey)) {
             return false;
         }
-        sectionIndex = assoc_search(config, sectionKey);
+        sectionIndex = data_.search(sectionKey);
     }
 
-    assoc_pair* sectionEntry = &(config->list[sectionIndex]);
-    ConfigSection* section = (ConfigSection*)sectionEntry->data;
+    assoc_pair& sectionEntry = data_.getEntry(sectionIndex);
+    auto* section = static_cast<ConfigSection*>(sectionEntry.data);
 
-    int index = assoc_search(section, key);
+    int index = section->search(key);
     if (index != -1) {
-        assoc_pair* keyValueEntry = &(section->list[index]);
+        assoc_pair& keyValueEntry = section->getEntry(index);
 
-        char** existingValue = (char**)keyValueEntry->data;
+        char** existingValue = static_cast<char**>(keyValueEntry.data);
         mem_free(*existingValue);
-        *existingValue = NULL;
+        *existingValue = nullptr;
 
-        assoc_delete(section, key);
+        section->remove(key);
     }
 
     char* valueCopy = mem_strdup(value);
-    if (valueCopy == NULL) {
+    if (valueCopy == nullptr) {
         return false;
     }
 
-    if (assoc_insert(section, key, &valueCopy) == -1) {
+    if (section->insert(key, &valueCopy) == -1) {
         mem_free(valueCopy);
         return false;
     }
@@ -179,14 +157,14 @@ bool config_set_string(Config* config, const char* sectionKey, const char* key, 
 }
 
 // 0x4267DC
-bool config_get_value(Config* config, const char* sectionKey, const char* key, int* valuePtr)
+bool Config::getValue(const char* sectionKey, const char* key, int* valuePtr)
 {
-    if (valuePtr == NULL) {
+    if (valuePtr == nullptr) {
         return false;
     }
 
     char* stringValue;
-    if (!config_get_string(config, sectionKey, key, &stringValue)) {
+    if (!getString(sectionKey, key, &stringValue)) {
         return false;
     }
 
@@ -196,23 +174,23 @@ bool config_get_value(Config* config, const char* sectionKey, const char* key, i
 }
 
 // 0x426810
-bool config_get_values(Config* config, const char* sectionKey, const char* key, int* arr, int count)
+bool Config::getValues(const char* sectionKey, const char* key, int* arr, int count)
 {
-    if (arr == NULL || count < 2) {
+    if (arr == nullptr || count < 2) {
         return false;
     }
 
     char* string;
-    if (!config_get_string(config, sectionKey, key, &string)) {
+    if (!getString(sectionKey, key, &string)) {
         return false;
     }
 
-    char temp[CONFIG_FILE_MAX_LINE_LENGTH];
-    string = strncpy(temp, string, CONFIG_FILE_MAX_LINE_LENGTH - 1);
+    char temp[MAX_LINE_LENGTH];
+    string = strncpy(temp, string, MAX_LINE_LENGTH - 1);
 
     while (1) {
         char* pch = strchr(string, ',');
-        if (pch == NULL) {
+        if (pch == nullptr) {
             break;
         }
 
@@ -235,38 +213,38 @@ bool config_get_values(Config* config, const char* sectionKey, const char* key, 
 }
 
 // 0x4268E0
-bool config_set_value(Config* config, const char* sectionKey, const char* key, int value)
+bool Config::setValue(const char* sectionKey, const char* key, int value)
 {
     char stringValue[20];
     compat_itoa(value, stringValue, 10);
 
-    return config_set_string(config, sectionKey, key, stringValue);
+    return setString(sectionKey, key, stringValue);
 }
 
 // Reads .INI file into config.
 //
 // 0x426A00
-bool config_load(Config* config, const char* filePath, bool isDb)
+bool Config::load(const char* filePath, bool isDb)
 {
-    if (config == NULL || filePath == NULL) {
+    if (filePath == nullptr) {
         return false;
     }
 
-    char string[CONFIG_FILE_MAX_LINE_LENGTH];
+    char string[MAX_LINE_LENGTH];
 
     if (isDb) {
         DB_FILE* stream = db_fopen(filePath, "rb");
-        if (stream != NULL) {
-            while (db_fgets(string, sizeof(string), stream) != NULL) {
-                config_parse_line(config, string);
+        if (stream != nullptr) {
+            while (stream->fgets(string, sizeof(string)) != nullptr) {
+                parseLine(string);
             }
-            db_fclose(stream);
+            stream->fclose();
         }
     } else {
         FILE* stream = compat_fopen(filePath, "rt");
-        if (stream != NULL) {
-            while (fgets(string, sizeof(string), stream) != NULL) {
-                config_parse_line(config, string);
+        if (stream != nullptr) {
+            while (fgets(string, sizeof(string), stream) != nullptr) {
+                parseLine(string);
             }
 
             fclose(stream);
@@ -282,46 +260,46 @@ bool config_load(Config* config, const char* filePath, bool isDb)
 // Writes config into .INI file.
 //
 // 0x426AA4
-bool config_save(Config* config, const char* filePath, bool isDb)
+bool Config::save(const char* filePath, bool isDb)
 {
-    if (config == NULL || filePath == NULL) {
+    if (filePath == nullptr) {
         return false;
     }
 
     if (isDb) {
         DB_FILE* stream = db_fopen(filePath, "wt");
-        if (stream == NULL) {
+        if (stream == nullptr) {
             return false;
         }
 
-        for (int sectionIndex = 0; sectionIndex < config->size; sectionIndex++) {
-            assoc_pair* sectionEntry = &(config->list[sectionIndex]);
-            db_fprintf(stream, "[%s]\n", sectionEntry->name);
+        for (int sectionIndex = 0; sectionIndex < data_.getSize(); sectionIndex++) {
+            assoc_pair& sectionEntry = data_.getEntry(sectionIndex);
+            stream->fprintf("[%s]\n", sectionEntry.name);
 
-            ConfigSection* section = (ConfigSection*)sectionEntry->data;
-            for (int index = 0; index < section->size; index++) {
-                assoc_pair* keyValueEntry = &(section->list[index]);
-                db_fprintf(stream, "%s=%s\n", keyValueEntry->name, *(char**)keyValueEntry->data);
+            auto* section = static_cast<ConfigSection*>(sectionEntry.data);
+            for (int index = 0; index < section->getSize(); index++) {
+                assoc_pair& keyValueEntry = section->getEntry(index);
+                stream->fprintf("%s=%s\n", keyValueEntry.name, *static_cast<char**>(keyValueEntry.data));
             }
 
-            db_fprintf(stream, "\n");
+            stream->fprintf("\n");
         }
 
-        db_fclose(stream);
+        stream->fclose();
     } else {
         FILE* stream = compat_fopen(filePath, "wt");
-        if (stream == NULL) {
+        if (stream == nullptr) {
             return false;
         }
 
-        for (int sectionIndex = 0; sectionIndex < config->size; sectionIndex++) {
-            assoc_pair* sectionEntry = &(config->list[sectionIndex]);
-            fprintf(stream, "[%s]\n", sectionEntry->name);
+        for (int sectionIndex = 0; sectionIndex < data_.getSize(); sectionIndex++) {
+            assoc_pair& sectionEntry = data_.getEntry(sectionIndex);
+            fprintf(stream, "[%s]\n", sectionEntry.name);
 
-            ConfigSection* section = (ConfigSection*)sectionEntry->data;
-            for (int index = 0; index < section->size; index++) {
-                assoc_pair* keyValueEntry = &(section->list[index]);
-                fprintf(stream, "%s=%s\n", keyValueEntry->name, *(char**)keyValueEntry->data);
+            auto* section = static_cast<ConfigSection*>(sectionEntry.data);
+            for (int index = 0; index < section->getSize(); index++) {
+                assoc_pair& keyValueEntry = section->getEntry(index);
+                fprintf(stream, "%s=%s\n", keyValueEntry.name, *static_cast<char**>(keyValueEntry.data));
             }
 
             fprintf(stream, "\n");
@@ -347,40 +325,40 @@ bool config_save(Config* config, const char* filePath, bool isDb)
 // added to the config, or `false` otherwise.
 //
 // 0x426C3C
-static bool config_parse_line(Config* config, char* string)
+bool Config::parseLine(char* string)
 {
     // 0x504C28
-    static char section[CONFIG_FILE_MAX_LINE_LENGTH] = "unknown";
+    static char section[MAX_LINE_LENGTH] = "unknown";
 
     char* pch;
 
     // Find comment marker and truncate the string.
     pch = strchr(string, ';');
-    if (pch != NULL) {
+    if (pch != nullptr) {
         *pch = '\0';
     }
 
     // Find opening bracket.
     pch = strchr(string, '[');
-    if (pch != NULL) {
+    if (pch != nullptr) {
         char* sectionKey = pch + 1;
 
         // Find closing bracket.
         pch = strchr(sectionKey, ']');
-        if (pch != NULL) {
+        if (pch != nullptr) {
             *pch = '\0';
             strcpy(section, sectionKey);
-            return config_strip_white_space(section);
+            return stripWhiteSpace(section);
         }
     }
 
     char key[260];
     char value[260];
-    if (!config_split_line(string, key, value)) {
+    if (!splitLine(string, key, value)) {
         return false;
     }
 
-    return config_set_string(config, section, key, value);
+    return setString(section, key, value);
 }
 
 // Splits "key=value" pair from [string] and copy appropriate parts into [key]
@@ -389,15 +367,15 @@ static bool config_parse_line(Config* config, char* string)
 // Both key and value are trimmed.
 //
 // 0x426D14
-static bool config_split_line(char* string, char* key, char* value)
+bool Config::splitLine(char* string, char* key, char* value)
 {
-    if (string == NULL || key == NULL || value == NULL) {
+    if (string == nullptr || key == nullptr || value == nullptr) {
         return false;
     }
 
     // Find equals character.
     char* pch = strchr(string, '=');
-    if (pch == NULL) {
+    if (pch == nullptr) {
         return false;
     }
 
@@ -408,8 +386,8 @@ static bool config_split_line(char* string, char* key, char* value)
 
     *pch = '=';
 
-    config_strip_white_space(key);
-    config_strip_white_space(value);
+    stripWhiteSpace(key);
+    stripWhiteSpace(value);
 
     return true;
 }
@@ -420,23 +398,23 @@ static bool config_split_line(char* string, char* key, char* value)
 // otherwise.
 //
 // 0x426DB8
-static bool config_add_section(Config* config, const char* sectionKey)
+bool Config::addSection(const char* sectionKey)
 {
-    if (config == NULL || sectionKey == NULL) {
+    if (sectionKey == nullptr) {
         return false;
     }
 
-    if (assoc_search(config, sectionKey) != -1) {
+    if (data_.search(sectionKey) != -1) {
         // Section already exists, no need to do anything.
         return true;
     }
 
     ConfigSection section;
-    if (assoc_init(&section, CONFIG_INITIAL_CAPACITY, sizeof(char**), NULL) == -1) {
+    if (section.init(INITIAL_CAPACITY, sizeof(char**)) == -1) {
         return false;
     }
 
-    if (assoc_insert(config, sectionKey, &section) == -1) {
+    if (data_.insert(sectionKey, &section) == -1) {
         return false;
     }
 
@@ -446,9 +424,9 @@ static bool config_add_section(Config* config, const char* sectionKey)
 // Removes leading and trailing whitespace from the specified string.
 //
 // 0x426E18
-static bool config_strip_white_space(char* string)
+bool Config::stripWhiteSpace(char* string)
 {
-    if (string == NULL) {
+    if (string == nullptr) {
         return false;
     }
 
@@ -483,40 +461,40 @@ static bool config_strip_white_space(char* string)
 }
 
 // 0x426E98
-bool config_get_double(Config* config, const char* sectionKey, const char* key, double* valuePtr)
+bool Config::getDouble(const char* sectionKey, const char* key, double* valuePtr)
 {
-    if (valuePtr == NULL) {
+    if (valuePtr == nullptr) {
         return false;
     }
 
     char* stringValue;
-    if (!config_get_string(config, sectionKey, key, &stringValue)) {
+    if (!getString(sectionKey, key, &stringValue)) {
         return false;
     }
 
-    *valuePtr = strtod(stringValue, NULL);
+    *valuePtr = strtod(stringValue, nullptr);
 
     return true;
 }
 
 // 0x426ECC
-bool config_set_double(Config* config, const char* sectionKey, const char* key, double value)
+bool Config::setDouble(const char* sectionKey, const char* key, double value)
 {
     char stringValue[32];
     snprintf(stringValue, sizeof(stringValue), "%.6f", value);
 
-    return config_set_string(config, sectionKey, key, stringValue);
+    return setString(sectionKey, key, stringValue);
 }
 
-// NOTE: Boolean-typed variant of [config_get_value].
-bool configGetBool(Config* config, const char* sectionKey, const char* key, bool* valuePtr)
+// NOTE: Boolean-typed variant of [getValue].
+bool Config::getBool(const char* sectionKey, const char* key, bool* valuePtr)
 {
-    if (valuePtr == NULL) {
+    if (valuePtr == nullptr) {
         return false;
     }
 
     int integerValue;
-    if (!config_get_value(config, sectionKey, key, &integerValue)) {
+    if (!getValue(sectionKey, key, &integerValue)) {
         return false;
     }
 
@@ -525,10 +503,10 @@ bool configGetBool(Config* config, const char* sectionKey, const char* key, bool
     return true;
 }
 
-// NOTE: Boolean-typed variant of [configGetInt].
-bool configSetBool(Config* config, const char* sectionKey, const char* key, bool value)
+// NOTE: Boolean-typed variant of [setValue].
+bool Config::setBool(const char* sectionKey, const char* key, bool value)
 {
-    return config_set_value(config, sectionKey, key, value ? 1 : 0);
+    return setValue(sectionKey, key, value ? 1 : 0);
 }
 
 } // namespace fallout

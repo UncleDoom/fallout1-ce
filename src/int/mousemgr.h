@@ -1,11 +1,11 @@
-#ifndef FALLOUT_INT_MOUSEMGR_H_
-#define FALLOUT_INT_MOUSEMGR_H_
+#pragma once
+
 
 namespace fallout {
 
-typedef char*(MouseManagerNameMangler)(char* fileName);
-typedef int(MouseManagerRateProvider)();
-typedef int(MouseManagerTimeProvider)();
+using MouseManagerNameMangler = char*(char* fileName);
+using MouseManagerRateProvider = int();
+using MouseManagerTimeProvider = int();
 
 void mousemgrSetNameMangler(MouseManagerNameMangler* func);
 void mousemgrSetTimeCallback(MouseManagerRateProvider* rateFunc, MouseManagerTimeProvider* currentTimeFunc);
@@ -20,5 +20,3 @@ void mouseHide();
 void mouseShow();
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_MOUSEMGR_H_ */

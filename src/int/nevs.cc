@@ -1,7 +1,7 @@
 #include "int/nevs.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "int/intlib.h"
 #include "int/memdbg.h"
@@ -10,9 +10,9 @@
 
 namespace fallout {
 
-#define NEVS_COUNT 40
+static constexpr int NEVS_COUNT = 40;
 
-typedef struct Nevs {
+struct Nevs {
     bool used;
     char name[32];
     Program* program;
@@ -21,7 +21,7 @@ typedef struct Nevs {
     int hits;
     bool busy;
     NevsCallback* callback;
-} Nevs;
+};
 
 static Nevs* nevs_alloc();
 static void nevs_free(Nevs* nevs);
@@ -40,7 +40,7 @@ static Nevs* nevs_alloc()
     int index;
     Nevs* entry;
 
-    if (nevs == NULL) {
+    if (nevs == nullptr) {
         debug_printf("nevs_alloc(): nevs_initonce() not called!");
         exit(99);
     }
@@ -54,7 +54,7 @@ static Nevs* nevs_alloc()
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x47A1A4
@@ -67,9 +67,9 @@ static void nevs_free(Nevs* entry)
 // 0x47A1BC
 void nevs_close()
 {
-    if (nevs != NULL) {
+    if (nevs != nullptr) {
         myfree(nevs, __FILE__, __LINE__); // "..\\int\\NEVS.C", 97
-        nevs = NULL;
+        nevs = nullptr;
     }
 }
 
@@ -79,7 +79,7 @@ static void nevs_removeprogramreferences(Program* program)
     int index;
     Nevs* entry;
 
-    if (nevs != NULL) {
+    if (nevs != nullptr) {
         for (index = 0; index < NEVS_COUNT; index++) {
             entry = &(nevs[index]);
             if (entry->used && entry->program == program) {
@@ -95,9 +95,9 @@ void nevs_initonce()
 {
     interpretRegisterProgramDeleteCallback(nevs_removeprogramreferences);
 
-    if (nevs == NULL) {
-        nevs = (Nevs*)mycalloc(sizeof(Nevs), NEVS_COUNT, __FILE__, __LINE__); // "..\\int\\NEVS.C", 131
-        if (nevs == NULL) {
+    if (nevs == nullptr) {
+        nevs = static_cast<Nevs*>(mycalloc(sizeof(Nevs), NEVS_COUNT, __FILE__, __LINE__)); // "..\\int\\NEVS.C", 131
+        if (nevs == nullptr) {
             debug_printf("nevs_initonce(): out of memory");
             exit(99);
         }
@@ -110,7 +110,7 @@ static Nevs* nevs_find(const char* name)
     int index;
     Nevs* entry;
 
-    if (nevs == NULL) {
+    if (nevs == nullptr) {
         debug_printf("nevs_find(): nevs_initonce() not called!");
         exit(99);
     }
@@ -122,7 +122,7 @@ static Nevs* nevs_find(const char* name)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x47A2D8
@@ -131,11 +131,11 @@ int nevs_addevent(const char* name, Program* program, int proc, int type)
     Nevs* entry;
 
     entry = nevs_find(name);
-    if (entry == NULL) {
+    if (entry == nullptr) {
         entry = nevs_alloc();
     }
 
-    if (entry == NULL) {
+    if (entry == nullptr) {
         return 1;
     }
 
@@ -144,7 +144,7 @@ int nevs_addevent(const char* name, Program* program, int proc, int type)
     entry->program = program;
     entry->proc = proc;
     entry->type = type;
-    entry->callback = NULL;
+    entry->callback = nullptr;
 
     return 0;
 }
@@ -157,20 +157,20 @@ int nevs_addCevent(const char* name, NevsCallback* callback, int type)
     debug_printf("nevs_addCevent( '%s', %p);\n", name, callback);
 
     entry = nevs_find(name);
-    if (entry == NULL) {
+    if (entry == nullptr) {
         entry = nevs_alloc();
     }
 
-    if (entry == NULL) {
+    if (entry == nullptr) {
         return 1;
     }
 
     entry->used = true;
     strcpy(entry->name, name);
-    entry->program = NULL;
+    entry->program = nullptr;
     entry->proc = 0;
     entry->type = type;
-    entry->callback = NULL;
+    entry->callback = nullptr;
 
     return 0;
 }
@@ -183,7 +183,7 @@ int nevs_clearevent(const char* name)
     debug_printf("nevs_clearevent( '%s');\n", name);
 
     entry = nevs_find(name);
-    if (entry != NULL) {
+    if (entry != nullptr) {
         // NOTE: Uninline.
         nevs_free(entry);
         return 0;
@@ -200,14 +200,14 @@ int nevs_signal(const char* name)
     debug_printf("nevs_signal( '%s');\n", name);
 
     entry = nevs_find(name);
-    if (entry == NULL) {
+    if (entry == nullptr) {
         return 1;
     }
 
     debug_printf("nep: %p,  used = %u, prog = %p, proc = %d", entry, entry->used, entry->program, entry->proc);
 
     if (entry->used
-        && ((entry->program != NULL && entry->proc != 0) || entry->callback != NULL)
+        && ((entry->program != nullptr && entry->proc != 0) || entry->callback != nullptr)
         && !entry->busy) {
         entry->hits++;
         anyhits++;
@@ -234,7 +234,7 @@ void nevs_update()
     for (index = 0; index < NEVS_COUNT; index++) {
         entry = &(nevs[index]);
         if (entry->used
-            && ((entry->program != NULL && entry->proc != 0) || entry->callback != NULL)
+            && ((entry->program != nullptr && entry->proc != 0) || entry->callback != nullptr)
             && !entry->busy) {
             if (entry->hits > 0) {
                 entry->busy = true;
@@ -242,8 +242,8 @@ void nevs_update()
                 entry->hits -= 1;
                 anyhits += entry->hits;
 
-                if (entry->callback == NULL) {
-                    executeProc(entry->program, entry->proc);
+                if (entry->callback == nullptr) {
+                    entry->program->executeProc(entry->proc);
                 } else {
                     entry->callback(entry->name);
                 }

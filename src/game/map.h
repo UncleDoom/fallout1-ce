@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_MAP_H_
-#define FALLOUT_GAME_MAP_H_
+#pragma once
+
 
 #include "game/combat_defs.h"
 #include "game/map_defs.h"
@@ -10,15 +10,16 @@
 
 namespace fallout {
 
-#define ORIGINAL_ISO_WINDOW_WIDTH 640
-#define ORIGINAL_ISO_WINDOW_HEIGHT 380
+inline constexpr int ORIGINAL_ISO_WINDOW_WIDTH = 640;
+inline constexpr int ORIGINAL_ISO_WINDOW_HEIGHT = 380;
 
 // TODO: Probably not needed -> replace with array?
-typedef struct TileData {
+struct TileData {
     int field_0[SQUARE_GRID_SIZE];
-} TileData;
+};
 
-typedef struct MapHeader {
+class MapHeader {
+public:
     // map_ver
     int version;
 
@@ -55,16 +56,19 @@ typedef struct MapHeader {
     // Time in game ticks when PC last visited this map.
     int lastVisitTime;
     int field_3C[44];
-} MapHeader;
 
-typedef struct MapTransition {
+    int writeData(DB_FILE* stream);
+    int readData(DB_FILE* stream);
+};
+
+struct MapTransition {
     int map;
     int elevation;
     int tile;
     int rotation;
-} MapTransition;
+};
 
-typedef void IsoWindowRefreshProc(Rect* rect);
+using IsoWindowRefreshProc = void(Rect* rect);
 
 extern char byte_50B058[];
 extern char _aErrorF2[];
@@ -124,5 +128,3 @@ void map_setup_paths();
 int map_match_map_name(const char* name);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_MAP_H_ */

@@ -1,16 +1,19 @@
-#ifndef FALLOUT_INT_NEVS_H_
-#define FALLOUT_INT_NEVS_H_
+#pragma once
+
 
 #include "int/intrpret.h"
 
 namespace fallout {
 
-typedef void(NevsCallback)(const char* name);
+using NevsCallback = void(const char* name);
 
-typedef enum NevsType {
-    NEVS_TYPE_EVENT = 0,
-    NEVS_TYPE_HANDLER = 1,
-} NevsType;
+enum class NevsType : int {
+    Event = 0,
+    Handler = 1,
+};
+
+inline constexpr int NEVS_TYPE_EVENT = static_cast<int>(NevsType::Event);
+inline constexpr int NEVS_TYPE_HANDLER = static_cast<int>(NevsType::Handler);
 
 void nevs_close();
 void nevs_initonce();
@@ -21,5 +24,3 @@ int nevs_signal(const char* name);
 void nevs_update();
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_NEVS_H_ */

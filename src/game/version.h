@@ -1,15 +1,15 @@
-#ifndef FALLOUT_GAME_VERSION_H_
-#define FALLOUT_GAME_VERSION_H_
+#pragma once
 
-#include <stddef.h>
+
+#include <cstddef>
 
 namespace fallout {
 
 // The size of buffer for version string.
-#define VERSION_MAX 32
+inline constexpr int VERSION_MAX = 32;
 
-#define VERSION_MAJOR 1
-#define VERSION_MINOR 1
+inline constexpr int VERSION_MAJOR = 1;
+inline constexpr int VERSION_MINOR = 1;
 #define VERSION_RELEASE 'R'
 
 #define VERSION_BUILD_TIME "Nov 11 1997 14:59:39"
@@ -17,5 +17,3 @@ namespace fallout {
 char* getverstr(char* dest, size_t size);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_VERSION_H_ */

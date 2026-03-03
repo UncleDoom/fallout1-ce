@@ -1,5 +1,5 @@
-#ifndef FALLOUT_FPS_LIMITER_H_
-#define FALLOUT_FPS_LIMITER_H_
+#pragma once
+
 
 namespace fallout {
 
@@ -15,5 +15,3 @@ private:
 };
 
 } // namespace fallout
-
-#endif /* FALLOUT_FPS_LIMITER_H_ */

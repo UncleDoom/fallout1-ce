@@ -1,14 +1,14 @@
-#ifndef MOVIE_LIB_H
-#define MOVIE_LIB_H
+#pragma once
+
 
 #include <SDL.h>
 
 namespace fallout {
 
-typedef void*(MveMallocFunc)(size_t size);
-typedef void(MveFreeFunc)(void* ptr);
-typedef bool MovieReadProc(void* handle, void* buffer, int count);
-typedef void(MovieShowFrameProc)(SDL_Surface*, int, int, int, int, int, int, int, int);
+using MveMallocFunc = void*(size_t size);
+using MveFreeFunc = void(void* ptr);
+using MovieReadProc = bool(void* handle, void* buffer, int count);
+using MovieShowFrameProc = void(SDL_Surface*, int, int, int, int, int, int, int, int);
 
 void movieLibSetMemoryProcs(MveMallocFunc* mallocProc, MveFreeFunc* freeProc);
 void movieLibSetReadProc(MovieReadProc* readProc);
@@ -26,5 +26,3 @@ void _MVE_rmEndMovie();
 void _MVE_ReleaseMem();
 
 } // namespace fallout
-
-#endif /* MOVIE_LIB_H */

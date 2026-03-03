@@ -1,15 +1,15 @@
-#ifndef FALLOUT_GAME_LIGHT_H_
-#define FALLOUT_GAME_LIGHT_H_
+#pragma once
+
 
 namespace fallout {
 
-#define LIGHT_LEVEL_MAX 65536
+inline constexpr int LIGHT_LEVEL_MAX = 65536;
 #define LIGHT_LEVEL_MIN (LIGHT_LEVEL_MAX / 4)
 
 // 10% of max light per "Night Vision" rank
 #define LIGHT_LEVEL_NIGHT_VISION_BONUS (LIGHT_LEVEL_MAX / 10)
 
-typedef void(AdjustLightIntensityProc)(int elevation, int tile, int intensity);
+using AdjustLightIntensityProc = void(int elevation, int tile, int intensity);
 
 int light_init();
 void light_reset();
@@ -26,5 +26,3 @@ void light_subtract_from_tile(int elevation, int tile, int intensity);
 void light_reset_tiles();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_LIGHT_H_ */

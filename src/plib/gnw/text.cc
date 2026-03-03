@@ -1,8 +1,9 @@
 #include "plib/gnw/text.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
+#include "game/raii.h"
 #include "platform_compat.h"
 #include "plib/color/color.h"
 #include "plib/db/db.h"
@@ -11,10 +12,10 @@
 namespace fallout {
 
 // The maximum number of text fonts.
-#define TEXT_FONT_MAX 10
+static constexpr int TEXT_FONT_MAX = 10;
 
 // The maximum number of font managers.
-#define FONT_MANAGER_MAX 10
+static constexpr int FONT_MANAGER_MAX = 10;
 
 static int load_font(int n);
 static void GNW_text_font(int font_num);
@@ -35,28 +36,28 @@ static int curr_font_num = -1;
 static int total_managers = 0;
 
 // 0x53A20C
-text_to_buf_func* text_to_buf = NULL;
+text_to_buf_func* text_to_buf = nullptr;
 
 // 0x53A210
-text_height_func* text_height = NULL;
+text_height_func* text_height = nullptr;
 
 // 0x53A214
-text_width_func* text_width = NULL;
+text_width_func* text_width = nullptr;
 
 // 0x53A218
-text_char_width_func* text_char_width = NULL;
+text_char_width_func* text_char_width = nullptr;
 
 // 0x53A21C
-text_mono_width_func* text_mono_width = NULL;
+text_mono_width_func* text_mono_width = nullptr;
 
 // 0x53A220
-text_spacing_func* text_spacing = NULL;
+text_spacing_func* text_spacing = nullptr;
 
 // 0x53A224
-text_size_func* text_size = NULL;
+text_size_func* text_size = nullptr;
 
 // 0x53A228
-text_max_func* text_max = NULL;
+text_max_func* text_max = nullptr;
 
 // 0x6ABE98
 static Font font[TEXT_FONT_MAX];
@@ -129,76 +130,48 @@ void GNW_text_exit()
 // 0x4C16BC
 static int load_font(int n)
 {
-    int rc = -1;
-
     char path[COMPAT_MAX_PATH];
     snprintf(path, sizeof(path), "font%d.fon", n);
 
     // NOTE: Original code is slightly different. It uses deep nesting and
     // unwinds everything from the point of failure.
     Font* textFontDescriptor = &(font[n]);
-    textFontDescriptor->data = NULL;
-    textFontDescriptor->info = NULL;
+    textFontDescriptor->data = nullptr;
+    textFontDescriptor->info = nullptr;
 
-    DB_FILE* stream = db_fopen(path, "rb");
-    int dataSize;
-    if (stream == NULL) {
-        goto out;
+    DbFileGuard stream(db_fopen(path, "rb"));
+    if (!stream) {
+        return -1;
     }
 
     // NOTE: Original code reads entire descriptor in one go. This does not work
     // in x64 because of the two pointers.
 
-    if (db_fread(&(textFontDescriptor->num), 4, 1, stream) != 1) goto out;
-    if (db_fread(&(textFontDescriptor->height), 4, 1, stream) != 1) goto out;
-    if (db_fread(&(textFontDescriptor->spacing), 4, 1, stream) != 1) goto out;
+    if (stream.get()->fread(&(textFontDescriptor->num), 4, 1) != 1) return -1;
+    if (stream.get()->fread(&(textFontDescriptor->height), 4, 1) != 1) return -1;
+    if (stream.get()->fread(&(textFontDescriptor->spacing), 4, 1) != 1) return -1;
 
     int glyphsPtr;
-    if (db_fread(&glyphsPtr, 4, 1, stream) != 1) goto out;
+    if (stream.get()->fread(&glyphsPtr, 4, 1) != 1) return -1;
 
     int dataPtr;
-    if (db_fread(&dataPtr, 4, 1, stream) != 1) goto out;
+    if (stream.get()->fread(&dataPtr, 4, 1) != 1) return -1;
 
-    textFontDescriptor->info = (FontInfo*)mem_malloc(textFontDescriptor->num * sizeof(FontInfo));
-    if (textFontDescriptor->info == NULL) {
-        goto out;
-    }
+    MemBuffer<FontInfo> info(static_cast<FontInfo*>(mem_malloc(textFontDescriptor->num * sizeof(FontInfo))));
+    if (!info) return -1;
 
-    if (db_fread(textFontDescriptor->info, sizeof(FontInfo), textFontDescriptor->num, stream) != textFontDescriptor->num) {
-        goto out;
-    }
+    if (stream.get()->fread(info.get(), sizeof(FontInfo), textFontDescriptor->num) != textFontDescriptor->num) return -1;
 
-    dataSize = textFontDescriptor->height * ((textFontDescriptor->info[textFontDescriptor->num - 1].width + 7) >> 3) + textFontDescriptor->info[textFontDescriptor->num - 1].offset;
-    textFontDescriptor->data = (unsigned char*)mem_malloc(dataSize);
-    if (textFontDescriptor->data == NULL) {
-        goto out;
-    }
+    int dataSize = textFontDescriptor->height * ((info[textFontDescriptor->num - 1].width + 7) >> 3) + info[textFontDescriptor->num - 1].offset;
+    MemBuffer<unsigned char> data(static_cast<unsigned char*>(mem_malloc(dataSize)));
+    if (!data) return -1;
 
-    if (db_fread(textFontDescriptor->data, 1, dataSize, stream) != dataSize) {
-        goto out;
-    }
+    if (stream.get()->fread(data.get(), 1, dataSize) != dataSize) return -1;
 
-    rc = 0;
-
-out:
-
-    if (rc != 0) {
-        if (textFontDescriptor->data != NULL) {
-            mem_free(textFontDescriptor->data);
-            textFontDescriptor->data = NULL;
-        }
-
-        if (textFontDescriptor->info != NULL) {
-            mem_free(textFontDescriptor->info);
-            textFontDescriptor->info = NULL;
-        }
-    }
-
-    if (stream != NULL) {
-        db_fclose(stream);
-    }
-
-    return rc;
+    // Success — transfer ownership to the font descriptor.
+    textFontDescriptor->info = info.release();
+    textFontDescriptor->data = data.release();
+    return 0;
 }
 
 // 0x4C1840
@@ -206,7 +179,7 @@ int text_add_manager(FontMgrPtr mgr)
 {
     int k;
 
-    if (mgr == NULL) {
+    if (mgr == nullptr) {
         return -1;
     }
 

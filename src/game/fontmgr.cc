@@ -1,8 +1,9 @@
 #include "game/fontmgr.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
+#include "game/raii.h"
 #include "int/memdbg.h"
 #include "plib/color/color.h"
 #include "plib/db/db.h"
@@ -11,15 +12,15 @@
 namespace fallout {
 
 // The maximum number of interface fonts.
-#define INTERFACE_FONT_MAX 16
+static constexpr int INTERFACE_FONT_MAX = 16;
 
-typedef struct InterfaceFontGlyph {
+struct InterfaceFontGlyph {
     short width;
     short height;
     int offset;
-} InterfaceFontGlyph;
+};
 
-typedef struct InterfaceFontDescriptor {
+struct InterfaceFontDescriptor {
     short maxHeight;
     short letterSpacing;
     short wordSpacing;
@@ -28,7 +29,7 @@ typedef struct InterfaceFontDescriptor {
     short field_A;
     InterfaceFontGlyph glyphs[256];
     unsigned char* data;
-} InterfaceFontDescriptor;
+};
 
 static int FMLoadFont(int font);
 static void swapUInt32(unsigned int* value);
@@ -60,7 +61,7 @@ int FMInit()
     for (int font = 0; font < INTERFACE_FONT_MAX; font++) {
         if (FMLoadFont(font) == -1) {
             gFontCache[font].maxHeight = 0;
-            gFontCache[font].data = NULL;
+            gFontCache[font].data = nullptr;
         } else {
             ++gNumFonts;
 
@@ -85,7 +86,7 @@ int FMInit()
 void FMExit()
 {
     for (int font = 0; font < INTERFACE_FONT_MAX; font++) {
-        if (gFontCache[font].data != NULL) {
+        if (gFontCache[font].data != nullptr) {
             myfree(gFontCache[font].data, __FILE__, __LINE__); // FONTMGR.C, 124
         }
     }
@@ -99,45 +100,39 @@ static int FMLoadFont(int font_index)
     char path[56];
     snprintf(path, sizeof(path), "font%d.aaf", font_index);
 
-    DB_FILE* stream = db_fopen(path, "rb");
-    if (stream == NULL) {
+    DbFileGuard stream(db_fopen(path, "rb"));
+    if (!stream) {
         return -1;
     }
 
-    int fileSize = db_filelength(stream);
+    int fileSize = stream.get()->filelength();
 
     int sig;
-    if (db_fread(&sig, 4, 1, stream) != 1) {
-        db_fclose(stream);
+    if (stream.get()->fread(&sig, 4, 1) != 1) {
         return -1;
     }
 
     swapInt32(&sig);
     if (sig != 0x41414646) {
-        db_fclose(stream);
         return -1;
     }
 
-    if (db_fread(&(fontDescriptor->maxHeight), 2, 1, stream) != 1) {
-        db_fclose(stream);
+    if (stream.get()->fread(&(fontDescriptor->maxHeight), 2, 1) != 1) {
         return -1;
     }
     swapInt16(&(fontDescriptor->maxHeight));
 
-    if (db_fread(&(fontDescriptor->letterSpacing), 2, 1, stream) != 1) {
-        db_fclose(stream);
+    if (stream.get()->fread(&(fontDescriptor->letterSpacing), 2, 1) != 1) {
         return -1;
     }
     swapInt16(&(fontDescriptor->letterSpacing));
 
-    if (db_fread(&(fontDescriptor->wordSpacing), 2, 1, stream) != 1) {
-        db_fclose(stream);
+    if (stream.get()->fread(&(fontDescriptor->wordSpacing), 2, 1) != 1) {
         return -1;
     }
     swapInt16(&(fontDescriptor->wordSpacing));
 
-    if (db_fread(&(fontDescriptor->lineSpacing), 2, 1, stream) != 1) {
-        db_fclose(stream);
+    if (stream.get()->fread(&(fontDescriptor->lineSpacing), 2, 1) != 1) {
         return -1;
     }
     swapInt16(&(fontDescriptor->lineSpacing));
@@ -145,20 +140,17 @@ static int FMLoadFont(int font_index)
     for (int index = 0; index < 256; index++) {
         InterfaceFontGlyph* glyph = &(fontDescriptor->glyphs[index]);
 
-        if (db_fread(&(glyph->width), 2, 1, stream) != 1) {
-            db_fclose(stream);
+        if (stream.get()->fread(&(glyph->width), 2, 1) != 1) {
             return -1;
         }
         swapInt16(&(glyph->width));
 
-        if (db_fread(&(glyph->height), 2, 1, stream) != 1) {
-            db_fclose(stream);
+        if (stream.get()->fread(&(glyph->height), 2, 1) != 1) {
             return -1;
         }
         swapInt16(&(glyph->height));
 
-        if (db_fread(&(glyph->offset), 4, 1, stream) != 1) {
-            db_fclose(stream);
+        if (stream.get()->fread(&(glyph->offset), 4, 1) != 1) {
             return -1;
         }
         swapInt32(&(glyph->offset));
@@ -166,19 +158,16 @@ static int FMLoadFont(int font_index)
 
     int glyphDataSize = fileSize - 2060;
 
-    fontDescriptor->data = (unsigned char*)mymalloc(glyphDataSize, __FILE__, __LINE__); // FONTMGR.C, 259
-    if (fontDescriptor->data == NULL) {
-        db_fclose(stream);
+    fontDescriptor->data = static_cast<unsigned char*>(mymalloc(glyphDataSize, __FILE__, __LINE__)); // FONTMGR.C, 259
+    if (fontDescriptor->data == nullptr) {
         return -1;
     }
 
-    if (db_fread(fontDescriptor->data, glyphDataSize, 1, stream) != 1) {
+    if (stream.get()->fread(fontDescriptor->data, glyphDataSize, 1) != 1) {
         myfree(fontDescriptor->data, __FILE__, __LINE__); // FONTMGR.C, 268
-        db_fclose(stream);
+        fontDescriptor->data = nullptr;
         return -1;
     }
-
-    db_fclose(stream);
 
     return 0;
 }
@@ -192,7 +181,7 @@ void FMtext_font(int font)
 
     font -= 100;
 
-    if (gFontCache[font].data != NULL) {
+    if (gFontCache[font].data != nullptr) {
         gCurrentFontNum = font;
         gCurrentFont = &(gFontCache[font]);
     }
@@ -218,7 +207,7 @@ int FMtext_width(const char* string)
     int stringWidth = 0;
 
     while (*string != '\0') {
-        unsigned char ch = (unsigned char)(*string++);
+        unsigned char ch = static_cast<unsigned char>(*string++);
 
         int characterWidth;
         if (ch == ' ') {

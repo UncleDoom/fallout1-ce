@@ -1,141 +1,249 @@
-#ifndef FALLOUT_INT_INTRPRET_H_
-#define FALLOUT_INT_INTRPRET_H_
+#pragma once
 
+
+#include <memory>
 #include <setjmp.h>
 
 #include <vector>
 
+#include "game/enum_utils.h"
+
 namespace fallout {
 
-typedef enum Opcode {
-    OPCODE_NOOP = 0x8000,
-    OPCODE_PUSH = 0x8001,
-    OPCODE_ENTER_CRITICAL_SECTION = 0x8002,
-    OPCODE_LEAVE_CRITICAL_SECTION = 0x8003,
-    OPCODE_JUMP = 0x8004,
-    OPCODE_CALL = 0x8005,
-    OPCODE_CALL_AT = 0x8006,
-    OPCODE_CALL_WHEN = 0x8007,
-    OPCODE_CALLSTART = 0x8008,
-    OPCODE_EXEC = 0x8009,
-    OPCODE_SPAWN = 0x800A,
-    OPCODE_FORK = 0x800B,
-    OPCODE_A_TO_D = 0x800C,
-    OPCODE_D_TO_A = 0x800D,
-    OPCODE_EXIT = 0x800E,
-    OPCODE_DETACH = 0x800F,
-    OPCODE_EXIT_PROGRAM = 0x8010,
-    OPCODE_STOP_PROGRAM = 0x8011,
-    OPCODE_FETCH_GLOBAL = 0x8012,
-    OPCODE_STORE_GLOBAL = 0x8013,
-    OPCODE_FETCH_EXTERNAL = 0x8014,
-    OPCODE_STORE_EXTERNAL = 0x8015,
-    OPCODE_EXPORT_VARIABLE = 0x8016,
-    OPCODE_EXPORT_PROCEDURE = 0x8017,
-    OPCODE_SWAP = 0x8018,
-    OPCODE_SWAPA = 0x8019,
-    OPCODE_POP = 0x801A,
-    OPCODE_DUP = 0x801B,
-    OPCODE_POP_RETURN = 0x801C,
-    OPCODE_POP_EXIT = 0x801D,
-    OPCODE_POP_ADDRESS = 0x801E,
-    OPCODE_POP_FLAGS = 0x801F,
-    OPCODE_POP_FLAGS_RETURN = 0x8020,
-    OPCODE_POP_FLAGS_EXIT = 0x8021,
-    OPCODE_POP_FLAGS_RETURN_EXTERN = 0x8022,
-    OPCODE_POP_FLAGS_EXIT_EXTERN = 0x8023,
-    OPCODE_POP_FLAGS_RETURN_VAL_EXTERN = 0x8024,
-    OPCODE_POP_FLAGS_RETURN_VAL_EXIT = 0x8025,
-    OPCODE_POP_FLAGS_RETURN_VAL_EXIT_EXTERN = 0x8026,
-    OPCODE_CHECK_PROCEDURE_ARGUMENT_COUNT = 0x8027,
-    OPCODE_LOOKUP_PROCEDURE_BY_NAME = 0x8028,
-    OPCODE_POP_BASE = 0x8029,
-    OPCODE_POP_TO_BASE = 0x802A,
-    OPCODE_PUSH_BASE = 0x802B,
-    OPCODE_SET_GLOBAL = 0x802C,
-    OPCODE_FETCH_PROCEDURE_ADDRESS = 0x802D,
-    OPCODE_DUMP = 0x802E,
-    OPCODE_IF = 0x802F,
-    OPCODE_WHILE = 0x8030,
-    OPCODE_STORE = 0x8031,
-    OPCODE_FETCH = 0x8032,
-    OPCODE_EQUAL = 0x8033,
-    OPCODE_NOT_EQUAL = 0x8034,
-    OPCODE_LESS_THAN_EQUAL = 0x8035,
-    OPCODE_GREATER_THAN_EQUAL = 0x8036,
-    OPCODE_LESS_THAN = 0x8037,
-    OPCODE_GREATER_THAN = 0x8038,
-    OPCODE_ADD = 0x8039,
-    OPCODE_SUB = 0x803A,
-    OPCODE_MUL = 0x803B,
-    OPCODE_DIV = 0x803C,
-    OPCODE_MOD = 0x803D,
-    OPCODE_AND = 0x803E,
-    OPCODE_OR = 0x803F,
-    OPCODE_BITWISE_AND = 0x8040,
-    OPCODE_BITWISE_OR = 0x8041,
-    OPCODE_BITWISE_XOR = 0x8042,
-    OPCODE_BITWISE_NOT = 0x8043,
-    OPCODE_FLOOR = 0x8044,
-    OPCODE_NOT = 0x8045,
-    OPCODE_NEGATE = 0x8046,
-    OPCODE_WAIT = 0x8047,
-    OPCODE_CANCEL = 0x8048,
-    OPCODE_CANCEL_ALL = 0x8049,
-    OPCODE_START_CRITICAL = 0x804A,
-    OPCODE_END_CRITICAL = 0x804B,
-} Opcode;
-
-typedef enum ProcedureFlags {
-    PROCEDURE_FLAG_TIMED = 0x01,
-    PROCEDURE_FLAG_CONDITIONAL = 0x02,
-    PROCEDURE_FLAG_IMPORTED = 0x04,
-    PROCEDURE_FLAG_EXPORTED = 0x08,
-    PROCEDURE_FLAG_CRITICAL = 0x10,
-} ProcedureFlags;
-
-typedef enum ProgramFlags {
-    PROGRAM_FLAG_EXITED = 0x01,
-    PROGRAM_FLAG_0x02 = 0x02,
-    PROGRAM_FLAG_0x04 = 0x04,
-    PROGRAM_FLAG_STOPPED = 0x08,
-
-    // Program is in waiting state with `checkWaitFunc` set.
-    PROGRAM_IS_WAITING = 0x10,
-    PROGRAM_FLAG_0x20 = 0x20,
-    PROGRAM_FLAG_0x40 = 0x40,
-    PROGRAM_FLAG_CRITICAL_SECTION = 0x80,
-    PROGRAM_FLAG_0x0100 = 0x0100,
-} ProgramFlags;
-
-enum RawValueType {
-    RAW_VALUE_TYPE_OPCODE = 0x8000,
-    RAW_VALUE_TYPE_INT = 0x4000,
-    RAW_VALUE_TYPE_FLOAT = 0x2000,
-    RAW_VALUE_TYPE_STATIC_STRING = 0x1000,
-    RAW_VALUE_TYPE_DYNAMIC_STRING = 0x0800,
+enum class Opcode : int {
+    Noop = 0x8000,
+    Push = 0x8001,
+    EnterCriticalSection = 0x8002,
+    LeaveCriticalSection = 0x8003,
+    Jump = 0x8004,
+    Call = 0x8005,
+    CallAt = 0x8006,
+    CallWhen = 0x8007,
+    Callstart = 0x8008,
+    Exec = 0x8009,
+    Spawn = 0x800A,
+    Fork = 0x800B,
+    AToD = 0x800C,
+    DToA = 0x800D,
+    Exit = 0x800E,
+    Detach = 0x800F,
+    ExitProgram = 0x8010,
+    StopProgram = 0x8011,
+    FetchGlobal = 0x8012,
+    StoreGlobal = 0x8013,
+    FetchExternal = 0x8014,
+    StoreExternal = 0x8015,
+    ExportVariable = 0x8016,
+    ExportProcedure = 0x8017,
+    Swap = 0x8018,
+    Swapa = 0x8019,
+    Pop = 0x801A,
+    Dup = 0x801B,
+    PopReturn = 0x801C,
+    PopExit = 0x801D,
+    PopAddress = 0x801E,
+    PopFlags = 0x801F,
+    PopFlagsReturn = 0x8020,
+    PopFlagsExit = 0x8021,
+    PopFlagsReturnExtern = 0x8022,
+    PopFlagsExitExtern = 0x8023,
+    PopFlagsReturnValExtern = 0x8024,
+    PopFlagsReturnValExit = 0x8025,
+    PopFlagsReturnValExitExtern = 0x8026,
+    CheckProcedureArgumentCount = 0x8027,
+    LookupProcedureByName = 0x8028,
+    PopBase = 0x8029,
+    PopToBase = 0x802A,
+    PushBase = 0x802B,
+    SetGlobal = 0x802C,
+    FetchProcedureAddress = 0x802D,
+    Dump = 0x802E,
+    If = 0x802F,
+    While = 0x8030,
+    Store = 0x8031,
+    Fetch = 0x8032,
+    Equal = 0x8033,
+    NotEqual = 0x8034,
+    LessThanEqual = 0x8035,
+    GreaterThanEqual = 0x8036,
+    LessThan = 0x8037,
+    GreaterThan = 0x8038,
+    Add = 0x8039,
+    Sub = 0x803A,
+    Mul = 0x803B,
+    Div = 0x803C,
+    Mod = 0x803D,
+    And = 0x803E,
+    Or = 0x803F,
+    BitwiseAnd = 0x8040,
+    BitwiseOr = 0x8041,
+    BitwiseXor = 0x8042,
+    BitwiseNot = 0x8043,
+    Floor = 0x8044,
+    Not = 0x8045,
+    Negate = 0x8046,
+    Wait = 0x8047,
+    Cancel = 0x8048,
+    CancelAll = 0x8049,
+    StartCritical = 0x804A,
+    EndCritical = 0x804B,
 };
 
-#define VALUE_TYPE_MASK 0xF7FF
+inline constexpr int OPCODE_NOOP = static_cast<int>(Opcode::Noop);
+inline constexpr int OPCODE_PUSH = static_cast<int>(Opcode::Push);
+inline constexpr int OPCODE_ENTER_CRITICAL_SECTION = static_cast<int>(Opcode::EnterCriticalSection);
+inline constexpr int OPCODE_LEAVE_CRITICAL_SECTION = static_cast<int>(Opcode::LeaveCriticalSection);
+inline constexpr int OPCODE_JUMP = static_cast<int>(Opcode::Jump);
+inline constexpr int OPCODE_CALL = static_cast<int>(Opcode::Call);
+inline constexpr int OPCODE_CALL_AT = static_cast<int>(Opcode::CallAt);
+inline constexpr int OPCODE_CALL_WHEN = static_cast<int>(Opcode::CallWhen);
+inline constexpr int OPCODE_CALLSTART = static_cast<int>(Opcode::Callstart);
+inline constexpr int OPCODE_EXEC = static_cast<int>(Opcode::Exec);
+inline constexpr int OPCODE_SPAWN = static_cast<int>(Opcode::Spawn);
+inline constexpr int OPCODE_FORK = static_cast<int>(Opcode::Fork);
+inline constexpr int OPCODE_A_TO_D = static_cast<int>(Opcode::AToD);
+inline constexpr int OPCODE_D_TO_A = static_cast<int>(Opcode::DToA);
+inline constexpr int OPCODE_EXIT = static_cast<int>(Opcode::Exit);
+inline constexpr int OPCODE_DETACH = static_cast<int>(Opcode::Detach);
+inline constexpr int OPCODE_EXIT_PROGRAM = static_cast<int>(Opcode::ExitProgram);
+inline constexpr int OPCODE_STOP_PROGRAM = static_cast<int>(Opcode::StopProgram);
+inline constexpr int OPCODE_FETCH_GLOBAL = static_cast<int>(Opcode::FetchGlobal);
+inline constexpr int OPCODE_STORE_GLOBAL = static_cast<int>(Opcode::StoreGlobal);
+inline constexpr int OPCODE_FETCH_EXTERNAL = static_cast<int>(Opcode::FetchExternal);
+inline constexpr int OPCODE_STORE_EXTERNAL = static_cast<int>(Opcode::StoreExternal);
+inline constexpr int OPCODE_EXPORT_VARIABLE = static_cast<int>(Opcode::ExportVariable);
+inline constexpr int OPCODE_EXPORT_PROCEDURE = static_cast<int>(Opcode::ExportProcedure);
+inline constexpr int OPCODE_SWAP = static_cast<int>(Opcode::Swap);
+inline constexpr int OPCODE_SWAPA = static_cast<int>(Opcode::Swapa);
+inline constexpr int OPCODE_POP = static_cast<int>(Opcode::Pop);
+inline constexpr int OPCODE_DUP = static_cast<int>(Opcode::Dup);
+inline constexpr int OPCODE_POP_RETURN = static_cast<int>(Opcode::PopReturn);
+inline constexpr int OPCODE_POP_EXIT = static_cast<int>(Opcode::PopExit);
+inline constexpr int OPCODE_POP_ADDRESS = static_cast<int>(Opcode::PopAddress);
+inline constexpr int OPCODE_POP_FLAGS = static_cast<int>(Opcode::PopFlags);
+inline constexpr int OPCODE_POP_FLAGS_RETURN = static_cast<int>(Opcode::PopFlagsReturn);
+inline constexpr int OPCODE_POP_FLAGS_EXIT = static_cast<int>(Opcode::PopFlagsExit);
+inline constexpr int OPCODE_POP_FLAGS_RETURN_EXTERN = static_cast<int>(Opcode::PopFlagsReturnExtern);
+inline constexpr int OPCODE_POP_FLAGS_EXIT_EXTERN = static_cast<int>(Opcode::PopFlagsExitExtern);
+inline constexpr int OPCODE_POP_FLAGS_RETURN_VAL_EXTERN = static_cast<int>(Opcode::PopFlagsReturnValExtern);
+inline constexpr int OPCODE_POP_FLAGS_RETURN_VAL_EXIT = static_cast<int>(Opcode::PopFlagsReturnValExit);
+inline constexpr int OPCODE_POP_FLAGS_RETURN_VAL_EXIT_EXTERN = static_cast<int>(Opcode::PopFlagsReturnValExitExtern);
+inline constexpr int OPCODE_CHECK_PROCEDURE_ARGUMENT_COUNT = static_cast<int>(Opcode::CheckProcedureArgumentCount);
+inline constexpr int OPCODE_LOOKUP_PROCEDURE_BY_NAME = static_cast<int>(Opcode::LookupProcedureByName);
+inline constexpr int OPCODE_POP_BASE = static_cast<int>(Opcode::PopBase);
+inline constexpr int OPCODE_POP_TO_BASE = static_cast<int>(Opcode::PopToBase);
+inline constexpr int OPCODE_PUSH_BASE = static_cast<int>(Opcode::PushBase);
+inline constexpr int OPCODE_SET_GLOBAL = static_cast<int>(Opcode::SetGlobal);
+inline constexpr int OPCODE_FETCH_PROCEDURE_ADDRESS = static_cast<int>(Opcode::FetchProcedureAddress);
+inline constexpr int OPCODE_DUMP = static_cast<int>(Opcode::Dump);
+inline constexpr int OPCODE_IF = static_cast<int>(Opcode::If);
+inline constexpr int OPCODE_WHILE = static_cast<int>(Opcode::While);
+inline constexpr int OPCODE_STORE = static_cast<int>(Opcode::Store);
+inline constexpr int OPCODE_FETCH = static_cast<int>(Opcode::Fetch);
+inline constexpr int OPCODE_EQUAL = static_cast<int>(Opcode::Equal);
+inline constexpr int OPCODE_NOT_EQUAL = static_cast<int>(Opcode::NotEqual);
+inline constexpr int OPCODE_LESS_THAN_EQUAL = static_cast<int>(Opcode::LessThanEqual);
+inline constexpr int OPCODE_GREATER_THAN_EQUAL = static_cast<int>(Opcode::GreaterThanEqual);
+inline constexpr int OPCODE_LESS_THAN = static_cast<int>(Opcode::LessThan);
+inline constexpr int OPCODE_GREATER_THAN = static_cast<int>(Opcode::GreaterThan);
+inline constexpr int OPCODE_ADD = static_cast<int>(Opcode::Add);
+inline constexpr int OPCODE_SUB = static_cast<int>(Opcode::Sub);
+inline constexpr int OPCODE_MUL = static_cast<int>(Opcode::Mul);
+inline constexpr int OPCODE_DIV = static_cast<int>(Opcode::Div);
+inline constexpr int OPCODE_MOD = static_cast<int>(Opcode::Mod);
+inline constexpr int OPCODE_AND = static_cast<int>(Opcode::And);
+inline constexpr int OPCODE_OR = static_cast<int>(Opcode::Or);
+inline constexpr int OPCODE_BITWISE_AND = static_cast<int>(Opcode::BitwiseAnd);
+inline constexpr int OPCODE_BITWISE_OR = static_cast<int>(Opcode::BitwiseOr);
+inline constexpr int OPCODE_BITWISE_XOR = static_cast<int>(Opcode::BitwiseXor);
+inline constexpr int OPCODE_BITWISE_NOT = static_cast<int>(Opcode::BitwiseNot);
+inline constexpr int OPCODE_FLOOR = static_cast<int>(Opcode::Floor);
+inline constexpr int OPCODE_NOT = static_cast<int>(Opcode::Not);
+inline constexpr int OPCODE_NEGATE = static_cast<int>(Opcode::Negate);
+inline constexpr int OPCODE_WAIT = static_cast<int>(Opcode::Wait);
+inline constexpr int OPCODE_CANCEL = static_cast<int>(Opcode::Cancel);
+inline constexpr int OPCODE_CANCEL_ALL = static_cast<int>(Opcode::CancelAll);
+inline constexpr int OPCODE_START_CRITICAL = static_cast<int>(Opcode::StartCritical);
+inline constexpr int OPCODE_END_CRITICAL = static_cast<int>(Opcode::EndCritical);
 
-#define VALUE_TYPE_INT 0xC001
-#define VALUE_TYPE_FLOAT 0xA001
-#define VALUE_TYPE_STRING 0x9001
-#define VALUE_TYPE_DYNAMIC_STRING 0x9801
-#define VALUE_TYPE_PTR 0xE001
+enum class ProcedureFlags : unsigned {
+    Timed = 0x01,
+    Conditional = 0x02,
+    Imported = 0x04,
+    Exported = 0x08,
+    Critical = 0x10,
+};
 
-typedef unsigned short opcode_t;
+DEFINE_ENUM_FLAG_OPERATORS(ProcedureFlags)
 
-typedef struct Procedure {
+inline constexpr int PROCEDURE_FLAG_TIMED = static_cast<int>(ProcedureFlags::Timed);
+inline constexpr int PROCEDURE_FLAG_CONDITIONAL = static_cast<int>(ProcedureFlags::Conditional);
+inline constexpr int PROCEDURE_FLAG_IMPORTED = static_cast<int>(ProcedureFlags::Imported);
+inline constexpr int PROCEDURE_FLAG_EXPORTED = static_cast<int>(ProcedureFlags::Exported);
+inline constexpr int PROCEDURE_FLAG_CRITICAL = static_cast<int>(ProcedureFlags::Critical);
+
+
+enum class ProgramFlags : unsigned {
+    Exited = 0x01,
+    Flag0x02 = 0x02,
+    Flag0x04 = 0x04,
+    Stopped = 0x08,
+
+    // Program is in waiting state with `checkWaitFunc` set.
+    IsWaiting = 0x10,
+    Flag0x20 = 0x20,
+    Flag0x40 = 0x40,
+    CriticalSection = 0x80,
+    Flag0x0100 = 0x0100,
+};
+
+DEFINE_ENUM_FLAG_OPERATORS(ProgramFlags)
+
+inline constexpr int PROGRAM_FLAG_EXITED = static_cast<int>(ProgramFlags::Exited);
+inline constexpr int PROGRAM_FLAG_0x02 = static_cast<int>(ProgramFlags::Flag0x02);
+inline constexpr int PROGRAM_FLAG_0x04 = static_cast<int>(ProgramFlags::Flag0x04);
+inline constexpr int PROGRAM_FLAG_STOPPED = static_cast<int>(ProgramFlags::Stopped);
+inline constexpr int PROGRAM_IS_WAITING = static_cast<int>(ProgramFlags::IsWaiting);
+inline constexpr int PROGRAM_FLAG_0x20 = static_cast<int>(ProgramFlags::Flag0x20);
+inline constexpr int PROGRAM_FLAG_0x40 = static_cast<int>(ProgramFlags::Flag0x40);
+inline constexpr int PROGRAM_FLAG_CRITICAL_SECTION = static_cast<int>(ProgramFlags::CriticalSection);
+inline constexpr int PROGRAM_FLAG_0x0100 = static_cast<int>(ProgramFlags::Flag0x0100);
+
+
+enum class RawValueType : int {
+    Opcode = 0x8000,
+    Int = 0x4000,
+    Float = 0x2000,
+    StaticString = 0x1000,
+    DynamicString = 0x0800,
+};
+
+inline constexpr int RAW_VALUE_TYPE_OPCODE = static_cast<int>(RawValueType::Opcode);
+inline constexpr int RAW_VALUE_TYPE_INT = static_cast<int>(RawValueType::Int);
+inline constexpr int RAW_VALUE_TYPE_FLOAT = static_cast<int>(RawValueType::Float);
+inline constexpr int RAW_VALUE_TYPE_STATIC_STRING = static_cast<int>(RawValueType::StaticString);
+inline constexpr int RAW_VALUE_TYPE_DYNAMIC_STRING = static_cast<int>(RawValueType::DynamicString);
+
+inline constexpr int VALUE_TYPE_MASK = 0xF7FF;
+
+inline constexpr int VALUE_TYPE_INT = 0xC001;
+inline constexpr int VALUE_TYPE_FLOAT = 0xA001;
+inline constexpr int VALUE_TYPE_STRING = 0x9001;
+inline constexpr int VALUE_TYPE_DYNAMIC_STRING = 0x9801;
+inline constexpr int VALUE_TYPE_PTR = 0xE001;
+
+using opcode_t = unsigned short;
+
+struct Procedure {
     int field_0;
     int field_4;
     int field_8;
     int field_C;
     int field_10;
     int field_14;
-} Procedure;
+};
 
-typedef struct ProgramValue {
+struct ProgramValue {
     opcode_t opcode;
     union {
         int integerValue;
@@ -144,20 +252,21 @@ typedef struct ProgramValue {
     };
 
     bool isEmpty();
-} ProgramValue;
+};
 
-typedef std::vector<ProgramValue> ProgramStack;
+using ProgramStack = std::vector<ProgramValue>;
 
-typedef struct Program Program;
-typedef int(InterpretCheckWaitFunc)(Program* program);
+class Program;
+using InterpretCheckWaitFunc = int(Program* program);
 
 // It's size in original code is 144 (0x8C) bytes due to the different
 // size of `jmp_buf`.
-typedef struct Program {
+class Program {
+public:
     char* name;
     unsigned char* data;
-    struct Program* parent;
-    struct Program* child;
+    Program* parent;
+    Program* child;
     int instructionPointer; // current pos in data
     int framePointer; // saved stack 1 pos - probably beginning of local variables - probably called base
     int basePointer; // saved stack 1 pos - probably beginning of global variables
@@ -173,33 +282,55 @@ typedef struct Program {
     int flags; // flags
     int windowId;
     bool exited;
-    ProgramStack* stackValues;
-    ProgramStack* returnStackValues;
-} Program;
+    std::unique_ptr<ProgramStack> stackValues;
+    std::unique_ptr<ProgramStack> returnStackValues;
 
-typedef char*(InterpretMangleFunc)(char* fileName);
-typedef int(InterpretOutputFunc)(char* string);
-typedef unsigned int(InterpretTimerFunc)();
-typedef void(OpcodeHandler)(Program* program);
+    // Methods (converted from free functions)
+    void freeProgram();
+    char* getString(opcode_t opcode, int offset);
+    char* getName(int offset);
+    int addString(char* string);
+    void interpret(int a2);
+    void executeProc(int procedureIndex);
+    int findProcedure(const char* name);
+    void executeProcedure(int procedureIndex);
+    void run();
+
+    void stackPushValue(ProgramValue& programValue);
+    void stackPushInteger(int value);
+    void stackPushFloat(float value);
+    void stackPushString(char* string);
+    void stackPushPointer(void* value);
+
+    ProgramValue stackPopValue();
+    int stackPopInteger();
+    float stackPopFloat();
+    char* stackPopString();
+    void* stackPopPointer();
+
+    void returnStackPushValue(ProgramValue& programValue);
+    void returnStackPushInteger(int value);
+    void returnStackPushPointer(void* value);
+
+    ProgramValue returnStackPopValue();
+    int returnStackPopInteger();
+    void* returnStackPopPointer();
+};
+
+using InterpretMangleFunc = char*(char* fileName);
+using InterpretOutputFunc = int(char* string);
+using InterpretTimerFunc = unsigned int();
+using OpcodeHandler = void(Program* program);
 
 void interpretSetTimeFunc(InterpretTimerFunc* timerFunc, int timerTick);
 char* interpretMangleName(char* fileName);
 void interpretOutputFunc(InterpretOutputFunc* func);
 int interpretOutput(const char* format, ...);
 void interpretError(const char* format, ...);
-void interpretFreeProgram(Program* program);
 Program* allocateProgram(const char* path);
-char* interpretGetString(Program* program, opcode_t opcode, int offset);
-char* interpretGetName(Program* program, int offset);
-int interpretAddString(Program* program, char* string);
 void initInterpreter();
 void interpretClose();
 void interpretEnableInterpreter(int enabled);
-void interpret(Program* program, int a2);
-void executeProc(Program* program, int procedureIndex);
-int interpretFindProcedure(Program* prg, const char* name);
-void executeProcedure(Program* program, int procedureIndex);
-void runProgram(Program* program);
 Program* runScript(char* name);
 void interpretSetCPUBurstSize(int value);
 void updatePrograms();
@@ -214,26 +345,4 @@ void interpretResumeEvents();
 int interpretSaveProgramState();
 int interpretLoadProgramState();
 
-void programStackPushValue(Program* program, ProgramValue& programValue);
-void programStackPushInteger(Program* program, int value);
-void programStackPushFloat(Program* program, float value);
-void programStackPushString(Program* program, char* string);
-void programStackPushPointer(Program* program, void* value);
-
-ProgramValue programStackPopValue(Program* program);
-int programStackPopInteger(Program* program);
-float programStackPopFloat(Program* program);
-char* programStackPopString(Program* program);
-void* programStackPopPointer(Program* program);
-
-void programReturnStackPushValue(Program* program, ProgramValue& programValue);
-void programReturnStackPushInteger(Program* program, int value);
-void programReturnStackPushPointer(Program* program, void* value);
-
-ProgramValue programReturnStackPopValue(Program* program);
-int programReturnStackPopInteger(Program* program);
-void* programReturnStackPopPointer(Program* program);
-
 } // namespace fallout
-
-#endif /* FALLOUT_INT_INTRPRET_H_ */

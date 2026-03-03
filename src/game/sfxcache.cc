@@ -1,10 +1,10 @@
 #include "game/sfxcache.h"
 
-#include <assert.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <climits>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <adecode/adecode.h>
 
@@ -16,9 +16,9 @@
 
 namespace fallout {
 
-#define SOUND_EFFECTS_CACHE_MIN_SIZE 0x40000
+static constexpr int SOUND_EFFECTS_CACHE_MIN_SIZE = 0x40000;
 
-typedef struct SoundEffect {
+struct SoundEffect {
     // NOTE: This field is only 1 byte, likely unsigned char. It always uses
     // cmp for checking implying it's not bitwise flags. Therefore it's better
     // to express it as boolean.
@@ -31,7 +31,7 @@ typedef struct SoundEffect {
     int position;
     int dataPosition;
     unsigned char* data;
-} SoundEffect;
+};
 
 static int sfxc_effect_size(int tag, int* sizePtr);
 static int sfxc_effect_load(int tag, int* sizePtr, unsigned char* data);
@@ -49,16 +49,16 @@ static unsigned int sfxc_ad_reader(void* stream, void* buf, unsigned int size);
 static int sfxc_dlevel = INT_MAX;
 
 // 0x507A74
-static char* sfxc_effect_path = NULL;
+static char* sfxc_effect_path = nullptr;
 
 // 0x507A78
-static SoundEffect* sfxc_handle_list = NULL;
+static SoundEffect* sfxc_handle_list = nullptr;
 
 // 0x507A7C
 static int sfxc_files_open = 0;
 
 // 0x507A80
-static Cache* sfxc_pcache = NULL;
+static Cache* sfxc_pcache = nullptr;
 
 // 0x507A84
 static bool sfxc_initialized = false;
@@ -69,7 +69,7 @@ static int sfxc_cmpr = 1;
 // 0x497140
 int sfxc_init(int cacheSize, const char* effectsPath)
 {
-    if (!config_get_value(&game_config, GAME_CONFIG_SOUND_KEY, GAME_CONFIG_DEBUG_SFXC_KEY, &sfxc_dlevel)) {
+    if (!game_config.getValue(GAME_CONFIG_SOUND_KEY, GAME_CONFIG_DEBUG_SFXC_KEY, &sfxc_dlevel)) {
         sfxc_dlevel = 1;
     }
 
@@ -77,12 +77,12 @@ int sfxc_init(int cacheSize, const char* effectsPath)
         return -1;
     }
 
-    if (effectsPath == NULL) {
+    if (effectsPath == nullptr) {
         effectsPath = "";
     }
 
     sfxc_effect_path = mem_strdup(effectsPath);
-    if (sfxc_effect_path == NULL) {
+    if (sfxc_effect_path == nullptr) {
         return -1;
     }
 
@@ -97,8 +97,8 @@ int sfxc_init(int cacheSize, const char* effectsPath)
         return -1;
     }
 
-    sfxc_pcache = (Cache*)mem_malloc(sizeof(*sfxc_pcache));
-    if (sfxc_pcache == NULL) {
+    sfxc_pcache = static_cast<Cache*>(mem_malloc(sizeof(*sfxc_pcache)));
+    if (sfxc_pcache == nullptr) {
         sfxc_handle_list_destroy();
         sfxl_exit();
         mem_free(sfxc_effect_path);
@@ -124,7 +124,7 @@ void sfxc_exit()
     if (sfxc_initialized) {
         cache_exit(sfxc_pcache);
         mem_free(sfxc_pcache);
-        sfxc_pcache = NULL;
+        sfxc_pcache = nullptr;
 
         sfxc_handle_list_destroy();
 
@@ -158,7 +158,7 @@ int sfxc_cached_open(const char* fname, int mode)
     }
 
     char* copy = mem_strdup(fname);
-    if (copy == NULL) {
+    if (copy == nullptr) {
         return -1;
     }
 
@@ -222,7 +222,7 @@ int sfxc_cached_read(int handle, void* buf, unsigned int size)
 
     size_t bytesToRead;
     // NOTE: Original code uses signed comparison.
-    if ((int)size < (soundEffect->dataSize - soundEffect->position)) {
+    if (static_cast<int>(size) < (soundEffect->dataSize - soundEffect->position)) {
         bytesToRead = size;
     } else {
         bytesToRead = soundEffect->dataSize - soundEffect->position;
@@ -366,8 +366,8 @@ static void sfxc_effect_free(void* ptr)
 // 0x497654
 static int sfxc_handle_list_create()
 {
-    sfxc_handle_list = (SoundEffect*)mem_malloc(sizeof(*sfxc_handle_list) * SOUND_EFFECTS_MAX_COUNT);
-    if (sfxc_handle_list == NULL) {
+    sfxc_handle_list = static_cast<SoundEffect*>(mem_malloc(sizeof(*sfxc_handle_list) * SOUND_EFFECTS_MAX_COUNT));
+    if (sfxc_handle_list == nullptr) {
         return -1;
     }
 
@@ -426,7 +426,7 @@ static int sfxc_handle_create(int* handlePtr, int tag, void* data, CacheEntry* c
     soundEffect->position = 0;
     soundEffect->dataPosition = 0;
 
-    soundEffect->data = (unsigned char*)data;
+    soundEffect->data = reinterpret_cast<unsigned char*>(data);
 
     *handlePtr = index;
 
@@ -491,7 +491,7 @@ static int sfxc_decode(int handle, void* buf, unsigned int size)
 
     if (soundEffect->position != 0) {
         void* temp = mem_malloc(soundEffect->position);
-        if (temp == NULL) {
+        if (temp == nullptr) {
             AudioDecoder_Close(ad);
             return -1;
         }

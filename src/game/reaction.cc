@@ -25,33 +25,29 @@ int level_to_reaction()
 }
 
 // 0x490C58
-int reaction_to_level_internal(int sid, int reaction)
+NpcReaction reaction_to_level_internal(int sid, int reaction)
 {
-    int level;
-
     if (reaction > 75) {
         compat_scr_set_local_var(sid, 1, 3);
-        level = 2;
+        return NpcReaction::NPC_REACTION_GOOD;
     } else if (reaction > 25) {
         compat_scr_set_local_var(sid, 1, 2);
-        level = 1;
+        return NpcReaction::NPC_REACTION_NEUTRAL;
     } else {
         compat_scr_set_local_var(sid, 1, 1);
-        level = 0;
+        return NpcReaction::NPC_REACTION_BAD;
     }
-
-    return 0;
 }
 
 // 0x490CA0
-int reaction_to_level(int reaction)
+NpcReaction reaction_to_level(int reaction)
 {
     if (reaction > 75) {
-        return 2;
+        return NpcReaction::NPC_REACTION_GOOD;
     } else if (reaction > 25) {
-        return 1;
+        return NpcReaction::NPC_REACTION_NEUTRAL;
     } else {
-        return 0;
+        return NpcReaction::NPC_REACTION_BAD;
     }
 }
 

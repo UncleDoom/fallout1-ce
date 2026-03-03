@@ -18,20 +18,15 @@ bool dxinput_init()
     }
 
     if (!dxinput_mouse_init()) {
-        goto err;
+        return false;
     }
 
     if (!dxinput_keyboard_init()) {
-        goto err;
+        dxinput_mouse_exit();
+        return false;
     }
 
     return true;
-
-err:
-
-    dxinput_mouse_exit();
-
-    return false;
 }
 
 // 0x4E0478

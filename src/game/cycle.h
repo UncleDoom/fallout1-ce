@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_CYCLE_H_
-#define FALLOUT_GAME_CYCLE_H_
+#pragma once
+
 
 namespace fallout {
 
@@ -19,5 +19,3 @@ void change_cycle_speed(int value);
 int get_cycle_speed();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_CYCLE_H_ */

@@ -1,2 +1,38 @@
+---
+Language: Cpp
 BasedOnStyle: WebKit
+
+# Preserve existing code style while improving consistency
 AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+AllowShortLambdasOnASingleLine: Inline
+
+# Line width
+ColumnLimit: 120
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+IndentCaseLabels: false
+NamespaceIndentation: None
+
+# Pointer/reference alignment
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Preserve
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignTrailingComments: true
+
+# Misc
+Cpp11BracedListStyle: true
+FixNamespaceComments: true
+MaxEmptyLinesToKeep: 1
+Standard: c++17

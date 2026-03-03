@@ -1,5 +1,5 @@
-#ifndef FALLOUT_PLIB_GNW_SVGA_H_
-#define FALLOUT_PLIB_GNW_SVGA_H_
+#pragma once
+
 
 #include <SDL.h>
 
@@ -31,5 +31,3 @@ void handleWindowSizeChanged();
 void renderPresent();
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_SVGA_H_ */

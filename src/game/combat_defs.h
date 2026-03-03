@@ -1,92 +1,114 @@
-#ifndef FALLOUT_GAME_COMBAT_DEFS_H_
-#define FALLOUT_GAME_COMBAT_DEFS_H_
+#pragma once
 
+#include "game/enum_utils.h"
 #include "game/object_types.h"
 
 namespace fallout {
 
-#define EXPLOSION_TARGET_COUNT (6)
+constexpr int EXPLOSION_TARGET_COUNT = 6;
 
-#define CRTICIAL_EFFECT_COUNT (6)
+constexpr int CRTICIAL_EFFECT_COUNT = 6;
 
-#define WEAPON_CRITICAL_FAILURE_TYPE_COUNT (7)
-#define WEAPON_CRITICAL_FAILURE_EFFECT_COUNT (5)
+constexpr int WEAPON_CRITICAL_FAILURE_TYPE_COUNT = 7;
+constexpr int WEAPON_CRITICAL_FAILURE_EFFECT_COUNT = 5;
 
-typedef enum CombatState {
-    COMBAT_STATE_0x01 = 0x01,
-    COMBAT_STATE_0x02 = 0x02,
-    COMBAT_STATE_0x08 = 0x08,
-} CombatState;
+enum class CombatState : unsigned int {
+    None = 0x00,
+    InCombat = 0x01,
+    SecondTurn = 0x02,
+    PlayerTurn = 0x08,
+};
+DEFINE_ENUM_FLAG_OPERATORS(CombatState)
 
-typedef enum HitMode {
-    HIT_MODE_LEFT_WEAPON_PRIMARY = 0,
-    HIT_MODE_LEFT_WEAPON_SECONDARY = 1,
-    HIT_MODE_RIGHT_WEAPON_PRIMARY = 2,
-    HIT_MODE_RIGHT_WEAPON_SECONDARY = 3,
-    HIT_MODE_PUNCH = 4,
-    HIT_MODE_KICK = 5,
-    HIT_MODE_LEFT_WEAPON_RELOAD = 6,
-    HIT_MODE_RIGHT_WEAPON_RELOAD = 7,
+// Legacy constants.
+inline constexpr unsigned int COMBAT_STATE_0x01 = 0x01;
+inline constexpr unsigned int COMBAT_STATE_0x02 = 0x02;
+inline constexpr unsigned int COMBAT_STATE_0x08 = 0x08;
 
-    // Punch Level 2
-    HIT_MODE_STRONG_PUNCH = 8,
 
-    // Punch Level 3
-    HIT_MODE_HAMMER_PUNCH = 9,
+enum class HitMode : int {
+    LeftWeaponPrimary = 0,
+    LeftWeaponSecondary = 1,
+    RightWeaponPrimary = 2,
+    RightWeaponSecondary = 3,
+    Punch = 4,
+    Kick = 5,
+    LeftWeaponReload = 6,
+    RightWeaponReload = 7,
+    StrongPunch = 8,       // Punch Level 2
+    HammerPunch = 9,       // Punch Level 3
+    Haymaker = 10,         // Punch Level 4 aka 'Lightning Punch'
+    Jab = 11,              // Punch Level 5 aka 'Chop Punch'
+    PalmStrike = 12,       // Punch Level 6 aka 'Dragon Punch'
+    PiercingStrike = 13,   // Punch Level 7 aka 'Force Punch'
+    StrongKick = 14,       // Kick Level 2
+    SnapKick = 15,         // Kick Level 3
+    PowerKick = 16,        // Kick Level 4 aka 'Roundhouse Kick'
+    HipKick = 17,          // Kick Level 5
+    HookKick = 18,         // Kick Level 6 aka 'Jump Kick'
+    PiercingKick = 19,     // Kick Level 7 aka 'Death Blossom Kick'
+    Count = 20,
+};
 
-    // Punch Level 4 aka 'Lightning Punch'
-    HIT_MODE_HAYMAKER = 10,
+// Legacy constants for backward compatibility.
+inline constexpr int HIT_MODE_LEFT_WEAPON_PRIMARY = 0;
+inline constexpr int HIT_MODE_LEFT_WEAPON_SECONDARY = 1;
+inline constexpr int HIT_MODE_RIGHT_WEAPON_PRIMARY = 2;
+inline constexpr int HIT_MODE_RIGHT_WEAPON_SECONDARY = 3;
+inline constexpr int HIT_MODE_PUNCH = 4;
+inline constexpr int HIT_MODE_KICK = 5;
+inline constexpr int HIT_MODE_LEFT_WEAPON_RELOAD = 6;
+inline constexpr int HIT_MODE_RIGHT_WEAPON_RELOAD = 7;
+inline constexpr int HIT_MODE_STRONG_PUNCH = 8;
+inline constexpr int HIT_MODE_HAMMER_PUNCH = 9;
+inline constexpr int HIT_MODE_HAYMAKER = 10;
+inline constexpr int HIT_MODE_JAB = 11;
+inline constexpr int HIT_MODE_PALM_STRIKE = 12;
+inline constexpr int HIT_MODE_PIERCING_STRIKE = 13;
+inline constexpr int HIT_MODE_STRONG_KICK = 14;
+inline constexpr int HIT_MODE_SNAP_KICK = 15;
+inline constexpr int HIT_MODE_POWER_KICK = 16;
+inline constexpr int HIT_MODE_HIP_KICK = 17;
+inline constexpr int HIT_MODE_HOOK_KICK = 18;
+inline constexpr int HIT_MODE_PIERCING_KICK = 19;
+inline constexpr int HIT_MODE_COUNT = 20;
+inline constexpr int FIRST_ADVANCED_PUNCH_HIT_MODE = HIT_MODE_STRONG_PUNCH;
+inline constexpr int LAST_ADVANCED_PUNCH_HIT_MODE = HIT_MODE_PIERCING_STRIKE;
+inline constexpr int FIRST_ADVANCED_KICK_HIT_MODE = HIT_MODE_STRONG_KICK;
+inline constexpr int LAST_ADVANCED_KICK_HIT_MODE = HIT_MODE_PIERCING_KICK;
+inline constexpr int FIRST_ADVANCED_UNARMED_HIT_MODE = FIRST_ADVANCED_PUNCH_HIT_MODE;
+inline constexpr int LAST_ADVANCED_UNARMED_HIT_MODE = LAST_ADVANCED_KICK_HIT_MODE;
 
-    // Punch Level 5 aka 'Chop Punch'
-    HIT_MODE_JAB = 11,
+enum class HitLocation : int {
+    Head = 0,
+    LeftArm = 1,
+    RightArm = 2,
+    Torso = 3,
+    RightLeg = 4,
+    LeftLeg = 5,
+    Eyes = 6,
+    Groin = 7,
+    Uncalled = 8,
+    Count = 9,
+};
+inline constexpr int HIT_LOCATION_SPECIFIC_COUNT = static_cast<int>(HitLocation::Count) - 1;
 
-    // Punch Level 6 aka 'Dragon Punch'
-    HIT_MODE_PALM_STRIKE = 12,
+// Legacy constants.
+inline constexpr int HIT_LOCATION_HEAD = 0;
+inline constexpr int HIT_LOCATION_LEFT_ARM = 1;
+inline constexpr int HIT_LOCATION_RIGHT_ARM = 2;
+inline constexpr int HIT_LOCATION_TORSO = 3;
+inline constexpr int HIT_LOCATION_RIGHT_LEG = 4;
+inline constexpr int HIT_LOCATION_LEFT_LEG = 5;
+inline constexpr int HIT_LOCATION_EYES = 6;
+inline constexpr int HIT_LOCATION_GROIN = 7;
+inline constexpr int HIT_LOCATION_UNCALLED = 8;
+inline constexpr int HIT_LOCATION_COUNT = 9;
 
-    // Punch Level 7 aka 'Force Punch'
-    HIT_MODE_PIERCING_STRIKE = 13,
-
-    // Kick Level 2
-    HIT_MODE_STRONG_KICK = 14,
-
-    // Kick Level 3
-    HIT_MODE_SNAP_KICK = 15,
-
-    // Kick Level 4 aka 'Roundhouse Kick'
-    HIT_MODE_POWER_KICK = 16,
-
-    // Kick Level 5
-    HIT_MODE_HIP_KICK = 17,
-
-    // Kick Level 6 aka 'Jump Kick'
-    HIT_MODE_HOOK_KICK = 18,
-
-    // Kick Level 7 aka 'Death Blossom Kick'
-    HIT_MODE_PIERCING_KICK = 19,
-    HIT_MODE_COUNT,
-    FIRST_ADVANCED_PUNCH_HIT_MODE = HIT_MODE_STRONG_PUNCH,
-    LAST_ADVANCED_PUNCH_HIT_MODE = HIT_MODE_PIERCING_STRIKE,
-    FIRST_ADVANCED_KICK_HIT_MODE = HIT_MODE_STRONG_KICK,
-    LAST_ADVANCED_KICK_HIT_MODE = HIT_MODE_PIERCING_KICK,
-    FIRST_ADVANCED_UNARMED_HIT_MODE = FIRST_ADVANCED_PUNCH_HIT_MODE,
-    LAST_ADVANCED_UNARMED_HIT_MODE = LAST_ADVANCED_KICK_HIT_MODE,
-} HitMode;
-
-typedef enum HitLocation {
-    HIT_LOCATION_HEAD,
-    HIT_LOCATION_LEFT_ARM,
-    HIT_LOCATION_RIGHT_ARM,
-    HIT_LOCATION_TORSO,
-    HIT_LOCATION_RIGHT_LEG,
-    HIT_LOCATION_LEFT_LEG,
-    HIT_LOCATION_EYES,
-    HIT_LOCATION_GROIN,
-    HIT_LOCATION_UNCALLED,
-    HIT_LOCATION_COUNT,
-    HIT_LOCATION_SPECIFIC_COUNT = HIT_LOCATION_COUNT - 1,
-} HitLocation;
-
-typedef struct STRUCT_664980 {
+// Combat sequence parameters — describes modifiers for a combat encounter.
+// (Previously named STRUCT_664980 — decompiled address)
+class CombatSequenceParams {
+public:
     Object* attacker;
     Object* defender;
     int actionPointsBonus;
@@ -94,12 +116,19 @@ typedef struct STRUCT_664980 {
     int damageBonus;
     int minDamage;
     int maxDamage;
-    int field_1C; // probably bool, indicating field_20 and field_24 used
-    int field_20; // flags on attacker
-    int field_24; // flags on defender
-} STRUCT_664980;
+    int hasOverrideFlags; // if nonzero, attackerOverrideFlags and defenderOverrideFlags are used
+    int attackerOverrideFlags;
+    int defenderOverrideFlags;
 
-typedef struct Attack {
+    int scripts_request_combat();
+    static int scripts_request_combat_no_params();
+
+    void combat();
+    static void combat_no_params();
+};
+
+class Attack {
+public:
     Object* attacker;
     int hitMode;
     Object* weapon;
@@ -121,10 +150,36 @@ typedef struct Attack {
     int extrasDamage[EXPLOSION_TARGET_COUNT];
     int extrasFlags[EXPLOSION_TARGET_COUNT];
     int extrasKnockback[EXPLOSION_TARGET_COUNT];
-} Attack;
+
+    // Public methods (formerly free functions in combat.h / combat.cc)
+    void init(Object* attacker, Object* defender, int hitMode, int hitLocation);
+    void computeExplosionOnExtras(int a2, bool isGrenade, int a4);
+    void deathChecks();
+    void applyDamage(bool animated);
+    void display();
+    int computeAttack();
+
+    // Public methods (formerly free functions in actions.h / actions.cc)
+    int showDamageTarget();
+    int showDamageExtras();
+    void showDamage(int a2, int a3);
+    int actionAttack();
+
+    // Public method (formerly free function in combatai.h / combatai.cc)
+    int aiMsg(Object* critter, int type, int delay);
+
+private:
+    // Private methods (formerly static functions in combat.cc)
+    bool checkRangedMiss();
+    int shootAlongPath(int endTile, int rounds, int anim);
+    int computeSpray(int accuracy, int* roundsHitMainTargetPtr, int* roundsSpentPtr, int anim);
+    int critSuccess();
+    int critFailure();
+    void computeDamage(int rounds, int damageMult);
+};
 
 // Provides metadata about critical hit effect.
-typedef struct CriticalHitDescription {
+struct CriticalHitDescription {
     int damageMultiplier;
 
     // Damage flags that will be applied to defender.
@@ -142,19 +197,27 @@ typedef struct CriticalHitDescription {
 
     int messageId;
     int massiveCriticalMessageId;
-} CriticalHitDescription;
+};
 
-typedef enum CombatBadShot {
-    COMBAT_BAD_SHOT_OK = 0,
-    COMBAT_BAD_SHOT_NO_AMMO = 1,
-    COMBAT_BAD_SHOT_OUT_OF_RANGE = 2,
-    COMBAT_BAD_SHOT_NOT_ENOUGH_AP = 3,
-    COMBAT_BAD_SHOT_ALREADY_DEAD = 4,
-    COMBAT_BAD_SHOT_AIM_BLOCKED = 5,
-    COMBAT_BAD_SHOT_ARM_CRIPPLED = 6,
-    COMBAT_BAD_SHOT_BOTH_ARMS_CRIPPLED = 7,
-} CombatBadShot;
+enum class CombatBadShot : int {
+    Ok = 0,
+    NoAmmo = 1,
+    OutOfRange = 2,
+    NotEnoughAP = 3,
+    AlreadyDead = 4,
+    AimBlocked = 5,
+    ArmCrippled = 6,
+    BothArmsCrippled = 7,
+};
+
+// Legacy constants.
+inline constexpr int COMBAT_BAD_SHOT_OK = 0;
+inline constexpr int COMBAT_BAD_SHOT_NO_AMMO = 1;
+inline constexpr int COMBAT_BAD_SHOT_OUT_OF_RANGE = 2;
+inline constexpr int COMBAT_BAD_SHOT_NOT_ENOUGH_AP = 3;
+inline constexpr int COMBAT_BAD_SHOT_ALREADY_DEAD = 4;
+inline constexpr int COMBAT_BAD_SHOT_AIM_BLOCKED = 5;
+inline constexpr int COMBAT_BAD_SHOT_ARM_CRIPPLED = 6;
+inline constexpr int COMBAT_BAD_SHOT_BOTH_ARMS_CRIPPLED = 7;
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_COMBAT_DEFS_H_ */

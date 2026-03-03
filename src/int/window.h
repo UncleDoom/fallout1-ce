@@ -1,5 +1,5 @@
-#ifndef FALLOUT_INT_WINDOW_H_
-#define FALLOUT_INT_WINDOW_H_
+#pragma once
+
 
 #include "int/intrpret.h"
 #include "int/region.h"
@@ -12,18 +12,22 @@ namespace fallout {
 
 #define MANAGED_WINDOW_COUNT (16)
 
-typedef bool(WindowInputHandler)(int key);
-typedef void(WindowDeleteCallback)(int windowIndex, const char* windowName);
-typedef void(DisplayInWindowCallback)(int windowIndex, const char* windowName, unsigned char* data, int width, int height);
-typedef void(ManagedButtonMouseEventCallback)(void* userData, int eventType);
-typedef void(ManagedWindowCreateCallback)(int windowIndex, const char* windowName, int* flagsPtr);
-typedef void(ManagedWindowSelectFunc)(int windowIndex, const char* windowName);
+using WindowInputHandler = bool(int key);
+using WindowDeleteCallback = void(int windowIndex, const char* windowName);
+using DisplayInWindowCallback = void(int windowIndex, const char* windowName, unsigned char* data, int width, int height);
+using ManagedButtonMouseEventCallback = void(void* userData, int eventType);
+using ManagedWindowCreateCallback = void(int windowIndex, const char* windowName, int* flagsPtr);
+using ManagedWindowSelectFunc = void(int windowIndex, const char* windowName);
 
-typedef enum TextAlignment {
-    TEXT_ALIGNMENT_LEFT,
-    TEXT_ALIGNMENT_RIGHT,
-    TEXT_ALIGNMENT_CENTER,
-} TextAlignment;
+enum class TextAlignment : int {
+    Left = 0,
+    Right = 1,
+    Center = 2,
+};
+
+inline constexpr int TEXT_ALIGNMENT_LEFT = static_cast<int>(TextAlignment::Left);
+inline constexpr int TEXT_ALIGNMENT_RIGHT = static_cast<int>(TextAlignment::Right);
+inline constexpr int TEXT_ALIGNMENT_CENTER = static_cast<int>(TextAlignment::Center);
 
 int windowGetFont();
 int windowSetFont(int a1);
@@ -144,5 +148,3 @@ int windowDeleteTextInputRegion(int textInputRegionId);
 int windowSetTextInputDeleteFunc(int textInputRegionId, TextInputRegionDeleteFunc* deleteFunc, void* userData);
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_WINDOW_H_ */

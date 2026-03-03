@@ -1,9 +1,9 @@
 #include "game/inventry.h"
 
-#include <assert.h>
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <climits>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
@@ -47,143 +47,143 @@
 
 namespace fallout {
 
-#define INVENTORY_WINDOW_X 80
-#define INVENTORY_WINDOW_Y 0
+static constexpr int INVENTORY_WINDOW_X = 80;
+static constexpr int INVENTORY_WINDOW_Y = 0;
 
-#define INVENTORY_TRADE_WINDOW_X 80
-#define INVENTORY_TRADE_WINDOW_Y 290
-#define INVENTORY_TRADE_WINDOW_WIDTH 480
-#define INVENTORY_TRADE_WINDOW_HEIGHT 180
+static constexpr int INVENTORY_TRADE_WINDOW_X = 80;
+static constexpr int INVENTORY_TRADE_WINDOW_Y = 290;
+static constexpr int INVENTORY_TRADE_WINDOW_WIDTH = 480;
+static constexpr int INVENTORY_TRADE_WINDOW_HEIGHT = 180;
 
-#define INVENTORY_LARGE_SLOT_WIDTH 90
-#define INVENTORY_LARGE_SLOT_HEIGHT 61
+static constexpr int INVENTORY_LARGE_SLOT_WIDTH = 90;
+static constexpr int INVENTORY_LARGE_SLOT_HEIGHT = 61;
 
-#define INVENTORY_SLOT_WIDTH 64
-#define INVENTORY_SLOT_HEIGHT 48
+static constexpr int INVENTORY_SLOT_WIDTH = 64;
+static constexpr int INVENTORY_SLOT_HEIGHT = 48;
 
-#define INVENTORY_LEFT_HAND_SLOT_X 154
-#define INVENTORY_LEFT_HAND_SLOT_Y 286
-#define INVENTORY_LEFT_HAND_SLOT_MAX_X (INVENTORY_LEFT_HAND_SLOT_X + INVENTORY_LARGE_SLOT_WIDTH)
-#define INVENTORY_LEFT_HAND_SLOT_MAX_Y (INVENTORY_LEFT_HAND_SLOT_Y + INVENTORY_LARGE_SLOT_HEIGHT)
+static constexpr int INVENTORY_LEFT_HAND_SLOT_X = 154;
+static constexpr int INVENTORY_LEFT_HAND_SLOT_Y = 286;
+static constexpr int INVENTORY_LEFT_HAND_SLOT_MAX_X = (INVENTORY_LEFT_HAND_SLOT_X + INVENTORY_LARGE_SLOT_WIDTH);
+static constexpr int INVENTORY_LEFT_HAND_SLOT_MAX_Y = (INVENTORY_LEFT_HAND_SLOT_Y + INVENTORY_LARGE_SLOT_HEIGHT);
 
-#define INVENTORY_RIGHT_HAND_SLOT_X 245
-#define INVENTORY_RIGHT_HAND_SLOT_Y 286
-#define INVENTORY_RIGHT_HAND_SLOT_MAX_X (INVENTORY_RIGHT_HAND_SLOT_X + INVENTORY_LARGE_SLOT_WIDTH)
-#define INVENTORY_RIGHT_HAND_SLOT_MAX_Y (INVENTORY_RIGHT_HAND_SLOT_Y + INVENTORY_LARGE_SLOT_HEIGHT)
+static constexpr int INVENTORY_RIGHT_HAND_SLOT_X = 245;
+static constexpr int INVENTORY_RIGHT_HAND_SLOT_Y = 286;
+static constexpr int INVENTORY_RIGHT_HAND_SLOT_MAX_X = (INVENTORY_RIGHT_HAND_SLOT_X + INVENTORY_LARGE_SLOT_WIDTH);
+static constexpr int INVENTORY_RIGHT_HAND_SLOT_MAX_Y = (INVENTORY_RIGHT_HAND_SLOT_Y + INVENTORY_LARGE_SLOT_HEIGHT);
 
-#define INVENTORY_ARMOR_SLOT_X 154
-#define INVENTORY_ARMOR_SLOT_Y 183
-#define INVENTORY_ARMOR_SLOT_MAX_X (INVENTORY_ARMOR_SLOT_X + INVENTORY_LARGE_SLOT_WIDTH)
-#define INVENTORY_ARMOR_SLOT_MAX_Y (INVENTORY_ARMOR_SLOT_Y + INVENTORY_LARGE_SLOT_HEIGHT)
+static constexpr int INVENTORY_ARMOR_SLOT_X = 154;
+static constexpr int INVENTORY_ARMOR_SLOT_Y = 183;
+static constexpr int INVENTORY_ARMOR_SLOT_MAX_X = (INVENTORY_ARMOR_SLOT_X + INVENTORY_LARGE_SLOT_WIDTH);
+static constexpr int INVENTORY_ARMOR_SLOT_MAX_Y = (INVENTORY_ARMOR_SLOT_Y + INVENTORY_LARGE_SLOT_HEIGHT);
 
-#define INVENTORY_TRADE_SCROLLER_Y 30
-#define INVENTORY_TRADE_INNER_SCROLLER_Y 20
+static constexpr int INVENTORY_TRADE_SCROLLER_Y = 30;
+static constexpr int INVENTORY_TRADE_INNER_SCROLLER_Y = 20;
 
-#define INVENTORY_TRADE_LEFT_SCROLLER_X 29
-#define INVENTORY_TRADE_LEFT_SCROLLER_Y INVENTORY_TRADE_SCROLLER_Y
+static constexpr int INVENTORY_TRADE_LEFT_SCROLLER_X = 29;
+static constexpr int INVENTORY_TRADE_LEFT_SCROLLER_Y = INVENTORY_TRADE_SCROLLER_Y;
 
-#define INVENTORY_TRADE_RIGHT_SCROLLER_X 388
-#define INVENTORY_TRADE_RIGHT_SCROLLER_Y INVENTORY_TRADE_SCROLLER_Y
+static constexpr int INVENTORY_TRADE_RIGHT_SCROLLER_X = 388;
+static constexpr int INVENTORY_TRADE_RIGHT_SCROLLER_Y = INVENTORY_TRADE_SCROLLER_Y;
 
-#define INVENTORY_TRADE_INNER_LEFT_SCROLLER_X 165
-#define INVENTORY_TRADE_INNER_LEFT_SCROLLER_Y INVENTORY_TRADE_INNER_SCROLLER_Y
+static constexpr int INVENTORY_TRADE_INNER_LEFT_SCROLLER_X = 165;
+static constexpr int INVENTORY_TRADE_INNER_LEFT_SCROLLER_Y = INVENTORY_TRADE_INNER_SCROLLER_Y;
 
-#define INVENTORY_TRADE_INNER_RIGHT_SCROLLER_X 250
-#define INVENTORY_TRADE_INNER_RIGHT_SCROLLER_Y INVENTORY_TRADE_INNER_SCROLLER_Y
+static constexpr int INVENTORY_TRADE_INNER_RIGHT_SCROLLER_X = 250;
+static constexpr int INVENTORY_TRADE_INNER_RIGHT_SCROLLER_Y = INVENTORY_TRADE_INNER_SCROLLER_Y;
 
-#define INVENTORY_TRADE_LEFT_SCROLLER_TRACKING_X 0
-#define INVENTORY_TRADE_LEFT_SCROLLER_TRACKING_Y 10
-#define INVENTORY_TRADE_LEFT_SCROLLER_TRACKING_MAX_X (INVENTORY_TRADE_LEFT_SCROLLER_TRACKING_X + INVENTORY_SLOT_WIDTH)
+static constexpr int INVENTORY_TRADE_LEFT_SCROLLER_TRACKING_X = 0;
+static constexpr int INVENTORY_TRADE_LEFT_SCROLLER_TRACKING_Y = 10;
+static constexpr int INVENTORY_TRADE_LEFT_SCROLLER_TRACKING_MAX_X = (INVENTORY_TRADE_LEFT_SCROLLER_TRACKING_X + INVENTORY_SLOT_WIDTH);
 
-#define INVENTORY_TRADE_INNER_LEFT_SCROLLER_TRACKING_X 165
-#define INVENTORY_TRADE_INNER_LEFT_SCROLLER_TRACKING_Y 10
-#define INVENTORY_TRADE_INNER_LEFT_SCROLLER_TRACKING_MAX_X (INVENTORY_TRADE_INNER_LEFT_SCROLLER_TRACKING_X + INVENTORY_SLOT_WIDTH)
+static constexpr int INVENTORY_TRADE_INNER_LEFT_SCROLLER_TRACKING_X = 165;
+static constexpr int INVENTORY_TRADE_INNER_LEFT_SCROLLER_TRACKING_Y = 10;
+static constexpr int INVENTORY_TRADE_INNER_LEFT_SCROLLER_TRACKING_MAX_X = (INVENTORY_TRADE_INNER_LEFT_SCROLLER_TRACKING_X + INVENTORY_SLOT_WIDTH);
 
-#define INVENTORY_TRADE_INNER_RIGHT_SCROLLER_TRACKING_X 250
-#define INVENTORY_TRADE_INNER_RIGHT_SCROLLER_TRACKING_Y 10
-#define INVENTORY_TRADE_INNER_RIGHT_SCROLLER_TRACKING_MAX_X (INVENTORY_TRADE_INNER_RIGHT_SCROLLER_TRACKING_X + INVENTORY_SLOT_WIDTH)
+static constexpr int INVENTORY_TRADE_INNER_RIGHT_SCROLLER_TRACKING_X = 250;
+static constexpr int INVENTORY_TRADE_INNER_RIGHT_SCROLLER_TRACKING_Y = 10;
+static constexpr int INVENTORY_TRADE_INNER_RIGHT_SCROLLER_TRACKING_MAX_X = (INVENTORY_TRADE_INNER_RIGHT_SCROLLER_TRACKING_X + INVENTORY_SLOT_WIDTH);
 
-#define INVENTORY_TRADE_RIGHT_SCROLLER_TRACKING_X 395
-#define INVENTORY_TRADE_RIGHT_SCROLLER_TRACKING_Y 10
-#define INVENTORY_TRADE_RIGHT_SCROLLER_TRACKING_MAX_X (INVENTORY_TRADE_RIGHT_SCROLLER_TRACKING_X + INVENTORY_SLOT_WIDTH)
+static constexpr int INVENTORY_TRADE_RIGHT_SCROLLER_TRACKING_X = 395;
+static constexpr int INVENTORY_TRADE_RIGHT_SCROLLER_TRACKING_Y = 10;
+static constexpr int INVENTORY_TRADE_RIGHT_SCROLLER_TRACKING_MAX_X = (INVENTORY_TRADE_RIGHT_SCROLLER_TRACKING_X + INVENTORY_SLOT_WIDTH);
 
-#define INVENTORY_LOOT_LEFT_SCROLLER_X 46
-#define INVENTORY_LOOT_LEFT_SCROLLER_Y 35
-#define INVENTORY_LOOT_LEFT_SCROLLER_MAX_X (INVENTORY_LOOT_LEFT_SCROLLER_X + INVENTORY_SLOT_WIDTH)
+static constexpr int INVENTORY_LOOT_LEFT_SCROLLER_X = 46;
+static constexpr int INVENTORY_LOOT_LEFT_SCROLLER_Y = 35;
+static constexpr int INVENTORY_LOOT_LEFT_SCROLLER_MAX_X = (INVENTORY_LOOT_LEFT_SCROLLER_X + INVENTORY_SLOT_WIDTH);
 
-#define INVENTORY_LOOT_RIGHT_SCROLLER_X 424
-#define INVENTORY_LOOT_RIGHT_SCROLLER_Y 35
-#define INVENTORY_LOOT_RIGHT_SCROLLER_MAX_X (INVENTORY_LOOT_RIGHT_SCROLLER_X + INVENTORY_SLOT_WIDTH)
+static constexpr int INVENTORY_LOOT_RIGHT_SCROLLER_X = 424;
+static constexpr int INVENTORY_LOOT_RIGHT_SCROLLER_Y = 35;
+static constexpr int INVENTORY_LOOT_RIGHT_SCROLLER_MAX_X = (INVENTORY_LOOT_RIGHT_SCROLLER_X + INVENTORY_SLOT_WIDTH);
 
-#define INVENTORY_SCROLLER_X 46
-#define INVENTORY_SCROLLER_Y 35
-#define INVENTORY_SCROLLER_MAX_X (INVENTORY_SCROLLER_X + INVENTORY_SLOT_WIDTH)
+static constexpr int INVENTORY_SCROLLER_X = 46;
+static constexpr int INVENTORY_SCROLLER_Y = 35;
+static constexpr int INVENTORY_SCROLLER_MAX_X = (INVENTORY_SCROLLER_X + INVENTORY_SLOT_WIDTH);
 
-#define INVENTORY_BODY_VIEW_WIDTH 60
-#define INVENTORY_BODY_VIEW_HEIGHT 100
+static constexpr int INVENTORY_BODY_VIEW_WIDTH = 60;
+static constexpr int INVENTORY_BODY_VIEW_HEIGHT = 100;
 
-#define INVENTORY_PC_BODY_VIEW_X 176
-#define INVENTORY_PC_BODY_VIEW_Y 37
-#define INVENTORY_PC_BODY_VIEW_MAX_X (INVENTORY_PC_BODY_VIEW_X + INVENTORY_BODY_VIEW_WIDTH)
-#define INVENTORY_PC_BODY_VIEW_MAX_Y (INVENTORY_PC_BODY_VIEW_Y + INVENTORY_BODY_VIEW_HEIGHT)
+static constexpr int INVENTORY_PC_BODY_VIEW_X = 176;
+static constexpr int INVENTORY_PC_BODY_VIEW_Y = 37;
+static constexpr int INVENTORY_PC_BODY_VIEW_MAX_X = (INVENTORY_PC_BODY_VIEW_X + INVENTORY_BODY_VIEW_WIDTH);
+static constexpr int INVENTORY_PC_BODY_VIEW_MAX_Y = (INVENTORY_PC_BODY_VIEW_Y + INVENTORY_BODY_VIEW_HEIGHT);
 
-#define INVENTORY_LOOT_RIGHT_BODY_VIEW_X 297
-#define INVENTORY_LOOT_RIGHT_BODY_VIEW_Y 37
+static constexpr int INVENTORY_LOOT_RIGHT_BODY_VIEW_X = 297;
+static constexpr int INVENTORY_LOOT_RIGHT_BODY_VIEW_Y = 37;
 
-#define INVENTORY_LOOT_LEFT_BODY_VIEW_X 176
-#define INVENTORY_LOOT_LEFT_BODY_VIEW_Y 37
+static constexpr int INVENTORY_LOOT_LEFT_BODY_VIEW_X = 176;
+static constexpr int INVENTORY_LOOT_LEFT_BODY_VIEW_Y = 37;
 
-#define INVENTORY_SUMMARY_X 297
-#define INVENTORY_SUMMARY_Y 44
-#define INVENTORY_SUMMARY_MAX_X 440
+static constexpr int INVENTORY_SUMMARY_X = 297;
+static constexpr int INVENTORY_SUMMARY_Y = 44;
+static constexpr int INVENTORY_SUMMARY_MAX_X = 440;
 
-#define INVENTORY_WINDOW_WIDTH 499
-#define INVENTORY_USE_ON_WINDOW_WIDTH 292
-#define INVENTORY_LOOT_WINDOW_WIDTH 537
-#define INVENTORY_TRADE_WINDOW_WIDTH 480
-#define INVENTORY_TIMER_WINDOW_WIDTH 259
+static constexpr int INVENTORY_WINDOW_WIDTH = 499;
+static constexpr int INVENTORY_USE_ON_WINDOW_WIDTH = 292;
+static constexpr int INVENTORY_LOOT_WINDOW_WIDTH = 537;
+// INVENTORY_TRADE_WINDOW_WIDTH defined above with trade window constants
+static constexpr int INVENTORY_TIMER_WINDOW_WIDTH = 259;
 
-#define INVENTORY_TRADE_BACKGROUND_WINDOW_WIDTH 640
-#define INVENTORY_TRADE_BACKGROUND_WINDOW_HEIGHT 480
-#define INVENTORY_TRADE_WINDOW_OFFSET ((INVENTORY_TRADE_BACKGROUND_WINDOW_WIDTH - INVENTORY_TRADE_WINDOW_WIDTH) / 2)
+static constexpr int INVENTORY_TRADE_BACKGROUND_WINDOW_WIDTH = 640;
+static constexpr int INVENTORY_TRADE_BACKGROUND_WINDOW_HEIGHT = 480;
+static constexpr int INVENTORY_TRADE_WINDOW_OFFSET = ((INVENTORY_TRADE_BACKGROUND_WINDOW_WIDTH - INVENTORY_TRADE_WINDOW_WIDTH) / 2);
 
-#define INVENTORY_SLOT_PADDING 4
+static constexpr int INVENTORY_SLOT_PADDING = 4;
 
-#define INVENTORY_SCROLLER_X_PAD (INVENTORY_SCROLLER_X + INVENTORY_SLOT_PADDING)
-#define INVENTORY_SCROLLER_Y_PAD (INVENTORY_SCROLLER_Y + INVENTORY_SLOT_PADDING)
+static constexpr int INVENTORY_SCROLLER_X_PAD = (INVENTORY_SCROLLER_X + INVENTORY_SLOT_PADDING);
+static constexpr int INVENTORY_SCROLLER_Y_PAD = (INVENTORY_SCROLLER_Y + INVENTORY_SLOT_PADDING);
 
-#define INVENTORY_LOOT_LEFT_SCROLLER_X_PAD (INVENTORY_LOOT_LEFT_SCROLLER_X + INVENTORY_SLOT_PADDING)
-#define INVENTORY_LOOT_LEFT_SCROLLER_Y_PAD (INVENTORY_LOOT_LEFT_SCROLLER_Y + INVENTORY_SLOT_PADDING)
+static constexpr int INVENTORY_LOOT_LEFT_SCROLLER_X_PAD = (INVENTORY_LOOT_LEFT_SCROLLER_X + INVENTORY_SLOT_PADDING);
+static constexpr int INVENTORY_LOOT_LEFT_SCROLLER_Y_PAD = (INVENTORY_LOOT_LEFT_SCROLLER_Y + INVENTORY_SLOT_PADDING);
 
-#define INVENTORY_LOOT_RIGHT_SCROLLER_X_PAD (INVENTORY_LOOT_RIGHT_SCROLLER_X + INVENTORY_SLOT_PADDING)
-#define INVENTORY_LOOT_RIGHT_SCROLLER_Y_PAD (INVENTORY_LOOT_RIGHT_SCROLLER_Y + INVENTORY_SLOT_PADDING)
+static constexpr int INVENTORY_LOOT_RIGHT_SCROLLER_X_PAD = (INVENTORY_LOOT_RIGHT_SCROLLER_X + INVENTORY_SLOT_PADDING);
+static constexpr int INVENTORY_LOOT_RIGHT_SCROLLER_Y_PAD = (INVENTORY_LOOT_RIGHT_SCROLLER_Y + INVENTORY_SLOT_PADDING);
 
-#define INVENTORY_TRADE_LEFT_SCROLLER_X_PAD (INVENTORY_TRADE_LEFT_SCROLLER_X + INVENTORY_SLOT_PADDING)
-#define INVENTORY_TRADE_LEFT_SCROLLER_Y_PAD (INVENTORY_TRADE_LEFT_SCROLLER_Y + INVENTORY_SLOT_PADDING)
+static constexpr int INVENTORY_TRADE_LEFT_SCROLLER_X_PAD = (INVENTORY_TRADE_LEFT_SCROLLER_X + INVENTORY_SLOT_PADDING);
+static constexpr int INVENTORY_TRADE_LEFT_SCROLLER_Y_PAD = (INVENTORY_TRADE_LEFT_SCROLLER_Y + INVENTORY_SLOT_PADDING);
 
-#define INVENTORY_TRADE_RIGHT_SCROLLER_X_PAD (INVENTORY_TRADE_RIGHT_SCROLLER_X + INVENTORY_SLOT_PADDING)
-#define INVENTORY_TRADE_RIGHT_SCROLLER_Y_PAD (INVENTORY_TRADE_RIGHT_SCROLLER_Y + INVENTORY_SLOT_PADDING)
+static constexpr int INVENTORY_TRADE_RIGHT_SCROLLER_X_PAD = (INVENTORY_TRADE_RIGHT_SCROLLER_X + INVENTORY_SLOT_PADDING);
+static constexpr int INVENTORY_TRADE_RIGHT_SCROLLER_Y_PAD = (INVENTORY_TRADE_RIGHT_SCROLLER_Y + INVENTORY_SLOT_PADDING);
 
-#define INVENTORY_TRADE_INNER_LEFT_SCROLLER_X_PAD (INVENTORY_TRADE_INNER_LEFT_SCROLLER_X + INVENTORY_SLOT_PADDING)
-#define INVENTORY_TRADE_INNER_LEFT_SCROLLER_Y_PAD (INVENTORY_TRADE_INNER_LEFT_SCROLLER_Y + INVENTORY_SLOT_PADDING)
+static constexpr int INVENTORY_TRADE_INNER_LEFT_SCROLLER_X_PAD = (INVENTORY_TRADE_INNER_LEFT_SCROLLER_X + INVENTORY_SLOT_PADDING);
+static constexpr int INVENTORY_TRADE_INNER_LEFT_SCROLLER_Y_PAD = (INVENTORY_TRADE_INNER_LEFT_SCROLLER_Y + INVENTORY_SLOT_PADDING);
 
-#define INVENTORY_TRADE_INNER_RIGHT_SCROLLER_X_PAD (INVENTORY_TRADE_INNER_RIGHT_SCROLLER_X + INVENTORY_SLOT_PADDING)
-#define INVENTORY_TRADE_INNER_RIGHT_SCROLLER_Y_PAD (INVENTORY_TRADE_INNER_RIGHT_SCROLLER_Y + INVENTORY_SLOT_PADDING)
+static constexpr int INVENTORY_TRADE_INNER_RIGHT_SCROLLER_X_PAD = (INVENTORY_TRADE_INNER_RIGHT_SCROLLER_X + INVENTORY_SLOT_PADDING);
+static constexpr int INVENTORY_TRADE_INNER_RIGHT_SCROLLER_Y_PAD = (INVENTORY_TRADE_INNER_RIGHT_SCROLLER_Y + INVENTORY_SLOT_PADDING);
 
-#define INVENTORY_SLOT_WIDTH_PAD (INVENTORY_SLOT_WIDTH - INVENTORY_SLOT_PADDING * 2)
-#define INVENTORY_SLOT_HEIGHT_PAD (INVENTORY_SLOT_HEIGHT - INVENTORY_SLOT_PADDING * 2)
+static constexpr int INVENTORY_SLOT_WIDTH_PAD = (INVENTORY_SLOT_WIDTH - INVENTORY_SLOT_PADDING * 2);
+static constexpr int INVENTORY_SLOT_HEIGHT_PAD = (INVENTORY_SLOT_HEIGHT - INVENTORY_SLOT_PADDING * 2);
 
-#define INVENTORY_NORMAL_WINDOW_PC_ROTATION_DELAY (1000U / ROTATION_COUNT)
+static constexpr int INVENTORY_NORMAL_WINDOW_PC_ROTATION_DELAY = (1000U / ROTATION_COUNT);
 
-typedef void(InventoryPrintItemDescriptionHandler)(char* string);
+using InventoryPrintItemDescriptionHandler = void(char* string);
 
-typedef enum InventoryArrowFrm {
+enum InventoryArrowFrm {
     INVENTORY_ARROW_FRM_LEFT_ARROW_UP,
     INVENTORY_ARROW_FRM_LEFT_ARROW_DOWN,
     INVENTORY_ARROW_FRM_RIGHT_ARROW_UP,
     INVENTORY_ARROW_FRM_RIGHT_ARROW_DOWN,
     INVENTORY_ARROW_FRM_COUNT,
-} InventoryArrowFrm;
+};
 
 typedef struct InventoryWindowConfiguration {
     int field_0; // artId
@@ -193,7 +193,7 @@ typedef struct InventoryWindowConfiguration {
     int y;
 } InventoryWindowDescription;
 
-typedef struct InventoryCursorData {
+struct InventoryCursorData {
     Art* frm;
     unsigned char* frmData;
     int width;
@@ -201,7 +201,7 @@ typedef struct InventoryCursorData {
     int offsetX;
     int offsetY;
     CacheEntry* frmHandle;
-} InventoryCursorData;
+};
 
 static int inventry_msg_load();
 static int inventry_msg_unload();
@@ -222,7 +222,7 @@ static int exit_move_timer_win(int inventoryWindowType);
 static int inven_cur_disp = 6;
 
 // 0x505640
-static Object* inven_dude = NULL;
+static Object* inven_dude = nullptr;
 
 // Probably fid of armor to display in inventory dialog.
 //
@@ -367,11 +367,11 @@ static int inventry_msg_load()
 {
     char path[COMPAT_MAX_PATH];
 
-    if (!message_init(&inventry_message_file))
+    if (!inventry_message_file.init())
         return -1;
 
     snprintf(path, sizeof(path), "%s%s", msg_path, "inventry.msg");
-    if (!message_load(&inventry_message_file, path))
+    if (!inventry_message_file.load(path))
         return -1;
 
     return 0;
@@ -380,7 +380,7 @@ static int inventry_msg_load()
 // 0x462470
 static int inventry_msg_unload()
 {
-    message_exit(&inventry_message_file);
+    inventry_message_file.exit();
     return 0;
 }
 
@@ -404,7 +404,7 @@ void handle_inventory()
                 // You don't have enough action points to use inventory
                 MessageListItem messageListItem;
                 messageListItem.num = 19;
-                if (message_search(&inventry_message_file, &messageListItem)) {
+                if (inventry_message_file.search(&messageListItem)) {
                     display_print(messageListItem.text);
                 }
 
@@ -560,7 +560,7 @@ bool setup_inventory(int inventoryWindowType)
 
         CacheEntry* backgroundFrmHandle;
         unsigned char* backgroundFrmData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundFrmHandle);
-        if (backgroundFrmData != NULL) {
+        if (backgroundFrmData != nullptr) {
             buf_to_buf(backgroundFrmData, windowDescription->width, windowDescription->height, windowDescription->width, dest, windowDescription->width);
             art_ptr_unlock(backgroundFrmHandle);
         }
@@ -605,12 +605,12 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 1000 + index,
                 -1,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 0);
             if (btn != -1) {
-                win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+                win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
             }
         }
 
@@ -624,12 +624,12 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 2000 + index,
                 -1,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 0);
             if (btn != -1) {
-                win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+                win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
             }
         }
     } else if (inventoryWindowType == INVENTORY_WINDOW_TYPE_TRADE) {
@@ -649,12 +649,12 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 1000 + index,
                 -1,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 0);
             if (btn != -1) {
-                win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+                win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
             }
 
             // Invisible button representing right inventory slot.
@@ -667,12 +667,12 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 2000 + index,
                 -1,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 0);
             if (btn != -1) {
-                win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+                win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
             }
 
             // Invisible button representing left suggested slot.
@@ -685,12 +685,12 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 2300 + index,
                 -1,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 0);
             if (btn != -1) {
-                win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+                win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
             }
 
             // Invisible button representing right suggested slot.
@@ -703,12 +703,12 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 2400 + index,
                 -1,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 0);
             if (btn != -1) {
-                win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+                win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
             }
 
             y1 += INVENTORY_SLOT_HEIGHT;
@@ -726,12 +726,12 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 1000 + index,
                 -1,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 0);
             if (btn != -1) {
-                win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+                win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
             }
         }
     }
@@ -749,12 +749,12 @@ bool setup_inventory(int inventoryWindowType)
             -1,
             1006,
             -1,
-            NULL,
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
+            nullptr,
             0);
         if (btn != -1) {
-            win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+            win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
         }
 
         // Item1 slot
@@ -767,12 +767,12 @@ bool setup_inventory(int inventoryWindowType)
             -1,
             1007,
             -1,
-            NULL,
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
+            nullptr,
             0);
         if (btn != -1) {
-            win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+            win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
         }
 
         // Armor slot
@@ -785,12 +785,12 @@ bool setup_inventory(int inventoryWindowType)
             -1,
             1008,
             -1,
-            NULL,
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
+            nullptr,
             0);
         if (btn != -1) {
-            win_register_button_func(btn, inven_hover_on, inven_hover_off, NULL, NULL);
+            win_register_button_func(btn, inven_hover_on, inven_hover_off, nullptr, nullptr);
         }
     }
 
@@ -807,7 +807,7 @@ bool setup_inventory(int inventoryWindowType)
     fid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
     buttonDownData = art_ptr_lock_data(fid, 0, 0, &(ikey[1]));
 
-    if (buttonUpData != NULL && buttonDownData != NULL) {
+    if (buttonUpData != nullptr && buttonDownData != nullptr) {
         btn = -1;
         switch (inventoryWindowType) {
         case INVENTORY_WINDOW_TYPE_NORMAL:
@@ -823,7 +823,7 @@ bool setup_inventory(int inventoryWindowType)
                 KEY_ESCAPE,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 BUTTON_FLAG_TRANSPARENT);
             break;
         case INVENTORY_WINDOW_TYPE_USE_ITEM_ON:
@@ -839,7 +839,7 @@ bool setup_inventory(int inventoryWindowType)
                 KEY_ESCAPE,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 BUTTON_FLAG_TRANSPARENT);
             break;
         case INVENTORY_WINDOW_TYPE_LOOT:
@@ -855,7 +855,7 @@ bool setup_inventory(int inventoryWindowType)
                 KEY_ESCAPE,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 BUTTON_FLAG_TRANSPARENT);
             break;
         }
@@ -878,7 +878,7 @@ bool setup_inventory(int inventoryWindowType)
         fid = art_id(OBJ_TYPE_INTERFACE, fid, 0, 0, 0);
         buttonDownData = art_ptr_lock_data(fid, 0, 0, &(ikey[3]));
 
-        if (buttonUpData != NULL && buttonDownData != NULL) {
+        if (buttonUpData != nullptr && buttonDownData != nullptr) {
             // Left inventory up button.
             btn = win_register_button(i_wid,
                 109,
@@ -891,7 +891,7 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -909,7 +909,7 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -924,7 +924,7 @@ bool setup_inventory(int inventoryWindowType)
         fid = art_id(OBJ_TYPE_INTERFACE, 50, 0, 0, 0);
         buttonDownData = art_ptr_lock_data(fid, 0, 0, &(ikey[3]));
 
-        if (buttonUpData != NULL && buttonDownData != NULL) {
+        if (buttonUpData != nullptr && buttonDownData != nullptr) {
             if (inventoryWindowType != INVENTORY_WINDOW_TYPE_TRADE) {
                 // Left inventory up button.
                 btn = win_register_button(i_wid,
@@ -938,7 +938,7 @@ bool setup_inventory(int inventoryWindowType)
                     -1,
                     buttonUpData,
                     buttonDownData,
-                    NULL,
+                    nullptr,
                     0);
                 if (btn != -1) {
                     win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -958,7 +958,7 @@ bool setup_inventory(int inventoryWindowType)
                     -1,
                     buttonUpData,
                     buttonDownData,
-                    NULL,
+                    nullptr,
                     0);
                 if (btn != -1) {
                     win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -978,7 +978,7 @@ bool setup_inventory(int inventoryWindowType)
         fid = art_id(OBJ_TYPE_INTERFACE, fid, 0, 0, 0);
         buttonDownData = art_ptr_lock_data(fid, 0, 0, &(ikey[6]));
 
-        if (buttonUpData != NULL && buttonDownData != NULL) {
+        if (buttonUpData != nullptr && buttonDownData != nullptr) {
             // Left inventory down button.
             btn = win_register_button(i_wid,
                 109,
@@ -991,7 +991,7 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1009,17 +1009,17 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
             }
 
             // Invisible button representing left character.
-            win_register_button(barter_back_win, 15, 25, INVENTORY_BODY_VIEW_WIDTH, INVENTORY_BODY_VIEW_HEIGHT, -1, -1, 2500, -1, NULL, NULL, NULL, 0);
+            win_register_button(barter_back_win, 15, 25, INVENTORY_BODY_VIEW_WIDTH, INVENTORY_BODY_VIEW_HEIGHT, -1, -1, 2500, -1, nullptr, nullptr, nullptr, 0);
 
             // Invisible button representing right character.
-            win_register_button(barter_back_win, 560, 25, INVENTORY_BODY_VIEW_WIDTH, INVENTORY_BODY_VIEW_HEIGHT, -1, -1, 2501, -1, NULL, NULL, NULL, 0);
+            win_register_button(barter_back_win, 560, 25, INVENTORY_BODY_VIEW_WIDTH, INVENTORY_BODY_VIEW_HEIGHT, -1, -1, 2501, -1, nullptr, nullptr, nullptr, 0);
         }
     } else {
         // Large arrow down (normal).
@@ -1030,7 +1030,7 @@ bool setup_inventory(int inventoryWindowType)
         fid = art_id(OBJ_TYPE_INTERFACE, 52, 0, 0, 0);
         buttonDownData = art_ptr_lock_data(fid, 0, 0, &(ikey[6]));
 
-        if (buttonUpData != NULL && buttonDownData != NULL) {
+        if (buttonUpData != nullptr && buttonDownData != nullptr) {
             // Left inventory down button.
             btn = win_register_button(i_wid,
                 128,
@@ -1043,13 +1043,13 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
 
             if (inventoryWindowType == INVENTORY_WINDOW_TYPE_LOOT) {
                 // Invisible button representing left character.
-                win_register_button(i_wid, INVENTORY_LOOT_LEFT_BODY_VIEW_X, INVENTORY_LOOT_LEFT_BODY_VIEW_Y, INVENTORY_BODY_VIEW_WIDTH, INVENTORY_BODY_VIEW_HEIGHT, -1, -1, 2500, -1, NULL, NULL, NULL, 0);
+                win_register_button(i_wid, INVENTORY_LOOT_LEFT_BODY_VIEW_X, INVENTORY_LOOT_LEFT_BODY_VIEW_Y, INVENTORY_BODY_VIEW_WIDTH, INVENTORY_BODY_VIEW_HEIGHT, -1, -1, 2500, -1, nullptr, nullptr, nullptr, 0);
 
                 // Right inventory down button.
                 btn = win_register_button(i_wid,
@@ -1079,9 +1079,9 @@ bool setup_inventory(int inventoryWindowType)
                     -1,
                     2501,
                     -1,
-                    NULL,
-                    NULL,
-                    NULL,
+                    nullptr,
+                    nullptr,
+                    nullptr,
                     0);
             } else {
                 // Invisible button representing character (in inventory and use on dialogs).
@@ -1094,9 +1094,9 @@ bool setup_inventory(int inventoryWindowType)
                     -1,
                     2500,
                     -1,
-                    NULL,
-                    NULL,
-                    NULL,
+                    nullptr,
+                    nullptr,
+                    nullptr,
                     0);
             }
         }
@@ -1111,7 +1111,7 @@ bool setup_inventory(int inventoryWindowType)
         fid = art_id(OBJ_TYPE_INTERFACE, 50, 0, 0, 0);
         buttonDownData = art_ptr_lock_data(fid, 0, 0, &(ikey[9]));
 
-        if (buttonUpData != NULL && buttonDownData != NULL) {
+        if (buttonUpData != nullptr && buttonDownData != nullptr) {
             // Left offered inventory up button.
             btn = win_register_button(i_wid,
                 128,
@@ -1124,7 +1124,7 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1142,7 +1142,7 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1157,7 +1157,7 @@ bool setup_inventory(int inventoryWindowType)
         fid = art_id(OBJ_TYPE_INTERFACE, 52, 0, 0, 0);
         buttonDownData = art_ptr_lock_data(fid, 0, 0, &(ikey[9]));
 
-        if (buttonUpData != NULL && buttonDownData != NULL) {
+        if (buttonUpData != nullptr && buttonDownData != nullptr) {
             // Left offered inventory down button.
             btn = win_register_button(i_wid,
                 128,
@@ -1170,7 +1170,7 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1188,7 +1188,7 @@ bool setup_inventory(int inventoryWindowType)
                 -1,
                 buttonUpData,
                 buttonDownData,
-                NULL,
+                nullptr,
                 0);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1196,9 +1196,9 @@ bool setup_inventory(int inventoryWindowType)
         }
     }
 
-    i_rhand = NULL;
-    i_worn = NULL;
-    i_lhand = NULL;
+    i_rhand = nullptr;
+    i_worn = nullptr;
+    i_lhand = nullptr;
 
     for (int index = 0; index < pud->length; index++) {
         InventoryItem* inventoryItem = &(pud->items[index]);
@@ -1215,15 +1215,15 @@ bool setup_inventory(int inventoryWindowType)
         }
     }
 
-    if (i_lhand != NULL) {
+    if (i_lhand != nullptr) {
         item_remove_mult(inven_dude, i_lhand, 1);
     }
 
-    if (i_rhand != NULL && i_rhand != i_lhand) {
+    if (i_rhand != nullptr && i_rhand != i_lhand) {
         item_remove_mult(inven_dude, i_rhand, 1);
     }
 
-    if (i_worn != NULL) {
+    if (i_worn != nullptr) {
         item_remove_mult(inven_dude, i_worn, 1);
     }
 
@@ -1241,7 +1241,7 @@ void exit_inventory(bool shouldEnableIso)
 {
     inven_dude = stack[0];
 
-    if (i_lhand != NULL) {
+    if (i_lhand != nullptr) {
         i_lhand->flags |= OBJECT_IN_LEFT_HAND;
         if (i_lhand == i_rhand) {
             i_lhand->flags |= OBJECT_IN_RIGHT_HAND;
@@ -1250,19 +1250,19 @@ void exit_inventory(bool shouldEnableIso)
         item_add_force(inven_dude, i_lhand, 1);
     }
 
-    if (i_rhand != NULL && i_rhand != i_lhand) {
+    if (i_rhand != nullptr && i_rhand != i_lhand) {
         i_rhand->flags |= OBJECT_IN_RIGHT_HAND;
         item_add_force(inven_dude, i_rhand, 1);
     }
 
-    if (i_worn != NULL) {
+    if (i_worn != nullptr) {
         i_worn->flags |= OBJECT_WORN;
         item_add_force(inven_dude, i_worn, 1);
     }
 
-    i_rhand = NULL;
-    i_worn = NULL;
-    i_lhand = NULL;
+    i_rhand = nullptr;
+    i_worn = nullptr;
+    i_lhand = nullptr;
 
     for (int index = 0; index < OFF_59E7BC_COUNT; index++) {
         art_ptr_unlock(ikey[index]);
@@ -1278,37 +1278,37 @@ void exit_inventory(bool shouldEnableIso)
 
     if (dropped_explosive) {
         Attack v1;
-        combat_ctd_init(&v1, obj_dude, NULL, HIT_MODE_PUNCH, HIT_LOCATION_TORSO);
+        v1.init(obj_dude, nullptr, HIT_MODE_PUNCH, HIT_LOCATION_TORSO);
         v1.attackerFlags = DAM_HIT;
         v1.tile = obj_dude->tile;
-        compute_explosion_on_extras(&v1, 0, 0, 1);
+        v1.computeExplosionOnExtras(0, 0, 1);
 
-        Object* v2 = NULL;
+        Object* v2 = nullptr;
         for (int index = 0; index < v1.extrasLength; index++) {
             Object* critter = v1.extras[index];
             if (critter != obj_dude
                 && critter->data.critter.combat.team != obj_dude->data.critter.combat.team
-                && stat_result(critter, STAT_PERCEPTION, 0, NULL) >= ROLL_SUCCESS) {
+                && stat_result(critter, STAT_PERCEPTION, 0, nullptr) >= ROLL_SUCCESS) {
                 critter_set_who_hit_me(critter, obj_dude);
 
-                if (v2 == NULL) {
+                if (v2 == nullptr) {
                     v2 = critter;
                 }
             }
         }
 
-        if (v2 != NULL) {
+        if (v2 != nullptr) {
             if (!isInCombat()) {
-                STRUCT_664980 v3;
-                v3.attacker = v2;
-                v3.defender = obj_dude;
-                v3.actionPointsBonus = 0;
-                v3.accuracyBonus = 0;
-                v3.damageBonus = 0;
-                v3.minDamage = 0;
-                v3.maxDamage = INT_MAX;
-                v3.field_1C = 0;
-                scripts_request_combat(&v3);
+                CombatSequenceParams combatParams;
+                combatParams.attacker = v2;
+                combatParams.defender = obj_dude;
+                combatParams.actionPointsBonus = 0;
+                combatParams.accuracyBonus = 0;
+                combatParams.damageBonus = 0;
+                combatParams.minDamage = 0;
+                combatParams.maxDamage = INT_MAX;
+                combatParams.hasOverrideFlags = 0;
+                combatParams.scripts_request_combat();
             }
         }
 
@@ -1329,7 +1329,7 @@ void display_inventory(int first_item_index, int selected_index, int inventoryWi
 
         CacheEntry* backgroundFrmHandle;
         unsigned char* backgroundFrmData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundFrmHandle);
-        if (backgroundFrmData != NULL) {
+        if (backgroundFrmData != nullptr) {
             // Clear scroll view background.
             buf_to_buf(backgroundFrmData + pitch * INVENTORY_SCROLLER_Y + INVENTORY_SCROLLER_X,
                 INVENTORY_SLOT_WIDTH,
@@ -1346,16 +1346,16 @@ void display_inventory(int first_item_index, int selected_index, int inventoryWi
                 windowBuffer + pitch * INVENTORY_ARMOR_SLOT_Y + INVENTORY_ARMOR_SLOT_X,
                 pitch);
 
-            if (i_lhand != NULL && i_lhand == i_rhand) {
+            if (i_lhand != nullptr && i_lhand == i_rhand) {
                 // Clear item1.
                 int itemBackgroundFid = art_id(OBJ_TYPE_INTERFACE, 32, 0, 0, 0);
 
                 CacheEntry* itemBackgroundFrmHandle;
                 Art* itemBackgroundFrm = art_ptr_lock(itemBackgroundFid, &itemBackgroundFrmHandle);
-                if (itemBackgroundFrm != NULL) {
-                    unsigned char* data = art_frame_data(itemBackgroundFrm, 0, 0);
-                    int width = art_frame_width(itemBackgroundFrm, 0, 0);
-                    int height = art_frame_length(itemBackgroundFrm, 0, 0);
+                if (itemBackgroundFrm != nullptr) {
+                    unsigned char* data = itemBackgroundFrm->frameData(0, 0);
+                    int width = itemBackgroundFrm->frameWidth(0, 0);
+                    int height = itemBackgroundFrm->frameLength(0, 0);
                     buf_to_buf(data,
                         width,
                         height,
@@ -1383,7 +1383,7 @@ void display_inventory(int first_item_index, int selected_index, int inventoryWi
 
         CacheEntry* backgroundFrmHandle;
         unsigned char* backgroundFrmData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundFrmHandle);
-        if (backgroundFrmData != NULL) {
+        if (backgroundFrmData != nullptr) {
             // Clear scroll view background.
             buf_to_buf(backgroundFrmData + pitch * 35 + 44, 64, inven_cur_disp * 48, pitch, windowBuffer + pitch * 35 + 44, pitch);
             art_ptr_unlock(backgroundFrmHandle);
@@ -1395,7 +1395,7 @@ void display_inventory(int first_item_index, int selected_index, int inventoryWi
 
         CacheEntry* backgroundFrmHandle;
         unsigned char* backgroundFrmData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundFrmHandle);
-        if (backgroundFrmData != NULL) {
+        if (backgroundFrmData != nullptr) {
             // Clear scroll view background.
             buf_to_buf(backgroundFrmData + pitch * INVENTORY_SCROLLER_Y + INVENTORY_SCROLLER_X,
                 INVENTORY_SLOT_WIDTH,
@@ -1448,18 +1448,18 @@ void display_inventory(int first_item_index, int selected_index, int inventoryWi
     }
 
     if (inventoryWindowType == INVENTORY_WINDOW_TYPE_NORMAL) {
-        if (i_rhand != NULL) {
+        if (i_rhand != nullptr) {
             int width = i_rhand == i_lhand ? INVENTORY_LARGE_SLOT_WIDTH * 2 : INVENTORY_LARGE_SLOT_WIDTH;
             int inventoryFid = item_inv_fid(i_rhand);
             scale_art(inventoryFid, windowBuffer + 499 * INVENTORY_RIGHT_HAND_SLOT_Y + INVENTORY_RIGHT_HAND_SLOT_X, width, INVENTORY_LARGE_SLOT_HEIGHT, 499);
         }
 
-        if (i_lhand != NULL && i_lhand != i_rhand) {
+        if (i_lhand != nullptr && i_lhand != i_rhand) {
             int inventoryFid = item_inv_fid(i_lhand);
             scale_art(inventoryFid, windowBuffer + 499 * INVENTORY_LEFT_HAND_SLOT_Y + INVENTORY_LEFT_HAND_SLOT_X, INVENTORY_LARGE_SLOT_WIDTH, INVENTORY_LARGE_SLOT_HEIGHT, 499);
         }
 
-        if (i_worn != NULL) {
+        if (i_worn != nullptr) {
             int inventoryFid = item_inv_fid(i_worn);
             scale_art(inventoryFid, windowBuffer + 499 * INVENTORY_ARMOR_SLOT_Y + INVENTORY_ARMOR_SLOT_X, INVENTORY_LARGE_SLOT_WIDTH, INVENTORY_LARGE_SLOT_HEIGHT, 499);
         }
@@ -1475,7 +1475,7 @@ void display_inventory(int first_item_index, int selected_index, int inventoryWi
         CacheEntry* key;
         int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 114, 0, 0, 0);
         unsigned char* data = art_ptr_lock_data(backgroundFid, 0, 0, &key);
-        if (data != NULL) {
+        if (data != nullptr) {
             int x = INVENTORY_LOOT_LEFT_SCROLLER_X;
             int y = INVENTORY_LOOT_LEFT_SCROLLER_Y + inven_cur_disp * INVENTORY_SLOT_HEIGHT + 2;
             buf_to_buf(data + pitch * y + x,
@@ -1513,7 +1513,7 @@ void display_inventory(int first_item_index, int selected_index, int inventoryWi
 // Render inventory item.
 //
 // 0x463C00
-void display_target_inventory(int first_item_index, int selected_index, Inventory* inventory, int inventoryWindowType)
+void Inventory::display_target(int first_item_index, int selected_index, int inventoryWindowType)
 {
     unsigned char* windowBuffer = win_get_buf(i_wid);
 
@@ -1525,7 +1525,7 @@ void display_target_inventory(int first_item_index, int selected_index, Inventor
 
         CacheEntry* handle;
         unsigned char* data = art_ptr_lock_data(fid, 0, 0, &handle);
-        if (data != NULL) {
+        if (data != nullptr) {
             buf_to_buf(data + pitch * 35 + 422, 64, 48 * inven_cur_disp, pitch, windowBuffer + pitch * 35 + 422, pitch);
             art_ptr_unlock(handle);
         }
@@ -1544,7 +1544,7 @@ void display_target_inventory(int first_item_index, int selected_index, Inventor
     }
 
     int y = 0;
-    for (int index = 0; index < inven_cur_disp && first_item_index + index < inventory->length; index++) {
+    for (int index = 0; index < inven_cur_disp && first_item_index + index < length; index++) {
         int offset;
         switch (inventoryWindowType) {
         case INVENTORY_WINDOW_TYPE_LOOT:
@@ -1555,7 +1555,7 @@ void display_target_inventory(int first_item_index, int selected_index, Inventor
             break;
         }
 
-        InventoryItem* inventoryItem = &(inventory->items[first_item_index + index]);
+        InventoryItem* inventoryItem = &(items[first_item_index + index]);
         int inventoryFid = item_inv_fid(inventoryItem->item);
         scale_art(inventoryFid, windowBuffer + offset, INVENTORY_SLOT_WIDTH_PAD, INVENTORY_SLOT_HEIGHT_PAD, pitch);
         display_inventory_info(inventoryItem->item, inventoryItem->quantity, windowBuffer + offset, pitch, index == selected_index);
@@ -1574,7 +1574,7 @@ void display_target_inventory(int first_item_index, int selected_index, Inventor
         CacheEntry* key;
         int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 114, 0, 0, 0);
         unsigned char* data = art_ptr_lock_data(backgroundFid, 0, 0, &key);
-        if (data != NULL) {
+        if (data != nullptr) {
             int x = INVENTORY_LOOT_RIGHT_SCROLLER_X;
             int y = INVENTORY_LOOT_RIGHT_SCROLLER_Y + INVENTORY_SLOT_HEIGHT * inven_cur_disp + 2;
             buf_to_buf(data + pitch * y + x,
@@ -1707,23 +1707,23 @@ void display_body(int fid, int inventoryWindowType)
 
         CacheEntry* handle;
         Art* art = art_ptr_lock(fid, &handle);
-        if (art == NULL) {
+        if (art == nullptr) {
             continue;
         }
 
         int frame = 0;
         if (index == 1) {
-            frame = art_frame_max_frame(art) - 1;
+            frame = art->maxFrame() - 1;
         }
 
         int rotation = rotations[index];
 
-        unsigned char* frameData = art_frame_data(art, frame, rotation);
+        unsigned char* frameData = art->frameData(frame, rotation);
 
-        int framePitch = art_frame_width(art, frame, rotation);
+        int framePitch = art->frameWidth(frame, rotation);
         int frameWidth = std::min(framePitch, INVENTORY_BODY_VIEW_WIDTH);
 
-        int frameHeight = art_frame_length(art, frame, rotation);
+        int frameHeight = art->frameLength(frame, rotation);
         if (frameHeight > INVENTORY_BODY_VIEW_HEIGHT) {
             frameHeight = INVENTORY_BODY_VIEW_HEIGHT;
         }
@@ -1748,7 +1748,7 @@ void display_body(int fid, int inventoryWindowType)
             int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 111, 0, 0, 0);
 
             unsigned char* src = art_ptr_lock_data(backgroundFid, 0, 0, &backrgroundFrmHandle);
-            if (src != NULL) {
+            if (src != nullptr) {
                 buf_to_buf(src + rect.uly * 640 + rect.ulx,
                     INVENTORY_BODY_VIEW_WIDTH,
                     INVENTORY_BODY_VIEW_HEIGHT,
@@ -1779,7 +1779,7 @@ void display_body(int fid, int inventoryWindowType)
 
             int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 114, 0, 0, 0);
             unsigned char* src = art_ptr_lock_data(backgroundFid, 0, 0, &backrgroundFrmHandle);
-            if (src != NULL) {
+            if (src != nullptr) {
                 buf_to_buf(src + INVENTORY_LOOT_WINDOW_WIDTH * rect.uly + rect.ulx,
                     INVENTORY_BODY_VIEW_WIDTH,
                     INVENTORY_BODY_VIEW_HEIGHT,
@@ -1834,15 +1834,15 @@ int inven_init()
 
         int fid = art_id(OBJ_TYPE_INTERFACE, num[index], 0, 0, 0);
         Art* frm = art_ptr_lock(fid, &(cursorData->frmHandle));
-        if (frm == NULL) {
+        if (frm == nullptr) {
             break;
         }
 
         cursorData->frm = frm;
-        cursorData->frmData = art_frame_data(frm, 0, 0);
-        cursorData->width = art_frame_width(frm, 0, 0);
-        cursorData->height = art_frame_length(frm, 0, 0);
-        art_frame_hot(frm, 0, 0, &(cursorData->offsetX), &(cursorData->offsetY));
+        cursorData->frmData = frm->frameData(0, 0);
+        cursorData->width = frm->frameWidth(0, 0);
+        cursorData->height = frm->frameLength(0, 0);
+        frm->frameHot(0, 0, &(cursorData->offsetX), &(cursorData->offsetY));
     }
 
     if (index != INVENTORY_WINDOW_CURSOR_COUNT) {
@@ -1854,7 +1854,7 @@ int inven_init()
             game_ui_disable(0);
         }
 
-        message_exit(&inventry_message_file);
+        inventry_message_file.exit();
 
         return -1;
     }
@@ -1899,15 +1899,15 @@ void inven_set_mouse(int cursor)
 void inven_hover_on(int btn, int keyCode)
 {
     // 0x5056E8
-    static Object* last_target = NULL;
+    static Object* last_target = nullptr;
 
     if (immode == INVENTORY_WINDOW_CURSOR_ARROW) {
         int x;
         int y;
         mouseGetPositionInWindow(i_wid, &x, &y);
 
-        Object* a2a = NULL;
-        if (inven_from_button(keyCode, &a2a, NULL, NULL) != 0) {
+        Object* a2a = nullptr;
+        if (inven_from_button(keyCode, &a2a, nullptr, nullptr) != 0) {
             gmouse_3d_build_pick_frame(x, y, 3, i_wid_max_x, i_wid_max_y);
 
             int v5 = 0;
@@ -1946,8 +1946,8 @@ void inven_hover_off(int btn, int keyCode)
 void inven_pickup(int keyCode, int first_item_index)
 {
     Object* a1a;
-    Object** v29 = NULL;
-    int count = inven_from_button(keyCode, &a1a, &v29, NULL);
+    Object** v29 = nullptr;
+    int count = inven_from_button(keyCode, &a1a, &v29, nullptr);
     if (count == 0) {
         return;
     }
@@ -1993,7 +1993,7 @@ void inven_pickup(int keyCode, int first_item_index)
             CacheEntry* backgroundFrmHandle;
             int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 48, 0, 0, 0);
             unsigned char* backgroundFrmData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundFrmHandle);
-            if (backgroundFrmData != NULL) {
+            if (backgroundFrmData != nullptr) {
                 buf_to_buf(backgroundFrmData + 499 * rect.uly + rect.ulx, width, height, 499, windowBuffer + 499 * rect.uly + rect.ulx, 499);
                 art_ptr_unlock(backgroundFrmHandle);
             }
@@ -2004,7 +2004,7 @@ void inven_pickup(int keyCode, int first_item_index)
             CacheEntry* backgroundFrmHandle;
             int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 48, 0, 0, 0);
             unsigned char* backgroundFrmData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundFrmHandle);
-            if (backgroundFrmData != NULL) {
+            if (backgroundFrmData != nullptr) {
                 buf_to_buf(backgroundFrmData + 499 * 286 + 154, 180, 61, 499, windowBuffer + 499 * 286 + 154, 499);
                 art_ptr_unlock(backgroundFrmHandle);
             }
@@ -2022,10 +2022,10 @@ void inven_pickup(int keyCode, int first_item_index)
     CacheEntry* itemInventoryFrmHandle;
     int itemInventoryFid = item_inv_fid(a1a);
     Art* itemInventoryFrm = art_ptr_lock(itemInventoryFid, &itemInventoryFrmHandle);
-    if (itemInventoryFrm != NULL) {
-        int width = art_frame_width(itemInventoryFrm, 0, 0);
-        int height = art_frame_length(itemInventoryFrm, 0, 0);
-        unsigned char* itemInventoryFrmData = art_frame_data(itemInventoryFrm, 0, 0);
+    if (itemInventoryFrm != nullptr) {
+        int width = itemInventoryFrm->frameWidth(0, 0);
+        int height = itemInventoryFrm->frameLength(0, 0);
+        unsigned char* itemInventoryFrmData = itemInventoryFrm->frameData(0, 0);
         mouse_set_shape(itemInventoryFrmData, width, height, width, width / 2, height / 2, 0);
         gsound_play_sfx_file("ipickup1");
     }
@@ -2040,7 +2040,7 @@ void inven_pickup(int keyCode, int first_item_index)
         sharedFpsLimiter.throttle();
     } while ((mouse_get_buttons() & MOUSE_EVENT_LEFT_BUTTON_REPEAT) != 0);
 
-    if (itemInventoryFrm != NULL) {
+    if (itemInventoryFrm != nullptr) {
         art_ptr_unlock(itemInventoryFrmHandle);
         gsound_play_sfx_file("iputdown");
     }
@@ -2069,26 +2069,26 @@ void inven_pickup(int keyCode, int first_item_index)
 
         if (v3 == -1) {
             // TODO: Holy shit, needs refactoring.
-            *v29 = NULL;
+            *v29 = nullptr;
             if (item_add_force(inven_dude, a1a, 1)) {
                 *v29 = a1a;
             } else if (v29 == &i_worn) {
-                adjust_ac(stack[0], a1a, NULL);
+                adjust_ac(stack[0], a1a, nullptr);
             } else if (i_rhand == i_lhand) {
-                i_lhand = NULL;
-                i_rhand = NULL;
+                i_lhand = nullptr;
+                i_rhand = nullptr;
             }
         }
     } else if (mouseHitTestInWindow(i_wid, INVENTORY_LEFT_HAND_SLOT_X, INVENTORY_LEFT_HAND_SLOT_Y, INVENTORY_LEFT_HAND_SLOT_MAX_X, INVENTORY_LEFT_HAND_SLOT_MAX_Y)) {
-        if (i_lhand != NULL && item_get_type(i_lhand) == ITEM_TYPE_CONTAINER && i_lhand != a1a) {
+        if (i_lhand != nullptr && item_get_type(i_lhand) == ITEM_TYPE_CONTAINER && i_lhand != a1a) {
             drop_into_container(i_lhand, a1a, v3, v29, count);
-        } else if (i_lhand == NULL || drop_ammo_into_weapon(i_lhand, a1a, v29, count, keyCode)) {
+        } else if (i_lhand == nullptr || drop_ammo_into_weapon(i_lhand, a1a, v29, count, keyCode)) {
             switch_hand(a1a, &i_lhand, v29, keyCode);
         }
     } else if (mouseHitTestInWindow(i_wid, INVENTORY_RIGHT_HAND_SLOT_X, INVENTORY_RIGHT_HAND_SLOT_Y, INVENTORY_RIGHT_HAND_SLOT_MAX_X, INVENTORY_RIGHT_HAND_SLOT_MAX_Y)) {
-        if (i_rhand != NULL && item_get_type(i_rhand) == ITEM_TYPE_CONTAINER && i_rhand != a1a) {
+        if (i_rhand != nullptr && item_get_type(i_rhand) == ITEM_TYPE_CONTAINER && i_rhand != a1a) {
             drop_into_container(i_rhand, a1a, v3, v29, count);
-        } else if (i_rhand == NULL || drop_ammo_into_weapon(i_rhand, a1a, v29, count, keyCode)) {
+        } else if (i_rhand == nullptr || drop_ammo_into_weapon(i_rhand, a1a, v29, count, keyCode)) {
             switch_hand(a1a, &i_rhand, v29, v3);
         }
     } else if (mouseHitTestInWindow(i_wid, INVENTORY_ARMOR_SLOT_X, INVENTORY_ARMOR_SLOT_Y, INVENTORY_ARMOR_SLOT_MAX_X, INVENTORY_ARMOR_SLOT_MAX_Y)) {
@@ -2099,15 +2099,15 @@ void inven_pickup(int keyCode, int first_item_index)
                 item_remove_mult(inven_dude, a1a, 1);
             }
 
-            if (i_worn != NULL) {
-                if (v29 != NULL) {
+            if (i_worn != nullptr) {
+                if (v29 != nullptr) {
                     *v29 = i_worn;
                 } else {
-                    i_worn = NULL;
+                    i_worn = nullptr;
                     v22 = item_add_force(inven_dude, v21, 1);
                 }
             } else {
-                if (v29 != NULL) {
+                if (v29 != nullptr) {
                     *v29 = i_worn;
                 }
             }
@@ -2138,12 +2138,12 @@ void inven_pickup(int keyCode, int first_item_index)
 // 0x464BFC
 void switch_hand(Object* a1, Object** a2, Object** a3, int a4)
 {
-    if (*a2 != NULL) {
+    if (*a2 != nullptr) {
         if (item_get_type(*a2) == ITEM_TYPE_WEAPON && item_get_type(a1) == ITEM_TYPE_AMMO) {
             return;
         }
 
-        if (a3 != NULL && (a3 != &i_worn || item_get_type(*a2) == ITEM_TYPE_ARMOR)) {
+        if (a3 != nullptr && (a3 != &i_worn || item_get_type(*a2) == ITEM_TYPE_ARMOR)) {
             if (a3 == &i_worn) {
                 adjust_ac(stack[0], i_worn, *a2);
             }
@@ -2154,7 +2154,7 @@ void switch_hand(Object* a1, Object** a2, Object** a3, int a4)
             }
 
             Object* itemToAdd = *a2;
-            *a2 = NULL;
+            *a2 = nullptr;
             if (item_add_force(inven_dude, itemToAdd, 1) != 0) {
                 item_add_force(inven_dude, a1, 1);
                 return;
@@ -2162,19 +2162,19 @@ void switch_hand(Object* a1, Object** a2, Object** a3, int a4)
 
             a4 = -1;
 
-            if (a3 != NULL) {
+            if (a3 != nullptr) {
                 if (a3 == &i_worn) {
-                    adjust_ac(stack[0], i_worn, NULL);
+                    adjust_ac(stack[0], i_worn, nullptr);
                 }
-                *a3 = NULL;
+                *a3 = nullptr;
             }
         }
     } else {
-        if (a3 != NULL) {
+        if (a3 != nullptr) {
             if (a3 == &i_worn) {
-                adjust_ac(stack[0], i_worn, NULL);
+                adjust_ac(stack[0], i_worn, nullptr);
             }
-            *a3 = NULL;
+            *a3 = nullptr;
         }
     }
 
@@ -2187,7 +2187,7 @@ void switch_hand(Object* a1, Object** a2, Object** a3, int a4)
 
 // This function removes armor bonuses and effects granted by [oldArmor] and
 // adds appropriate bonuses and effects granted by [newArmor]. Both [oldArmor]
-// and [newArmor] can be NULL.
+// and [newArmor] can be nullptr.
 //
 // 0x464D14
 void adjust_ac(Object* critter, Object* oldArmor, Object* newArmor)
@@ -2215,12 +2215,12 @@ void adjust_ac(Object* critter, Object* oldArmor, Object* newArmor)
             damageThresholdStat += 1;
         }
 
-        if (oldArmor != NULL) {
+        if (oldArmor != nullptr) {
             int perk = item_ar_perk(oldArmor);
             perk_remove_effect(critter, perk);
         }
 
-        if (newArmor != NULL) {
+        if (newArmor != nullptr) {
             int perk = item_ar_perk(newArmor);
             perk_add_effect(critter, perk);
         }
@@ -2240,7 +2240,7 @@ void adjust_fid()
             v0 = proto->fid & 0xFFF;
         }
 
-        if (i_worn != NULL) {
+        if (i_worn != nullptr) {
             proto_ptr(i_worn->pid, &proto);
             if (stat_level(inven_dude, STAT_GENDER) == GENDER_FEMALE) {
                 v0 = proto->item.data.armor.femaleFid;
@@ -2255,14 +2255,14 @@ void adjust_fid()
 
         int animationCode = 0;
         if (intface_is_item_right_hand()) {
-            if (i_rhand != NULL) {
+            if (i_rhand != nullptr) {
                 proto_ptr(i_rhand->pid, &proto);
                 if (proto->item.type == ITEM_TYPE_WEAPON) {
                     animationCode = proto->item.data.weapon.animationCode;
                 }
             }
         } else {
-            if (i_lhand != NULL) {
+            if (i_lhand != nullptr) {
                 proto_ptr(i_lhand->pid, &proto);
                 if (proto->item.type == ITEM_TYPE_WEAPON) {
                     animationCode = proto->item.data.weapon.animationCode;
@@ -2405,7 +2405,7 @@ Object* inven_right_hand(Object* critter)
     Inventory* inventory;
     Object* item;
 
-    if (i_rhand != NULL && critter == inven_dude) {
+    if (i_rhand != nullptr && critter == inven_dude) {
         return i_rhand;
     }
 
@@ -2417,7 +2417,7 @@ Object* inven_right_hand(Object* critter)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x465128
@@ -2427,7 +2427,7 @@ Object* inven_left_hand(Object* critter)
     Inventory* inventory;
     Object* item;
 
-    if (i_lhand != NULL && critter == inven_dude) {
+    if (i_lhand != nullptr && critter == inven_dude) {
         return i_lhand;
     }
 
@@ -2439,7 +2439,7 @@ Object* inven_left_hand(Object* critter)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x465168
@@ -2449,7 +2449,7 @@ Object* inven_worn(Object* critter)
     Inventory* inventory;
     Object* item;
 
-    if (i_worn != NULL && critter == inven_dude) {
+    if (i_worn != nullptr && critter == inven_dude) {
         return i_worn;
     }
 
@@ -2461,7 +2461,7 @@ Object* inven_worn(Object* critter)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x4651A8
@@ -2491,7 +2491,7 @@ Object* inven_pid_is_carried_ptr(Object* obj, int pid)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x465208
@@ -2549,7 +2549,7 @@ void display_stats()
 
     CacheEntry* backgroundHandle;
     unsigned char* backgroundData = art_ptr_lock_data(fid, 0, 0, &backgroundHandle);
-    if (backgroundData != NULL) {
+    if (backgroundData != nullptr) {
         buf_to_buf(backgroundData + INVENTORY_WINDOW_WIDTH * INVENTORY_SUMMARY_Y + INVENTORY_SUMMARY_X,
             152,
             188,
@@ -2576,7 +2576,7 @@ void display_stats()
     int offset = INVENTORY_WINDOW_WIDTH * 2 * text_height() + INVENTORY_WINDOW_WIDTH * INVENTORY_SUMMARY_Y + INVENTORY_SUMMARY_X;
     for (int stat = 0; stat < 7; stat++) {
         messageListItem.num = stat;
-        if (message_search(&inventry_message_file, &messageListItem)) {
+        if (inventry_message_file.search(&messageListItem)) {
             text_to_buf(windowBuffer + offset, messageListItem.text, 80, INVENTORY_WINDOW_WIDTH, colorTable[992]);
         }
 
@@ -2591,7 +2591,7 @@ void display_stats()
 
     for (int index = 0; index < 7; index += 1) {
         messageListItem.num = 7 + index;
-        if (message_search(&inventry_message_file, &messageListItem)) {
+        if (inventry_message_file.search(&messageListItem)) {
             text_to_buf(windowBuffer + offset + 40, messageListItem.text, 80, INVENTORY_WINDOW_WIDTH, colorTable[992]);
         }
 
@@ -2627,12 +2627,12 @@ void display_stats()
 
     for (int index = 0; index < 2; index += 1) {
         Object* item = itemsInHands[index];
-        if (item == NULL) {
+        if (item == nullptr) {
             formattedText[0] = '\0';
 
             // No item
             messageListItem.num = 14;
-            if (message_search(&inventry_message_file, &messageListItem)) {
+            if (inventry_message_file.search(&messageListItem)) {
                 text_to_buf(windowBuffer + offset, messageListItem.text, 120, INVENTORY_WINDOW_WIDTH, colorTable[992]);
             }
 
@@ -2640,7 +2640,7 @@ void display_stats()
 
             // Unarmed dmg:
             messageListItem.num = 24;
-            if (message_search(&inventry_message_file, &messageListItem)) {
+            if (inventry_message_file.search(&messageListItem)) {
                 // TODO: Figure out why it uses STAT_MELEE_DAMAGE instead of
                 // STAT_UNARMED_DAMAGE.
                 int damage = stat_level(stack[0], STAT_MELEE_DAMAGE) + 2;
@@ -2663,7 +2663,7 @@ void display_stats()
             if (itemType == ITEM_TYPE_ARMOR) {
                 // (Not worn)
                 messageListItem.num = 18;
-                if (message_search(&inventry_message_file, &messageListItem)) {
+                if (inventry_message_file.search(&messageListItem)) {
                     text_to_buf(windowBuffer + offset, messageListItem.text, 120, INVENTORY_WINDOW_WIDTH, colorTable[992]);
                 }
             }
@@ -2690,11 +2690,11 @@ void display_stats()
         }
 
         messageListItem.num = 15; // Dmg:
-        if (message_search(&inventry_message_file, &messageListItem)) {
+        if (inventry_message_file.search(&messageListItem)) {
             if (attackType == ATTACK_TYPE_RANGED || range > 1) {
                 MessageListItem rangeMessageListItem;
                 rangeMessageListItem.num = 16; // Rng:
-                if (message_search(&inventry_message_file, &rangeMessageListItem)) {
+                if (inventry_message_file.search(&rangeMessageListItem)) {
                     snprintf(formattedText, sizeof(formattedText), "%s %d-%d   %s %d", messageListItem.text, damageMin, damageMax + meleeDamage, rangeMessageListItem.text, range);
                 }
             } else {
@@ -2712,7 +2712,7 @@ void display_stats()
             formattedText[0] = '\0';
 
             messageListItem.num = 17; // Ammo:
-            if (message_search(&inventry_message_file, &messageListItem)) {
+            if (inventry_message_file.search(&messageListItem)) {
                 if (ammoTypePid != 0) {
                     const char* ammoName = proto_name(ammoTypePid);
                     int capacity = item_w_max_ammo(item);
@@ -2733,7 +2733,7 @@ void display_stats()
 
     // Total wt:
     messageListItem.num = 20;
-    if (message_search(&inventry_message_file, &messageListItem)) {
+    if (inventry_message_file.search(&messageListItem)) {
         if (PID_TYPE(stack[0]->pid) == OBJ_TYPE_CRITTER) {
             int carryWeight = stat_level(stack[0], STAT_CARRY_WEIGHT);
             int inventoryWeight = item_total_weight(stack[0]);
@@ -2761,7 +2761,7 @@ void display_stats()
 Object* inven_find_type(Object* obj, int itemType, int* indexPtr)
 {
     int dummy = -1;
-    if (indexPtr == NULL) {
+    if (indexPtr == nullptr) {
         indexPtr = &dummy;
     }
 
@@ -2771,14 +2771,14 @@ Object* inven_find_type(Object* obj, int itemType, int* indexPtr)
 
     // TODO: Refactor with for loop.
     if (*indexPtr >= inventory->length) {
-        return NULL;
+        return nullptr;
     }
 
     while (itemType != -1 && item_get_type(inventory->items[*indexPtr].item) != itemType) {
         *indexPtr += 1;
 
         if (*indexPtr >= inventory->length) {
-            return NULL;
+            return nullptr;
         }
     }
 
@@ -2802,13 +2802,13 @@ Object* inven_find_id(Object* obj, int id)
 
         if (item_get_type(item) == ITEM_TYPE_CONTAINER) {
             item = inven_find_id(item, id);
-            if (item != NULL) {
+            if (item != nullptr) {
                 return item;
             }
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x465B98
@@ -2819,7 +2819,7 @@ int inven_wield(Object* critter, Object* item, int a3)
     int itemType = item_get_type(item);
     if (itemType == ITEM_TYPE_ARMOR) {
         Object* armor = inven_worn(critter);
-        if (armor != NULL) {
+        if (armor != nullptr) {
             armor->flags &= ~OBJECT_WORN;
         }
 
@@ -2868,7 +2868,7 @@ int inven_wield(Object* critter, Object* item, int a3)
         }
 
         Rect rect;
-        if (v17 != NULL) {
+        if (v17 != nullptr) {
             v17->flags &= ~OBJECT_IN_ANY_HAND;
 
             if (v17->pid == PROTO_ID_LIT_FLARE) {
@@ -2998,9 +2998,9 @@ int inven_from_button(int keyCode, Object** a2, Object*** a3, Object** a4)
         item = i_worn;
         break;
     default:
-        slot_ptr = NULL;
-        owner = NULL;
-        item = NULL;
+        slot_ptr = nullptr;
+        owner = nullptr;
+        item = nullptr;
 
         if (keyCode < 2000) {
             index = stack_offset[curr_stack] + keyCode - 1000;
@@ -3043,19 +3043,19 @@ int inven_from_button(int keyCode, Object** a2, Object*** a3, Object** a4)
         quantity = inventoryItem->quantity;
     }
 
-    if (a3 != NULL) {
+    if (a3 != nullptr) {
         *a3 = slot_ptr;
     }
 
-    if (a2 != NULL) {
+    if (a2 != nullptr) {
         *a2 = item;
     }
 
-    if (a4 != NULL) {
+    if (a4 != nullptr) {
         *a4 = owner;
     }
 
-    if (quantity == 0 && item != NULL) {
+    if (quantity == 0 && item != nullptr) {
         quantity = 1;
     }
 
@@ -3077,14 +3077,14 @@ void inven_display_msg(char* string)
     windowBuffer += 499 * 44 + 297;
 
     char* c = string;
-    while (c != NULL && *c != '\0') {
+    while (c != nullptr && *c != '\0') {
         inven_display_msg_line += 1;
         if (inven_display_msg_line > 17) {
             debug_printf("\nError: inven_display_msg: out of bounds!");
             return;
         }
 
-        char* space = NULL;
+        char* space = nullptr;
         if (text_width(c) > 152) {
             // Look for next space.
             space = c + 1;
@@ -3139,13 +3139,13 @@ void inven_display_msg(char* string)
 
         text_to_buf(windowBuffer + 499 * inven_display_msg_line * text_height(), c, 152, 499, colorTable[992]);
 
-        if (space != NULL) {
+        if (space != nullptr) {
             c = space + 1;
             if (*space == '\0') {
                 *space = ' ';
             }
         } else {
-            c = NULL;
+            c = nullptr;
         }
     }
 
@@ -3167,7 +3167,7 @@ void inven_obj_examine_func(Object* critter, Object* item)
 
     CacheEntry* handle;
     unsigned char* backgroundData = art_ptr_lock_data(backgroundFid, 0, 0, &handle);
-    if (backgroundData != NULL) {
+    if (backgroundData != nullptr) {
         buf_to_buf(backgroundData + 499 * 44 + 297, 152, 188, 499, windowBuffer + 499 * 44 + 297, 499);
     }
     art_ptr_unlock(handle);
@@ -3206,7 +3206,7 @@ void inven_obj_examine_func(Object* critter, Object* item)
             messageListItem.num = 541;
         }
 
-        if (!message_search(&proto_main_msg_file, &messageListItem)) {
+        if (!proto_main_msg_file.search(&messageListItem)) {
             debug_printf("\nError: Couldn't find message!");
         }
 
@@ -3338,7 +3338,7 @@ void inven_action_cursor(int keyCode, int inventoryWindowType)
                 }
             }
         } else {
-            if (itemType == ITEM_TYPE_CONTAINER && v43 != NULL) {
+            if (itemType == ITEM_TYPE_CONTAINER && v43 != nullptr) {
                 actionMenuItemsLength = 3;
                 actionMenuItems = act_no_use;
             } else {
@@ -3368,7 +3368,7 @@ void inven_action_cursor(int keyCode, int inventoryWindowType)
 
     int offsetX;
     int offsetY;
-    art_frame_offset(cursorData->frm, 0, &offsetX, &offsetY);
+    cursorData->frm->frameOffset(0, &offsetX, &offsetY);
 
     Rect rect;
     rect.ulx = x - inventoryWindowX - cursorData->width / 2 + offsetX;
@@ -3458,13 +3458,13 @@ void inven_action_cursor(int keyCode, int inventoryWindowType)
     int actionMenuItem = actionMenuItems[menuItemIndex];
     switch (actionMenuItem) {
     case GAME_MOUSE_ACTION_MENU_ITEM_DROP:
-        if (v43 != NULL) {
+        if (v43 != nullptr) {
             if (v43 == &i_worn) {
-                adjust_ac(stack[0], item, NULL);
+                adjust_ac(stack[0], item, nullptr);
             }
             item_add_force(v41, item, 1);
             v56 = 1;
-            *v43 = NULL;
+            *v43 = nullptr;
         }
 
         if (item->pid == PROTO_ID_MONEY) {
@@ -3521,20 +3521,20 @@ void inven_action_cursor(int keyCode, int inventoryWindowType)
             break;
         case ITEM_TYPE_DRUG:
             if (item_d_take_drug(stack[0], item)) {
-                if (v43 != NULL) {
-                    *v43 = NULL;
+                if (v43 != nullptr) {
+                    *v43 = nullptr;
                 } else {
                     item_remove_mult(v41, item, 1);
                 }
 
-                obj_connect(item, obj_dude->tile, obj_dude->elevation, NULL);
+                obj_connect(item, obj_dude->tile, obj_dude->elevation, nullptr);
                 obj_destroy(item);
             }
             intface_update_hit_points(true);
             break;
         case ITEM_TYPE_WEAPON:
         case ITEM_TYPE_MISC:
-            if (v43 == NULL) {
+            if (v43 == nullptr) {
                 item_remove_mult(v41, item, 1);
             }
 
@@ -3546,27 +3546,27 @@ void inven_action_cursor(int keyCode, int inventoryWindowType)
             }
 
             if (v21 == 1) {
-                if (v43 != NULL) {
-                    *v43 = NULL;
+                if (v43 != nullptr) {
+                    *v43 = nullptr;
                 }
 
-                obj_connect(item, obj_dude->tile, obj_dude->elevation, NULL);
+                obj_connect(item, obj_dude->tile, obj_dude->elevation, nullptr);
                 obj_destroy(item);
             } else {
-                if (v43 == NULL) {
+                if (v43 == nullptr) {
                     item_add_force(v41, item, 1);
                 }
             }
         }
         break;
     case GAME_MOUSE_ACTION_MENU_ITEM_UNLOAD:
-        if (v43 == NULL) {
+        if (v43 == nullptr) {
             item_remove_mult(v41, item, 1);
         }
 
         for (;;) {
             Object* ammo = item_w_unload(item);
-            if (ammo == NULL) {
+            if (ammo == nullptr) {
                 break;
             }
 
@@ -3575,7 +3575,7 @@ void inven_action_cursor(int keyCode, int inventoryWindowType)
             item_add_force(v41, ammo, 1);
         }
 
-        if (v43 == NULL) {
+        if (v43 == nullptr) {
             item_add_force(v41, item, 1);
         }
         break;
@@ -3591,7 +3591,7 @@ void inven_action_cursor(int keyCode, int inventoryWindowType)
 
     if (inventoryWindowType == INVENTORY_WINDOW_TYPE_LOOT
         || inventoryWindowType == INVENTORY_WINDOW_TYPE_TRADE) {
-        display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, inventoryWindowType);
+        target_pud->display_target(target_stack_offset[target_curr_stack], -1, inventoryWindowType);
     }
 
     display_inventory(stack_offset[curr_stack], -1, inventoryWindowType);
@@ -3626,8 +3626,8 @@ int loot_container(Object* a1, Object* a2)
             if (a2->frame == 0) {
                 CacheEntry* handle;
                 Art* frm = art_ptr_lock(a2->fid, &handle);
-                if (frm != NULL) {
-                    int frameCount = art_frame_max_frame(frm);
+                if (frm != nullptr) {
+                    int frameCount = frm->maxFrame();
                     art_ptr_unlock(handle);
                     if (frameCount > 1) {
                         return 0;
@@ -3640,7 +3640,7 @@ int loot_container(Object* a1, Object* a2)
     int sid = -1;
     if (!gIsSteal) {
         if (obj_sid(a2, &sid) != -1) {
-            scr_set_objs(sid, a1, NULL);
+            scr_set_objs(sid, a1, nullptr);
             exec_script_proc(sid, SCRIPT_PROC_PICKUP);
 
             Script* script;
@@ -3661,35 +3661,35 @@ int loot_container(Object* a1, Object* a2)
     target_stack_offset[0] = 0;
     target_stack[0] = a2;
 
-    Object* a1a = NULL;
+    Object* a1a = nullptr;
     if (obj_new(&a1a, 0, 467) == -1) {
         return 0;
     }
 
-    Object* item1 = NULL;
-    Object* item2 = NULL;
-    Object* armor = NULL;
+    Object* item1 = nullptr;
+    Object* item2 = nullptr;
+    Object* armor = nullptr;
 
     if (gIsSteal) {
         item1 = inven_left_hand(a2);
-        if (item1 != NULL) {
+        if (item1 != nullptr) {
             item_remove_mult(a2, item1, 1);
         }
 
         item2 = inven_right_hand(a2);
-        if (item2 != NULL) {
+        if (item2 != nullptr) {
             item_remove_mult(a2, item2, 1);
         }
 
         armor = inven_worn(a2);
-        if (armor != NULL) {
+        if (armor != nullptr) {
             item_remove_mult(a2, armor, 1);
         }
     }
 
     bool isoWasEnabled = setup_inventory(INVENTORY_WINDOW_TYPE_LOOT);
 
-    Object** critters = NULL;
+    Object** critters = nullptr;
     int critterCount = 0;
     int critterIndex = 0;
     if (!gIsSteal) {
@@ -3731,7 +3731,7 @@ int loot_container(Object* a1, Object* a2)
                 fid = art_id(OBJ_TYPE_INTERFACE, arrowFrmIds[INVENTORY_ARROW_FRM_LEFT_ARROW_DOWN], 0, 0, 0);
                 buttonDownData = art_ptr_lock_data(fid, 0, 0, &(arrowFrmHandles[INVENTORY_ARROW_FRM_LEFT_ARROW_DOWN]));
 
-                if (buttonUpData != NULL && buttonDownData != NULL) {
+                if (buttonUpData != nullptr && buttonDownData != nullptr) {
                     btn = win_register_button(i_wid,
                         307,
                         149,
@@ -3743,7 +3743,7 @@ int loot_container(Object* a1, Object* a2)
                         -1,
                         buttonUpData,
                         buttonDownData,
-                        NULL,
+                        nullptr,
                         0);
                     if (btn != -1) {
                         win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -3757,7 +3757,7 @@ int loot_container(Object* a1, Object* a2)
                 fid = art_id(OBJ_TYPE_INTERFACE, arrowFrmIds[INVENTORY_ARROW_FRM_RIGHT_ARROW_DOWN], 0, 0, 0);
                 buttonDownData = art_ptr_lock_data(fid, 0, 0, &(arrowFrmHandles[INVENTORY_ARROW_FRM_RIGHT_ARROW_DOWN]));
 
-                if (buttonUpData != NULL && buttonDownData != NULL) {
+                if (buttonUpData != nullptr && buttonDownData != nullptr) {
                     btn = win_register_button(i_wid,
                         327,
                         149,
@@ -3769,7 +3769,7 @@ int loot_container(Object* a1, Object* a2)
                         -1,
                         buttonUpData,
                         buttonDownData,
-                        NULL,
+                        nullptr,
                         0);
                     if (btn != -1) {
                         win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -3785,7 +3785,7 @@ int loot_container(Object* a1, Object* a2)
         }
     }
 
-    display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+    target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
     display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
     display_body(a2->fid, INVENTORY_WINDOW_TYPE_LOOT);
     inven_set_mouse(INVENTORY_WINDOW_CURSOR_HAND);
@@ -3821,13 +3821,13 @@ int loot_container(Object* a1, Object* a2)
                 int newInventoryWeight = item_total_weight(a2);
                 if (newInventoryWeight <= maxCarryWeight - currentWeight) {
                     item_move_all(a2, a1);
-                    display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                    target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                     display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                 } else {
                     // Sorry, you cannot carry that much.
                     messageListItem.num = 31;
-                    if (message_search(&inventry_message_file, &messageListItem)) {
-                        dialog_out(messageListItem.text, NULL, 0, 169, 117, colorTable[32328], NULL, colorTable[32328], 0);
+                    if (inventry_message_file.search(&messageListItem)) {
+                        dialog_out(messageListItem.text, nullptr, 0, 169, 117, colorTable[32328], nullptr, colorTable[32328], 0);
                     }
                 }
             }
@@ -3849,7 +3849,7 @@ int loot_container(Object* a1, Object* a2)
                 target_stack[0] = a2;
                 target_curr_stack = 0;
                 target_stack_offset[0] = 0;
-                display_target_inventory(0, -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                target_pud->display_target(0, -1, INVENTORY_WINDOW_TYPE_LOOT);
                 display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                 display_body(a2->fid, INVENTORY_WINDOW_TYPE_LOOT);
             }
@@ -3871,20 +3871,20 @@ int loot_container(Object* a1, Object* a2)
                 target_stack[0] = a2;
                 target_curr_stack = 0;
                 target_stack_offset[0] = 0;
-                display_target_inventory(0, -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                target_pud->display_target(0, -1, INVENTORY_WINDOW_TYPE_LOOT);
                 display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                 display_body(a2->fid, INVENTORY_WINDOW_TYPE_LOOT);
             }
         } else if (keyCode == KEY_CTRL_ARROW_UP) {
             if (target_stack_offset[target_curr_stack] > 0) {
                 target_stack_offset[target_curr_stack] -= 1;
-                display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                 win_draw(i_wid);
             }
         } else if (keyCode == KEY_CTRL_ARROW_DOWN) {
             if (target_stack_offset[target_curr_stack] + inven_cur_disp < target_pud->length) {
                 target_stack_offset[target_curr_stack] += 1;
-                display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                 win_draw(i_wid);
             }
         } else if (keyCode >= 2500 && keyCode <= 2501) {
@@ -3915,7 +3915,7 @@ int loot_container(Object* a1, Object* a2)
                                 stealingXpBonus += 10;
                             }
 
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                             display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                         }
 
@@ -3939,7 +3939,7 @@ int loot_container(Object* a1, Object* a2)
                                 stealingXpBonus += 10;
                             }
 
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                             display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                         }
                     }
@@ -3967,13 +3967,13 @@ int loot_container(Object* a1, Object* a2)
                     if (wheelY > 0) {
                         if (target_stack_offset[target_curr_stack] > 0) {
                             target_stack_offset[target_curr_stack] -= 1;
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                             win_draw(i_wid);
                         }
                     } else if (wheelY < 0) {
                         if (target_stack_offset[target_curr_stack] + inven_cur_disp < target_pud->length) {
                             target_stack_offset[target_curr_stack] += 1;
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_LOOT);
                             win_draw(i_wid);
                         }
                     }
@@ -3998,24 +3998,24 @@ int loot_container(Object* a1, Object* a2)
     }
 
     if (gIsSteal) {
-        if (item1 != NULL) {
+        if (item1 != nullptr) {
             item1->flags |= OBJECT_IN_LEFT_HAND;
             item_add_force(a2, item1, 1);
         }
 
-        if (item2 != NULL) {
+        if (item2 != nullptr) {
             item2->flags |= OBJECT_IN_RIGHT_HAND;
             item_add_force(a2, item2, 1);
         }
 
-        if (armor != NULL) {
+        if (armor != nullptr) {
             armor->flags |= OBJECT_WORN;
             item_add_force(a2, armor, 1);
         }
     }
 
     item_move_all(a1a, a2);
-    obj_erase_object(a1a, NULL);
+    obj_erase_object(a1a, nullptr);
 
     if (gIsSteal) {
         if (!isCaughtStealing) {
@@ -4026,7 +4026,7 @@ int loot_container(Object* a1, Object* a2)
 
                     // You gain %d experience points for successfully using your Steal skill.
                     messageListItem.num = 29;
-                    if (message_search(&inventry_message_file, &messageListItem)) {
+                    if (inventry_message_file.search(&messageListItem)) {
                         char formattedText[200];
                         snprintf(formattedText, sizeof(formattedText), messageListItem.text, stealingXp);
                         display_print(formattedText);
@@ -4047,7 +4047,7 @@ int loot_container(Object* a1, Object* a2)
         if (isCaughtStealing) {
             if (gStealCount > 0) {
                 if (obj_sid(a2, &sid) != -1) {
-                    scr_set_objs(sid, a1, NULL);
+                    scr_set_objs(sid, a1, nullptr);
                     exec_script_proc(sid, SCRIPT_PROC_PICKUP);
 
                     // TODO: Looks like inlining, script is not used.
@@ -4106,7 +4106,7 @@ int move_inventory(Object* a1, int a2, Object* a3, bool a4)
         InventoryItem* inventoryItem = &(target_pud->items[a2 + target_stack_offset[target_curr_stack]]);
         quantity = inventoryItem->quantity;
         if (quantity > 1) {
-            display_target_inventory(target_stack_offset[target_curr_stack], a2, target_pud, INVENTORY_WINDOW_TYPE_LOOT);
+            target_pud->display_target(target_stack_offset[target_curr_stack], a2, INVENTORY_WINDOW_TYPE_LOOT);
             win_draw(i_wid);
             v38 = false;
         }
@@ -4118,7 +4118,7 @@ int move_inventory(Object* a1, int a2, Object* a3, bool a4)
         CacheEntry* handle;
         int fid = art_id(OBJ_TYPE_INTERFACE, 114, 0, 0, 0);
         unsigned char* data = art_ptr_lock_data(fid, 0, 0, &handle);
-        if (data != NULL) {
+        if (data != nullptr) {
             buf_to_buf(data + INVENTORY_LOOT_WINDOW_WIDTH * rect.uly + rect.ulx,
                 INVENTORY_SLOT_WIDTH,
                 INVENTORY_SLOT_HEIGHT,
@@ -4136,10 +4136,10 @@ int move_inventory(Object* a1, int a2, Object* a3, bool a4)
     CacheEntry* inventoryFrmHandle;
     int inventoryFid = item_inv_fid(a1);
     Art* inventoryFrm = art_ptr_lock(inventoryFid, &inventoryFrmHandle);
-    if (inventoryFrm != NULL) {
-        int width = art_frame_width(inventoryFrm, 0, 0);
-        int height = art_frame_length(inventoryFrm, 0, 0);
-        unsigned char* data = art_frame_data(inventoryFrm, 0, 0);
+    if (inventoryFrm != nullptr) {
+        int width = inventoryFrm->frameWidth(0, 0);
+        int height = inventoryFrm->frameLength(0, 0);
+        unsigned char* data = inventoryFrm->frameData(0, 0);
         mouse_set_shape(data, width, height, width, width / 2, height / 2, 0);
         gsound_play_sfx_file("ipickup1");
     }
@@ -4153,7 +4153,7 @@ int move_inventory(Object* a1, int a2, Object* a3, bool a4)
         sharedFpsLimiter.throttle();
     } while ((mouse_get_buttons() & MOUSE_EVENT_LEFT_BUTTON_REPEAT) != 0);
 
-    if (inventoryFrm != NULL) {
+    if (inventoryFrm != nullptr) {
         art_ptr_unlock(inventoryFrmHandle);
         gsound_play_sfx_file("iputdown");
     }
@@ -4183,7 +4183,7 @@ int move_inventory(Object* a1, int a2, Object* a3, bool a4)
                     } else {
                         // There is no space left for that item.
                         messageListItem.num = 26;
-                        if (message_search(&inventry_message_file, &messageListItem)) {
+                        if (inventry_message_file.search(&messageListItem)) {
                             display_print(messageListItem.text);
                         }
                     }
@@ -4218,7 +4218,7 @@ int move_inventory(Object* a1, int a2, Object* a3, bool a4)
                     } else {
                         // You cannot pick that up. You are at your maximum weight capacity.
                         messageListItem.num = 25;
-                        if (message_search(&inventry_message_file, &messageListItem)) {
+                        if (inventry_message_file.search(&messageListItem)) {
                             display_print(messageListItem.text);
                         }
                     }
@@ -4292,7 +4292,7 @@ static void barter_move_inventory(Object* a1, int quantity, int a3, int a4, Obje
         if (a7) {
             display_inventory(a4, a3, INVENTORY_WINDOW_TYPE_TRADE);
         } else {
-            display_target_inventory(a4, a3, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+            target_pud->display_target(a4, a3, INVENTORY_WINDOW_TYPE_TRADE);
         }
     } else {
         unsigned char* dest = win_get_buf(i_wid);
@@ -4309,10 +4309,10 @@ static void barter_move_inventory(Object* a1, int quantity, int a3, int a4, Obje
     CacheEntry* inventoryFrmHandle;
     int inventoryFid = item_inv_fid(a1);
     Art* inventoryFrm = art_ptr_lock(inventoryFid, &inventoryFrmHandle);
-    if (inventoryFrm != NULL) {
-        int width = art_frame_width(inventoryFrm, 0, 0);
-        int height = art_frame_length(inventoryFrm, 0, 0);
-        unsigned char* data = art_frame_data(inventoryFrm, 0, 0);
+    if (inventoryFrm != nullptr) {
+        int width = inventoryFrm->frameWidth(0, 0);
+        int height = inventoryFrm->frameLength(0, 0);
+        unsigned char* data = inventoryFrm->frameData(0, 0);
         mouse_set_shape(data, width, height, width, width / 2, height / 2, 0);
         gsound_play_sfx_file("ipickup1");
     }
@@ -4326,7 +4326,7 @@ static void barter_move_inventory(Object* a1, int quantity, int a3, int a4, Obje
         sharedFpsLimiter.throttle();
     } while ((mouse_get_buttons() & MOUSE_EVENT_LEFT_BUTTON_REPEAT) != 0);
 
-    if (inventoryFrm != NULL) {
+    if (inventoryFrm != nullptr) {
         art_ptr_unlock(inventoryFrmHandle);
         gsound_play_sfx_file("iputdown");
     }
@@ -4340,7 +4340,7 @@ static void barter_move_inventory(Object* a1, int quantity, int a3, int a4, Obje
                 if (item_move_force(inven_dude, a6, a1, quantityToMove) == -1) {
                     // There is no space left for that item.
                     messageListItem.num = 26;
-                    if (message_search(&inventry_message_file, &messageListItem)) {
+                    if (inventry_message_file.search(&messageListItem)) {
                         display_print(messageListItem.text);
                     }
                 }
@@ -4353,7 +4353,7 @@ static void barter_move_inventory(Object* a1, int quantity, int a3, int a4, Obje
                 if (item_move_force(a5, a6, a1, quantityToMove) == -1) {
                     // You cannot pick that up. You are at your maximum weight capacity.
                     messageListItem.num = 25;
-                    if (message_search(&inventry_message_file, &messageListItem)) {
+                    if (inventry_message_file.search(&messageListItem)) {
                         display_print(messageListItem.text);
                     }
                 }
@@ -4378,9 +4378,9 @@ static void barter_move_from_table_inventory(Object* a1, int quantity, int a3, O
 
     if (quantity > 1) {
         if (a6) {
-            display_table_inventories(barter_back_win, a5, NULL, a3);
+            display_table_inventories(barter_back_win, a5, nullptr, a3);
         } else {
-            display_table_inventories(barter_back_win, NULL, a5, a3);
+            display_table_inventories(barter_back_win, nullptr, a5, a3);
         }
     } else {
         unsigned char* dest = win_get_buf(i_wid);
@@ -4402,10 +4402,10 @@ static void barter_move_from_table_inventory(Object* a1, int quantity, int a3, O
     CacheEntry* inventoryFrmHandle;
     int inventoryFid = item_inv_fid(a1);
     Art* inventoryFrm = art_ptr_lock(inventoryFid, &inventoryFrmHandle);
-    if (inventoryFrm != NULL) {
-        int width = art_frame_width(inventoryFrm, 0, 0);
-        int height = art_frame_length(inventoryFrm, 0, 0);
-        unsigned char* data = art_frame_data(inventoryFrm, 0, 0);
+    if (inventoryFrm != nullptr) {
+        int width = inventoryFrm->frameWidth(0, 0);
+        int height = inventoryFrm->frameLength(0, 0);
+        unsigned char* data = inventoryFrm->frameData(0, 0);
         mouse_set_shape(data, width, height, width, width / 2, height / 2, 0);
         gsound_play_sfx_file("ipickup1");
     }
@@ -4419,7 +4419,7 @@ static void barter_move_from_table_inventory(Object* a1, int quantity, int a3, O
         sharedFpsLimiter.throttle();
     } while ((mouse_get_buttons() & MOUSE_EVENT_LEFT_BUTTON_REPEAT) != 0);
 
-    if (inventoryFrm != NULL) {
+    if (inventoryFrm != nullptr) {
         art_ptr_unlock(inventoryFrmHandle);
         gsound_play_sfx_file("iputdown");
     }
@@ -4433,7 +4433,7 @@ static void barter_move_from_table_inventory(Object* a1, int quantity, int a3, O
                 if (item_move_force(a5, inven_dude, a1, quantityToMove) == -1) {
                     // There is no space left for that item.
                     messageListItem.num = 26;
-                    if (message_search(&inventry_message_file, &messageListItem)) {
+                    if (inventry_message_file.search(&messageListItem)) {
                         display_print(messageListItem.text);
                     }
                 }
@@ -4446,7 +4446,7 @@ static void barter_move_from_table_inventory(Object* a1, int quantity, int a3, O
                 if (item_move_force(a5, a4, a1, quantityToMove) == -1) {
                     // You cannot pick that up. You are at your maximum weight capacity.
                     messageListItem.num = 25;
-                    if (message_search(&inventry_message_file, &messageListItem)) {
+                    if (inventry_message_file.search(&messageListItem)) {
                         display_print(messageListItem.text);
                     }
                 }
@@ -4468,7 +4468,7 @@ static void display_table_inventories(int win, Object* a2, Object* a3, int a4)
     char formattedText[80];
     int v45 = text_height() + INVENTORY_SLOT_HEIGHT * inven_cur_disp;
 
-    if (a2 != NULL) {
+    if (a2 != nullptr) {
         unsigned char* src = win_get_buf(win);
         buf_to_buf(src + INVENTORY_TRADE_BACKGROUND_WINDOW_WIDTH * INVENTORY_TRADE_INNER_LEFT_SCROLLER_Y + INVENTORY_TRADE_INNER_LEFT_SCROLLER_X_PAD + INVENTORY_TRADE_WINDOW_OFFSET,
             INVENTORY_SLOT_WIDTH,
@@ -4514,7 +4514,7 @@ static void display_table_inventories(int win, Object* a2, Object* a3, int a4)
         win_draw_rect(i_wid, &rect);
     }
 
-    if (a3 != NULL) {
+    if (a3 != nullptr) {
         unsigned char* src = win_get_buf(win);
         buf_to_buf(src + INVENTORY_TRADE_BACKGROUND_WINDOW_WIDTH * INVENTORY_TRADE_INNER_RIGHT_SCROLLER_Y + INVENTORY_TRADE_INNER_RIGHT_SCROLLER_X_PAD + INVENTORY_TRADE_WINDOW_OFFSET,
             INVENTORY_SLOT_WIDTH,
@@ -4569,22 +4569,22 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
     }
 
     Object* armor = inven_worn(a2);
-    if (armor != NULL) {
+    if (armor != nullptr) {
         item_remove_mult(a2, armor, 1);
     }
 
-    Object* item1 = NULL;
+    Object* item1 = nullptr;
     Object* item2 = inven_right_hand(a2);
-    if (item2 != NULL) {
+    if (item2 != nullptr) {
         item_remove_mult(a2, item2, 1);
     } else {
-        item1 = inven_find_type(a2, ITEM_TYPE_WEAPON, NULL);
-        if (item1 != NULL) {
+        item1 = inven_find_type(a2, ITEM_TYPE_WEAPON, nullptr);
+        if (item1 != nullptr) {
             item_remove_mult(a2, item1, 1);
         }
     }
 
-    Object* a1a = NULL;
+    Object* a1a = nullptr;
     if (obj_new(&a1a, 0, 467) == -1) {
         return;
     }
@@ -4607,7 +4607,7 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
     target_stack_offset[0] = 0;
 
     bool isoWasEnabled = setup_inventory(INVENTORY_WINDOW_TYPE_TRADE);
-    display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+    target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
     display_inventory(stack_offset[0], -1, INVENTORY_WINDOW_TYPE_TRADE);
     display_body(a2->fid, INVENTORY_WINDOW_TYPE_TRADE);
     win_draw(barter_back_win);
@@ -4617,15 +4617,15 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
 
     int modifier;
     int npcReactionValue = reaction_get(a2);
-    int npcReactionType = reaction_to_level(npcReactionValue);
+    NpcReaction npcReactionType = reaction_to_level(npcReactionValue);
     switch (npcReactionType) {
-    case NPC_REACTION_BAD:
+    case NpcReaction::NPC_REACTION_BAD:
         modifier = -25;
         break;
-    case NPC_REACTION_NEUTRAL:
+    case NpcReaction::NPC_REACTION_NEUTRAL:
         modifier = 0;
         break;
-    case NPC_REACTION_GOOD:
+    case NpcReaction::NPC_REACTION_GOOD:
         modifier = 50;
         break;
     default:
@@ -4660,7 +4660,7 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
             if (a3->data.inventory.length != 0 || btable->data.inventory.length != 0) {
                 MessageListItem messageListItem;
                 if (barter_attempt_transaction(inven_dude, a3, a2, a4) == 0) {
-                    display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                    target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                     display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                     display_table_inventories(win, a3, a4, -1);
 
@@ -4671,7 +4671,7 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
                     messageListItem.num = 28;
                 }
 
-                if (message_search(&inventry_message_file, &messageListItem)) {
+                if (inventry_message_file.search(&messageListItem)) {
                     gdialog_display_msg(messageListItem.text);
                 }
             }
@@ -4708,13 +4708,13 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
         } else if (keyCode == KEY_CTRL_ARROW_UP) {
             if (target_stack_offset[target_curr_stack] > 0) {
                 target_stack_offset[target_curr_stack] -= 1;
-                display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                 win_draw(i_wid);
             }
         } else if (keyCode == KEY_CTRL_ARROW_DOWN) {
             if (target_stack_offset[target_curr_stack] + inven_cur_disp < target_pud->length) {
                 target_stack_offset[target_curr_stack] += 1;
-                display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                 win_draw(i_wid);
             }
         } else if (keyCode >= 2500 && keyCode <= 2501) {
@@ -4730,15 +4730,15 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
                 if (keyCode >= 1000 && keyCode <= 1000 + inven_cur_disp) {
                     if (immode == INVENTORY_WINDOW_CURSOR_ARROW) {
                         inven_action_cursor(keyCode, INVENTORY_WINDOW_TYPE_TRADE);
-                        display_table_inventories(win, a3, NULL, -1);
+                        display_table_inventories(win, a3, nullptr, -1);
                     } else {
                         int index = keyCode - 1000;
                         if (index + stack_offset[curr_stack] < pud->length) {
                             InventoryItem* inventoryItem = &(pud->items[index + stack_offset[curr_stack]]);
                             barter_move_inventory(inventoryItem->item, inventoryItem->quantity, index, stack_offset[curr_stack], a2, a3, true);
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                             display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
-                            display_table_inventories(win, a3, NULL, -1);
+                            display_table_inventories(win, a3, nullptr, -1);
                         }
                     }
 
@@ -4746,15 +4746,15 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
                 } else if (keyCode >= 2000 && keyCode <= 2000 + inven_cur_disp) {
                     if (immode == INVENTORY_WINDOW_CURSOR_ARROW) {
                         inven_action_cursor(keyCode, INVENTORY_WINDOW_TYPE_TRADE);
-                        display_table_inventories(win, NULL, a4, -1);
+                        display_table_inventories(win, nullptr, a4, -1);
                     } else {
                         int index = keyCode - 2000;
                         if (index + target_stack_offset[target_curr_stack] < target_pud->length) {
                             InventoryItem* inventoryItem = &(target_pud->items[index + target_stack_offset[target_curr_stack]]);
                             barter_move_inventory(inventoryItem->item, inventoryItem->quantity, index, target_stack_offset[target_curr_stack], a2, a4, false);
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                             display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
-                            display_table_inventories(win, NULL, a4, -1);
+                            display_table_inventories(win, nullptr, a4, -1);
                         }
                     }
 
@@ -4762,15 +4762,15 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
                 } else if (keyCode >= 2300 && keyCode <= 2300 + inven_cur_disp) {
                     if (immode == INVENTORY_WINDOW_CURSOR_ARROW) {
                         inven_action_cursor(keyCode, INVENTORY_WINDOW_TYPE_TRADE);
-                        display_table_inventories(win, a3, NULL, -1);
+                        display_table_inventories(win, a3, nullptr, -1);
                     } else {
                         int index = keyCode - 2300;
                         if (index < ptable_pud->length) {
                             InventoryItem* inventoryItem = &(ptable_pud->items[index + ptable_offset]);
                             barter_move_from_table_inventory(inventoryItem->item, inventoryItem->quantity, index, a2, a3, true);
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                             display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
-                            display_table_inventories(win, a3, NULL, -1);
+                            display_table_inventories(win, a3, nullptr, -1);
                         }
                     }
 
@@ -4778,15 +4778,15 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
                 } else if (keyCode >= 2400 && keyCode <= 2400 + inven_cur_disp) {
                     if (immode == INVENTORY_WINDOW_CURSOR_ARROW) {
                         inven_action_cursor(keyCode, INVENTORY_WINDOW_TYPE_TRADE);
-                        display_table_inventories(win, NULL, a4, -1);
+                        display_table_inventories(win, nullptr, a4, -1);
                     } else {
                         int index = keyCode - 2400;
                         if (index < btable_pud->length) {
                             InventoryItem* inventoryItem = &(btable_pud->items[index + btable_offset]);
                             barter_move_from_table_inventory(inventoryItem->item, inventoryItem->quantity, index, a2, a4, false);
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                             display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
-                            display_table_inventories(win, NULL, a4, -1);
+                            display_table_inventories(win, nullptr, a4, -1);
                         }
                     }
 
@@ -4830,13 +4830,13 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
                     if (wheelY > 0) {
                         if (target_stack_offset[target_curr_stack] > 0) {
                             target_stack_offset[target_curr_stack] -= 1;
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                             win_draw(i_wid);
                         }
                     } else if (wheelY < 0) {
                         if (target_stack_offset[target_curr_stack] + inven_cur_disp < target_pud->length) {
                             target_stack_offset[target_curr_stack] += 1;
-                            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, INVENTORY_WINDOW_TYPE_TRADE);
+                            target_pud->display_target(target_stack_offset[target_curr_stack], -1, INVENTORY_WINDOW_TYPE_TRADE);
                             win_draw(i_wid);
                         }
                     }
@@ -4864,19 +4864,19 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
     }
 
     item_move_all(a1a, a2);
-    obj_erase_object(a1a, NULL);
+    obj_erase_object(a1a, nullptr);
 
-    if (armor != NULL) {
+    if (armor != nullptr) {
         armor->flags |= OBJECT_WORN;
         item_add_force(a2, armor, 1);
     }
 
-    if (item2 != NULL) {
+    if (item2 != nullptr) {
         item2->flags |= OBJECT_IN_RIGHT_HAND;
         item_add_force(a2, item2, 1);
     }
 
-    if (item1 != NULL) {
+    if (item1 != nullptr) {
         item_add_force(a2, item1, 1);
     }
 
@@ -4902,7 +4902,7 @@ void container_enter(int keyCode, int inventoryWindowType)
                 target_pud = &(item->data.inventory);
 
                 display_body(item->fid, inventoryWindowType);
-                display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, inventoryWindowType);
+                target_pud->display_target(target_stack_offset[target_curr_stack], -1, inventoryWindowType);
                 win_draw(i_wid);
             }
         }
@@ -4946,7 +4946,7 @@ void container_exit(int keyCode, int inventoryWindowType)
             Object* v5 = target_stack[target_curr_stack];
             target_pud = &(v5->data.inventory);
             display_body(v5->fid, inventoryWindowType);
-            display_target_inventory(target_stack_offset[target_curr_stack], -1, target_pud, inventoryWindowType);
+            target_pud->display_target(target_stack_offset[target_curr_stack], -1, inventoryWindowType);
             win_draw(i_wid);
         }
     }
@@ -4978,11 +4978,11 @@ int drop_into_container(Object* a1, Object* a2, int a3, Object** a4, int quantit
             item_add_mult(inven_dude, a2, quantityToMove);
         }
     } else {
-        if (a4 != NULL) {
+        if (a4 != nullptr) {
             if (a4 == &i_worn) {
-                adjust_ac(stack[0], i_worn, NULL);
+                adjust_ac(stack[0], i_worn, nullptr);
             }
-            *a4 = NULL;
+            *a4 = nullptr;
         }
     }
 
@@ -5021,14 +5021,14 @@ int drop_ammo_into_weapon(Object* weapon, Object* ammo, Object** a3, int quantit
     for (int index = 0; index < quantityToMove; index++) {
         int v11 = item_w_reload(weapon, v14);
         if (v11 == 0) {
-            if (a3 != NULL) {
-                *a3 = NULL;
+            if (a3 != nullptr) {
+                *a3 = nullptr;
             }
 
             obj_destroy(v14);
 
             v17 = true;
-            if (inven_from_button(keyCode, &v14, NULL, NULL) == 0) {
+            if (inven_from_button(keyCode, &v14, nullptr, nullptr) == 0) {
                 break;
             }
         }
@@ -5048,7 +5048,7 @@ int drop_ammo_into_weapon(Object* weapon, Object* ammo, Object** a3, int quantit
         return -1;
     }
 
-    const char* sfx = gsnd_build_weapon_sfx_name(WEAPON_SOUND_EFFECT_READY, weapon, HIT_MODE_RIGHT_WEAPON_PRIMARY, NULL);
+    const char* sfx = gsnd_build_weapon_sfx_name(WEAPON_SOUND_EFFECT_READY, weapon, HIT_MODE_RIGHT_WEAPON_PRIMARY, nullptr);
     gsound_play_sfx_file(sfx);
 
     return 0;
@@ -5061,7 +5061,7 @@ void draw_amount(int value, int inventoryWindowType)
     CacheEntry* handle;
     int fid = art_id(OBJ_TYPE_INTERFACE, 170, 0, 0, 0);
     unsigned char* data = art_ptr_lock_data(fid, 0, 0, &handle);
-    if (data == NULL) {
+    if (data == nullptr) {
         return;
     }
 
@@ -5216,7 +5216,7 @@ static int setup_move_timer_win(int inventoryWindowType, Object* item)
     text_font(103);
 
     for (int index = 0; index < 8; index++) {
-        mt_key[index] = NULL;
+        mt_key[index] = nullptr;
     }
 
     InventoryWindowDescription* windowDescription = &(iscr_data[inventoryWindowType]);
@@ -5234,7 +5234,7 @@ static int setup_move_timer_win(int inventoryWindowType, Object* item)
     CacheEntry* backgroundHandle;
     int backgroundFid = art_id(OBJ_TYPE_INTERFACE, windowDescription->field_0, 0, 0, 0);
     unsigned char* backgroundData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundHandle);
-    if (backgroundData != NULL) {
+    if (backgroundData != nullptr) {
         buf_to_buf(backgroundData, windowDescription->width, windowDescription->height, windowDescription->width, windowBuffer, windowDescription->width);
         art_ptr_unlock(backgroundHandle);
     }
@@ -5243,14 +5243,14 @@ static int setup_move_timer_win(int inventoryWindowType, Object* item)
     if (inventoryWindowType == INVENTORY_WINDOW_TYPE_MOVE_ITEMS) {
         // MOVE ITEMS
         messageListItem.num = 21;
-        if (message_search(&inventry_message_file, &messageListItem)) {
+        if (inventry_message_file.search(&messageListItem)) {
             int length = text_width(messageListItem.text);
             text_to_buf(windowBuffer + windowDescription->width * 9 + (windowDescription->width - length) / 2, messageListItem.text, 200, windowDescription->width, colorTable[21091]);
         }
     } else if (inventoryWindowType == INVENTORY_WINDOW_TYPE_SET_TIMER) {
         // SET TIMER
         messageListItem.num = 23;
-        if (message_search(&inventry_message_file, &messageListItem)) {
+        if (inventry_message_file.search(&messageListItem)) {
             int length = text_width(messageListItem.text);
             text_to_buf(windowBuffer + windowDescription->width * 9 + (windowDescription->width - length) / 2, messageListItem.text, 200, windowDescription->width, colorTable[21091]);
         }
@@ -5259,7 +5259,7 @@ static int setup_move_timer_win(int inventoryWindowType, Object* item)
         CacheEntry* overlayFrmHandle;
         int overlayFid = art_id(OBJ_TYPE_INTERFACE, 306, 0, 0, 0);
         unsigned char* overlayFrmData = art_ptr_lock_data(overlayFid, 0, 0, &overlayFrmHandle);
-        if (overlayFrmData != NULL) {
+        if (overlayFrmData != nullptr) {
             buf_to_buf(overlayFrmData, 105, 81, 105, windowBuffer + 34 * windowDescription->width + 113, windowDescription->width);
             art_ptr_unlock(overlayFrmHandle);
         }
@@ -5290,8 +5290,8 @@ static int setup_move_timer_win(int inventoryWindowType, Object* item)
     fid = art_id(OBJ_TYPE_INTERFACE, 194, 0, 0, 0);
     buttonDownData = art_ptr_lock_data(fid, 0, 0, &(mt_key[1]));
 
-    if (buttonUpData != NULL && buttonDownData != NULL) {
-        btn = win_register_button(mt_wid, x, y, 16, 12, -1, -1, 6000, -1, buttonUpData, buttonDownData, NULL, BUTTON_FLAG_TRANSPARENT);
+    if (buttonUpData != nullptr && buttonDownData != nullptr) {
+        btn = win_register_button(mt_wid, x, y, 16, 12, -1, -1, 6000, -1, buttonUpData, buttonDownData, nullptr, BUTTON_FLAG_TRANSPARENT);
         if (btn != -1) {
             win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
         }
@@ -5304,8 +5304,8 @@ static int setup_move_timer_win(int inventoryWindowType, Object* item)
     fid = art_id(OBJ_TYPE_INTERFACE, 192, 0, 0, 0);
     buttonDownData = art_ptr_lock_data(fid, 0, 0, &(mt_key[3]));
 
-    if (buttonUpData != NULL && buttonDownData != NULL) {
-        btn = win_register_button(mt_wid, x, y + 12, 17, 12, -1, -1, 7000, -1, buttonUpData, buttonDownData, NULL, BUTTON_FLAG_TRANSPARENT);
+    if (buttonUpData != nullptr && buttonDownData != nullptr) {
+        btn = win_register_button(mt_wid, x, y + 12, 17, 12, -1, -1, 7000, -1, buttonUpData, buttonDownData, nullptr, BUTTON_FLAG_TRANSPARENT);
         if (btn != -1) {
             win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
         }
@@ -5317,15 +5317,15 @@ static int setup_move_timer_win(int inventoryWindowType, Object* item)
     fid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
     buttonDownData = art_ptr_lock_data(fid, 0, 0, &(mt_key[5]));
 
-    if (buttonUpData != NULL && buttonDownData != NULL) {
+    if (buttonUpData != nullptr && buttonDownData != nullptr) {
         // Done
-        btn = win_register_button(mt_wid, 98, 128, 15, 16, -1, -1, -1, KEY_RETURN, buttonUpData, buttonDownData, NULL, BUTTON_FLAG_TRANSPARENT);
+        btn = win_register_button(mt_wid, 98, 128, 15, 16, -1, -1, -1, KEY_RETURN, buttonUpData, buttonDownData, nullptr, BUTTON_FLAG_TRANSPARENT);
         if (btn != -1) {
             win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
         }
 
         // Cancel
-        btn = win_register_button(mt_wid, 148, 128, 15, 16, -1, -1, -1, KEY_ESCAPE, buttonUpData, buttonDownData, NULL, BUTTON_FLAG_TRANSPARENT);
+        btn = win_register_button(mt_wid, 148, 128, 15, 16, -1, -1, -1, KEY_ESCAPE, buttonUpData, buttonDownData, nullptr, BUTTON_FLAG_TRANSPARENT);
         if (btn != -1) {
             win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
         }
@@ -5338,17 +5338,17 @@ static int setup_move_timer_win(int inventoryWindowType, Object* item)
         fid = art_id(OBJ_TYPE_INTERFACE, 308, 0, 0, 0);
         buttonDownData = art_ptr_lock_data(fid, 0, 0, &(mt_key[7]));
 
-        if (buttonUpData != NULL && buttonDownData != NULL) {
+        if (buttonUpData != nullptr && buttonDownData != nullptr) {
             // ALL
             messageListItem.num = 22;
-            if (message_search(&inventry_message_file, &messageListItem)) {
+            if (inventry_message_file.search(&messageListItem)) {
                 int length = text_width(messageListItem.text);
 
                 // TODO: Where is y? Is it hardcoded in to 376?
                 text_to_buf(buttonUpData + (94 - length) / 2 + 376, messageListItem.text, 200, 94, colorTable[21091]);
                 text_to_buf(buttonDownData + (94 - length) / 2 + 376, messageListItem.text, 200, 94, colorTable[18977]);
 
-                btn = win_register_button(mt_wid, 120, 80, 94, 33, -1, -1, -1, 5000, buttonUpData, buttonDownData, NULL, BUTTON_FLAG_TRANSPARENT);
+                btn = win_register_button(mt_wid, 120, 80, 94, 33, -1, -1, -1, 5000, buttonUpData, buttonDownData, nullptr, BUTTON_FLAG_TRANSPARENT);
                 if (btn != -1) {
                     win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
                 }

@@ -4,33 +4,33 @@
 
 #include "movie_lib.h"
 
-#include <assert.h>
+#include <cassert>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "audio_engine.h"
 #include "platform_compat.h"
 
 namespace fallout {
 
-typedef struct STRUCT_6B3690 {
+struct STRUCT_6B3690 {
     void* field_0;
     unsigned int field_4;
     int field_8;
-} STRUCT_6B3690;
+};
 
 #pragma pack(2)
-typedef struct Mve {
+struct Mve {
     char sig[20];
     short field_14;
     short field_16;
     short field_18;
     int field_1A;
-} Mve;
+};
 #pragma pack()
 
-typedef struct STRUCT_4F6930 {
+struct STRUCT_4F6930 {
     int field_0;
     MovieReadProc* readProc;
     STRUCT_6B3690 field_8;
@@ -51,7 +51,7 @@ typedef struct STRUCT_4F6930 {
     int field_48;
     int field_4C;
     int field_50;
-} STRUCT_4F6930;
+};
 
 static void _MVE_MemInit(STRUCT_6B3690* a1, int a2, void* a3);
 static void _MVE_MemFree(STRUCT_6B3690* a1);
@@ -169,7 +169,7 @@ static int dword_51EE0C = 1;
 // TODO: There is a default function (not yet implemented).
 //
 // 0x51EE14
-static void (*_pal_SetPalette)(unsigned char*, int, int) = NULL;
+static void (*_pal_SetPalette)(unsigned char*, int, int) = nullptr;
 
 // 0x51EE18
 static int _rm_hold = 0;
@@ -532,7 +532,7 @@ void movieLibSetReadProc(MovieReadProc* readProc)
 // 0x4F4890
 static void _MVE_MemInit(STRUCT_6B3690* a1, int a2, void* a3)
 {
-    if (a3 == NULL) {
+    if (a3 == nullptr) {
         return;
     }
 
@@ -546,7 +546,7 @@ static void _MVE_MemInit(STRUCT_6B3690* a1, int a2, void* a3)
 // 0x4F48C0
 static void _MVE_MemFree(STRUCT_6B3690* a1)
 {
-    if (a1->field_8 && gMovieLibFreeProc != NULL) {
+    if (a1->field_8 && gMovieLibFreeProc != nullptr) {
         gMovieLibFreeProc(a1->field_0);
         a1->field_8 = 0;
     }
@@ -684,8 +684,8 @@ static int _ioReset(void* handle)
 
     _io_handle = handle;
 
-    mve = (Mve*)_ioRead(sizeof(Mve));
-    if (mve == NULL) {
+    mve = reinterpret_cast<Mve*>(_ioRead(sizeof(Mve)));
+    if (mve == nullptr) {
         return 0;
     }
 
@@ -718,11 +718,11 @@ static void* _ioRead(int size)
     void* buf;
 
     buf = _MVE_MemAlloc(&_io_mem_buf, size);
-    if (buf == NULL) {
-        return NULL;
+    if (buf == nullptr) {
+        return nullptr;
     }
 
-    return gMovieLibReadProc(_io_handle, buf, size) < 1 ? NULL : buf;
+    return gMovieLibReadProc(_io_handle, buf, size) < 1 ? nullptr : buf;
 }
 
 // 0x4F4D40
@@ -734,15 +734,15 @@ static void* _MVE_MemAlloc(STRUCT_6B3690* a1, unsigned int a2)
         return a1->field_0;
     }
 
-    if (gMovieLibMallocProc == NULL) {
-        return NULL;
+    if (gMovieLibMallocProc == nullptr) {
+        return nullptr;
     }
 
     _MVE_MemFree(a1);
 
     ptr = gMovieLibMallocProc(a2 + 100);
-    if (ptr == NULL) {
-        return NULL;
+    if (ptr == nullptr) {
+        return nullptr;
     }
 
     _MVE_MemInit(a1, a2 + 100, ptr);
@@ -757,9 +757,9 @@ static unsigned char* _ioNextRecord()
 {
     unsigned char* buf;
 
-    buf = (unsigned char*)_ioRead((_io_next_hdr & 0xFFFF) + 4);
-    if (buf == NULL) {
-        return NULL;
+    buf = reinterpret_cast<unsigned char*>(_ioRead((_io_next_hdr & 0xFFFF) + 4));
+    if (buf == nullptr) {
+        return nullptr;
     }
 
     _io_next_hdr = loadUInt32LE(buf + (_io_next_hdr & 0xFFFF));
@@ -838,7 +838,7 @@ int _MVE_rmStepMovie()
     unsigned char* v14;
 
     v0 = _rm_len;
-    v1 = (unsigned short*)_rm_p;
+    v1 = reinterpret_cast<unsigned short*>(_rm_p);
 
     if (!_rm_active) {
         return -10;
@@ -850,8 +850,8 @@ int _MVE_rmStepMovie()
     }
 
 LABEL_5:
-    v21 = NULL;
-    v3 = NULL;
+    v21 = nullptr;
+    v3 = nullptr;
     if (!v1) {
         v6 = -2;
         _MVE_rmEndMovie();
@@ -859,8 +859,8 @@ LABEL_5:
     }
 
     while (1) {
-        v5 = loadUInt32LE((unsigned char*)v1 + v0);
-        v1 = (unsigned short*)((unsigned char*)v1 + v0 + 4);
+        v5 = loadUInt32LE(reinterpret_cast<unsigned char*>(v1) + v0);
+        v1 = reinterpret_cast<unsigned short*>((unsigned char*)v1 + v0 + 4);
         v0 = v5 & 0xFFFF;
 
         switch ((v5 >> 16) & 0xFF) {
@@ -868,7 +868,7 @@ LABEL_5:
             return -1;
         case 1:
             v0 = 0;
-            v1 = (unsigned short*)_ioNextRecord();
+            v1 = reinterpret_cast<unsigned short*>(_ioNextRecord());
             goto LABEL_5;
         case 2:
             if (!_syncInit(v1[0], v1[2])) {
@@ -882,7 +882,7 @@ LABEL_5:
             } else {
                 v7 = (v1[1] & 0x04) >> 2;
             }
-            v8 = loadUInt32LE((unsigned char*)v1 + 6);
+            v8 = loadUInt32LE(reinterpret_cast<unsigned char*>(v1) + 6);
             if ((v5 >> 24) == 0) {
                 v8 &= 0xFFFF;
             }
@@ -973,7 +973,7 @@ LABEL_5:
                 _SetPalette_1(v1[0], v20);
             }
 
-            _rm_p = (unsigned char*)v1;
+            _rm_p = reinterpret_cast<unsigned char*>(v1);
             _rm_len = v0;
 
             return 0;
@@ -981,9 +981,9 @@ LABEL_5:
         case 9:
             // push data to audio buffers?
             if (v1[1] & _rm_track_bit) {
-                v14 = (unsigned char*)v1 + 6;
+                v14 = reinterpret_cast<unsigned char*>(v1) + 6;
                 if ((v5 >> 16) != 8) {
-                    v14 = NULL;
+                    v14 = nullptr;
                 }
                 _CallsSndBuff_Loc(v14, v1[2]);
             }
@@ -1002,7 +1002,7 @@ LABEL_5:
             continue;
         case 12:
             // palette
-            _palLoadPalette((unsigned char*)v1 + 4, v1[0], v1[1]);
+            _palLoadPalette(reinterpret_cast<unsigned char*>(v1) + 4, v1[0], v1[1]);
             continue;
         case 14:
             // save current position
@@ -1083,7 +1083,7 @@ LABEL_5:
                 break;
             }
 
-            _nfPkDecomp((unsigned char*)v3, (unsigned char*)&v1[7], v1[2], v1[3], v1[4], v1[5]);
+            _nfPkDecomp(reinterpret_cast<unsigned char*>(v3), reinterpret_cast<unsigned char*>(&v1[7]), v1[2], v1[3], v1[4], v1[5]);
 
             // unlock
             movieUnlockSurfaces();
@@ -1270,7 +1270,7 @@ static void _MVE_sndSync()
 
             v8 = gMveBufferBytes - v7 - 1;
             // NOTE: Original code uses signed comparison.
-            if ((int)gMveBufferBytes / 2 < v8) {
+            if (static_cast<int>(gMveBufferBytes) / 2 < v8) {
                 v8 = gMveBufferBytes >> 1;
             }
 
@@ -1371,13 +1371,13 @@ static void _CallsSndBuff_Loc(unsigned char* a1, int a2)
     v2 = 0;
     v3 = 1;
     if (dwAudioBytes1 != 0) {
-        v2 = _MVE_sndAdd((unsigned char*)lpvAudioPtr1, &a1, dwAudioBytes1, 0, 1);
+        v2 = _MVE_sndAdd(reinterpret_cast<unsigned char*>(lpvAudioPtr1), &a1, dwAudioBytes1, 0, 1);
         v3 = 0;
         dword_6B36A4 += dwAudioBytes1;
     }
 
     if (dwAudioBytes2 != 0) {
-        _MVE_sndAdd((unsigned char*)lpvAudioPtr2, &a1, dwAudioBytes2, v2, v3);
+        _MVE_sndAdd(reinterpret_cast<unsigned char*>(lpvAudioPtr2), &a1, dwAudioBytes2, v2, v3);
         dword_6B36A4 = dwAudioBytes2;
     }
 
@@ -1411,9 +1411,9 @@ static int _MVE_sndAdd(unsigned char* dest, unsigned char** src_ptr, int a3, int
 
     src = *src_ptr;
 
-    if (*src_ptr == NULL) {
+    if (*src_ptr == nullptr) {
         memset(dest, dword_6B36A0 < 1 ? 0x80 : 0, a3);
-        *src_ptr = NULL;
+        *src_ptr = nullptr;
         return a4;
     }
 
@@ -1425,15 +1425,15 @@ static int _MVE_sndAdd(unsigned char* dest, unsigned char** src_ptr, int a3, int
 
     if (!_snd_comp) {
         if (a5) {
-            v9 = *(unsigned short*)src;
+            v9 = *reinterpret_cast<unsigned short*>(src);
             src += 2;
 
-            *(unsigned short*)dest = v9;
-            v10 = (unsigned short*)(dest + 2);
+            *reinterpret_cast<unsigned short*>(dest) = v9;
+            v10 = reinterpret_cast<unsigned short*>(dest + 2);
             v11 = a3 - 2;
         } else {
             v9 = a4;
-            v10 = (unsigned short*)dest;
+            v10 = reinterpret_cast<unsigned short*>(dest);
             v11 = a3;
         }
 
@@ -1446,11 +1446,11 @@ static int _MVE_sndAdd(unsigned char* dest, unsigned char** src_ptr, int a3, int
         v12 = loadUInt32LE(src);
         src += 4;
 
-        *(unsigned int*)dest = v12;
-        v13 = (unsigned short*)(dest + 4);
+        *reinterpret_cast<unsigned int*>(dest) = v12;
+        v13 = reinterpret_cast<unsigned short*>(dest + 4);
         v14 = a3 - 4;
     } else {
-        v13 = (unsigned short*)dest;
+        v13 = reinterpret_cast<unsigned short*>(dest);
         v14 = a3;
         v12 = a4;
     }
@@ -1469,14 +1469,14 @@ static void _MVE_sndResume()
 // 0x4F5CB0
 static int _nfConfig(int a1, int a2, int a3, int a4)
 {
-    if (gMovieSdlSurface1 != NULL) {
+    if (gMovieSdlSurface1 != nullptr) {
         SDL_FreeSurface(gMovieSdlSurface1);
-        gMovieSdlSurface1 = NULL;
+        gMovieSdlSurface1 = nullptr;
     }
 
-    if (gMovieSdlSurface2 != NULL) {
+    if (gMovieSdlSurface2 != nullptr) {
         SDL_FreeSurface(gMovieSdlSurface2);
-        gMovieSdlSurface2 = NULL;
+        gMovieSdlSurface2 = nullptr;
     }
 
     byte_6B400D = a1;
@@ -1506,12 +1506,12 @@ static int _nfConfig(int a1, int a2, int a3, int a4)
     }
 
     gMovieSdlSurface1 = SDL_CreateRGBSurface(0, _mveBW, _mveBH, depth, rmask, gmask, bmask, 0);
-    if (gMovieSdlSurface1 == NULL) {
+    if (gMovieSdlSurface1 == nullptr) {
         return 0;
     }
 
     gMovieSdlSurface2 = SDL_CreateRGBSurface(0, _mveBW, _mveBH, depth, rmask, gmask, bmask, 0);
-    if (gMovieSdlSurface2 == NULL) {
+    if (gMovieSdlSurface2 == nullptr) {
         return 0;
     }
 
@@ -1534,18 +1534,18 @@ static int _nfConfig(int a1, int a2, int a3, int a4)
 // 0x4F5E60
 static bool movieLockSurfaces()
 {
-    if (gMovieSdlSurface1 != NULL && gMovieSdlSurface2 != NULL) {
+    if (gMovieSdlSurface1 != nullptr && gMovieSdlSurface2 != nullptr) {
         if (SDL_LockSurface(gMovieSdlSurface1) != 0) {
             return false;
         }
 
-        gMovieDirectDrawSurfaceBuffer1 = (unsigned char*)gMovieSdlSurface1->pixels;
+        gMovieDirectDrawSurfaceBuffer1 = reinterpret_cast<unsigned char*>(gMovieSdlSurface1->pixels);
 
         if (SDL_LockSurface(gMovieSdlSurface2) != 0) {
             return false;
         }
 
-        gMovieDirectDrawSurfaceBuffer2 = (unsigned char*)gMovieSdlSurface2->pixels;
+        gMovieDirectDrawSurfaceBuffer2 = reinterpret_cast<unsigned char*>(gMovieSdlSurface2->pixels);
     }
 
     return true;
@@ -1709,14 +1709,14 @@ static void _MVE_sndRelease()
 // 0x4F6390
 static void _nfRelease()
 {
-    if (gMovieSdlSurface1 != NULL) {
+    if (gMovieSdlSurface1 != nullptr) {
         SDL_FreeSurface(gMovieSdlSurface1);
-        gMovieSdlSurface1 = NULL;
+        gMovieSdlSurface1 = nullptr;
     }
 
-    if (gMovieSdlSurface2 != NULL) {
+    if (gMovieSdlSurface2 != nullptr) {
         SDL_FreeSurface(gMovieSdlSurface2);
-        gMovieSdlSurface2 = NULL;
+        gMovieSdlSurface2 = nullptr;
     }
 }
 
@@ -1784,7 +1784,7 @@ static void _MVE_frClose(STRUCT_4F6930* a1)
     _nfRelease();
     _frLoad(&v1);
 
-    if (gMovieLibFreeProc != NULL) {
+    if (gMovieLibFreeProc != nullptr) {
         gMovieLibFreeProc(a1);
     }
 }
@@ -1998,16 +1998,16 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         value2 = _mveBW;
 
                         for (i = 0; i < 4; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[i * 4]] << 16) | (map2[map1[i * 4 + 1]]);
 
-                            dest_ptr = (unsigned int*)(dest + value2);
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest + value2);
                             dest_ptr[0] = (map2[map1[i * 4]] << 16) | (map2[map1[i * 4 + 1]]);
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[1] = (map2[map1[i * 4 + 2]] << 16) | (map2[map1[i * 4 + 3]]);
 
-                            dest_ptr = (unsigned int*)(dest + value2);
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest + value2);
                             dest_ptr[1] = (map2[map1[i * 4 + 2]] << 16) | (map2[map1[i * 4 + 3]]);
 
                             dest += value2 * 2;
@@ -2036,7 +2036,7 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         value2 = _mveBW;
 
                         for (i = 0; i < 8; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[i * 4]] << 16) | map2[map1[i * 4 + 1]];
                             dest_ptr[1] = (map2[map1[i * 4 + 2]] << 16) | map2[map1[i * 4 + 3]];
 
@@ -2078,7 +2078,7 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             map2[0xC5] = (a2[1] << 8) | a2[1]; // bp
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 4]] << 16) | map2[map1[i * 4 + 1]];
                                 dest_ptr[1] = (map2[map1[i * 4 + 2]] << 16) | map2[map1[i * 4 + 3]];
 
@@ -2091,7 +2091,7 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             map2[0xC5] = (a2[6 + 1] << 8) | a2[6 + 1]; // bp
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[16 + i * 4]] << 16) | map2[map1[16 + i * 4 + 1]];
                                 dest_ptr[1] = (map2[map1[16 + i * 4 + 2]] << 16) | map2[map1[16 + i * 4 + 3]];
 
@@ -2128,11 +2128,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             map2[0xC5] = (a2[1] << 8) | a2[1]; // bp
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 4]] << 16) | map2[map1[i * 4 + 1]];
                                 dest += value2;
 
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 4 + 2]] << 16) | map2[map1[i * 4 + 3]];
                                 dest += value2;
                             }
@@ -2145,11 +2145,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             map2[0xC5] = (a2[6 + 1] << 8) | a2[6 + 1]; // bp
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[16 + i * 4]] << 16) | map2[map1[16 + i * 4 + 1]];
                                 dest += value2;
 
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[16 + i * 4 + 2]] << 16) | map2[map1[16 + i * 4 + 3]];
                                 dest += value2;
                             }
@@ -2203,11 +2203,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         map2[0xC5] = (a2[1] << 8) | a2[1]; // bp
 
                         for (i = 0; i < 2; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[i * 4]] << 16) | map2[map1[i * 4 + 1]];
                             dest += value2;
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[i * 4 + 2]] << 16) | map2[map1[i * 4 + 3]];
                             dest += value2;
                         }
@@ -2218,11 +2218,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         map2[0xC5] = (a2[4 + 1] << 8) | a2[4 + 1]; // bp
 
                         for (i = 0; i < 2; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[8 + i * 4]] << 16) | map2[map1[8 + i * 4 + 1]];
                             dest += value2;
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[8 + i * 4 + 2]] << 16) | map2[map1[8 + i * 4 + 3]];
                             dest += value2;
                         }
@@ -2235,11 +2235,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         map2[0xC5] = (a2[8 + 1] << 8) | a2[8 + 1]; // bp
 
                         for (i = 0; i < 2; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[16 + i * 4]] << 16) | map2[map1[16 + i * 4 + 1]];
                             dest += value2;
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[16 + i * 4 + 2]] << 16) | map2[map1[16 + i * 4 + 3]];
                             dest += value2;
                         }
@@ -2250,11 +2250,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         map2[0xC5] = (a2[12 + 1] << 8) | a2[12 + 1]; // bp
 
                         for (i = 0; i < 2; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[24 + i * 4]] << 16) | map2[map1[24 + i * 4 + 1]];
                             dest += value2;
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[24 + i * 4 + 2]] << 16) | map2[map1[24 + i * 4 + 3]];
                             dest += value2;
                         }
@@ -2292,11 +2292,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             value2 = _mveBW;
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 8]] << 16) | (map2[map1[i * 8 + 1]] << 24) | (map2[map1[i * 8 + 2]]) | (map2[map1[i * 8 + 3]] << 8);
                                 dest_ptr[1] = (map2[map1[i * 8 + 4]] << 16) | (map2[map1[i * 8 + 5]] << 24) | (map2[map1[i * 8 + 6]]) | (map2[map1[i * 8 + 7]] << 8);
 
-                                dest_ptr = (unsigned int*)(dest + value2);
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest + value2);
                                 dest_ptr[0] = (map2[map1[i * 8]] << 16) | (map2[map1[i * 8 + 1]] << 24) | (map2[map1[i * 8 + 2]]) | (map2[map1[i * 8 + 3]] << 8);
                                 dest_ptr[1] = (map2[map1[i * 8 + 4]] << 16) | (map2[map1[i * 8 + 5]] << 24) | (map2[map1[i * 8 + 6]]) | (map2[map1[i * 8 + 7]] << 8);
 
@@ -2330,7 +2330,7 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             value2 = _mveBW;
 
                             for (i = 0; i < 8; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 4]] << 24) | (map2[map1[i * 4 + 0]] << 16) | (map2[map1[i * 4 + 1]] << 8) | (map2[map1[i * 4 + 1]]);
                                 dest_ptr[1] = (map2[map1[i * 4 + 2]] << 24) | (map2[map1[i * 4 + 2]] << 16) | (map2[map1[i * 4 + 3]] << 8) | (map2[map1[i * 4 + 3]]);
 
@@ -2366,13 +2366,13 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             value2 = _mveBW;
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 4 + 0]] << 24) | (map2[map1[i * 4 + 0]] << 16) | (map2[map1[i * 4 + 1]] << 8) | (map2[map1[i * 4 + 1]]);
                                 dest_ptr[1] = (map2[map1[i * 4 + 2]] << 24) | (map2[map1[i * 4 + 2]] << 16) | (map2[map1[i * 4 + 3]] << 8) | (map2[map1[i * 4 + 3]]);
 
                                 dest += value2;
 
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 4 + 0]] << 24) | (map2[map1[i * 4 + 0]] << 16) | (map2[map1[i * 4 + 1]] << 8) | (map2[map1[i * 4 + 1]]);
                                 dest_ptr[1] = (map2[map1[i * 4 + 2]] << 24) | (map2[map1[i * 4 + 2]] << 16) | (map2[map1[i * 4 + 3]] << 8) | (map2[map1[i * 4 + 3]]);
 
@@ -2406,7 +2406,7 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             value2 = _mveBW;
 
                             for (i = 0; i < 8; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 8 + 0]] << 16) | (map2[map1[i * 8 + 1]] << 24) | (map2[map1[i * 8 + 2]]) | (map2[map1[i * 8 + 3]] << 8);
                                 dest_ptr[1] = (map2[map1[i * 8 + 4]] << 16) | (map2[map1[i * 8 + 5]] << 24) | (map2[map1[i * 8 + 6]]) | (map2[map1[i * 8 + 7]] << 8);
                                 dest += value2;
@@ -2452,7 +2452,7 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             map2[0xE7] = a2[1]; // mov ah, bh
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 8 + 0]] << 16) | (map2[map1[i * 8 + 1]] << 24) | (map2[map1[i * 8 + 2]]) | (map2[map1[i * 8 + 3]] << 8);
                                 dest_ptr[1] = (map2[map1[i * 8 + 4]] << 16) | (map2[map1[i * 8 + 5]] << 24) | (map2[map1[i * 8 + 6]]) | (map2[map1[i * 8 + 7]] << 8);
                                 dest += value2;
@@ -2468,7 +2468,7 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             map2[0xE7] = a2[0x0C + 1]; // mov ah, bh
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[32 + i * 8 + 0]] << 16) | (map2[map1[32 + i * 8 + 1]] << 24) | (map2[map1[32 + i * 8 + 2]]) | (map2[map1[32 + i * 8 + 3]] << 8);
                                 dest_ptr[1] = (map2[map1[32 + i * 8 + 4]] << 16) | (map2[map1[32 + i * 8 + 5]] << 24) | (map2[map1[32 + i * 8 + 6]]) | (map2[map1[32 + i * 8 + 7]] << 8);
                                 dest += value2;
@@ -2509,11 +2509,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             map2[0xE7] = a2[1]; // mov ah, bh
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 8 + 0]] << 16) | (map2[map1[i * 8 + 1]] << 24) | (map2[map1[i * 8 + 2]]) | (map2[map1[i * 8 + 3]] << 8);
                                 dest += value2;
 
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[i * 8 + 4]] << 16) | (map2[map1[i * 8 + 5]] << 24) | (map2[map1[i * 8 + 6]]) | (map2[map1[i * 8 + 7]] << 8);
                                 dest += value2;
                             }
@@ -2530,11 +2530,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                             map2[0xE7] = a2[0x0C + 1]; // mov ah, bh
 
                             for (i = 0; i < 4; i++) {
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[32 + i * 8 + 0]] << 16) | (map2[map1[32 + i * 8 + 1]] << 24) | (map2[map1[32 + i * 8 + 2]]) | (map2[map1[32 + i * 8 + 3]] << 8);
                                 dest += value2;
 
-                                dest_ptr = (unsigned int*)dest;
+                                dest_ptr = reinterpret_cast<unsigned int*>(dest);
                                 dest_ptr[0] = (map2[map1[32 + i * 8 + 4]] << 16) | (map2[map1[32 + i * 8 + 5]] << 24) | (map2[map1[32 + i * 8 + 6]]) | (map2[map1[32 + i * 8 + 7]] << 8);
                                 dest += value2;
                             }
@@ -2592,11 +2592,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         map2[0xE7] = a2[1]; // mov ah, bh
 
                         for (i = 0; i < 2; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[i * 8 + 0]] << 16) | (map2[map1[i * 8 + 1]] << 24) | (map2[map1[i * 8 + 2]]) | (map2[map1[i * 8 + 3]] << 8);
                             dest += value2;
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[i * 8 + 4]] << 16) | (map2[map1[i * 8 + 5]] << 24) | (map2[map1[i * 8 + 6]]) | (map2[map1[i * 8 + 7]] << 8);
                             dest += value2;
                         }
@@ -2611,11 +2611,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         map2[0xE7] = a2[0x08 + 1]; // mov ah, bh
 
                         for (i = 0; i < 2; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[16 + i * 8 + 0]] << 16) | (map2[map1[16 + i * 8 + 1]] << 24) | (map2[map1[16 + i * 8 + 2]]) | (map2[map1[16 + i * 8 + 3]] << 8);
                             dest += value2;
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[16 + i * 8 + 4]] << 16) | (map2[map1[16 + i * 8 + 5]] << 24) | (map2[map1[16 + i * 8 + 6]]) | (map2[map1[16 + i * 8 + 7]] << 8);
                             dest += value2;
                         }
@@ -2632,11 +2632,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         map2[0xE7] = a2[0x10 + 1]; // mov ah, bh
 
                         for (i = 0; i < 2; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[32 + i * 8 + 0]] << 16) | (map2[map1[32 + i * 8 + 1]] << 24) | (map2[map1[32 + i * 8 + 2]]) | (map2[map1[32 + i * 8 + 3]] << 8);
                             dest += value2;
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[32 + i * 8 + 4]] << 16) | (map2[map1[32 + i * 8 + 5]] << 24) | (map2[map1[32 + i * 8 + 6]]) | (map2[map1[32 + i * 8 + 7]] << 8);
                             dest += value2;
                         }
@@ -2651,11 +2651,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         map2[0xE7] = a2[0x18 + 1]; // mov ah, bh
 
                         for (i = 0; i < 2; i++) {
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[48 + i * 8 + 0]] << 16) | (map2[map1[48 + i * 8 + 1]] << 24) | (map2[map1[48 + i * 8 + 2]]) | (map2[map1[48 + i * 8 + 3]] << 8);
                             dest += value2;
 
-                            dest_ptr = (unsigned int*)dest;
+                            dest_ptr = reinterpret_cast<unsigned int*>(dest);
                             dest_ptr[0] = (map2[map1[48 + i * 8 + 4]] << 16) | (map2[map1[48 + i * 8 + 5]] << 24) | (map2[map1[48 + i * 8 + 6]]) | (map2[map1[48 + i * 8 + 7]] << 8);
                             dest += value2;
                         }
@@ -2696,11 +2696,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                         byte = a2[i * 4 + 3];
                         value2 |= (byte << 16) | (byte << 24);
 
-                        dest_ptr = (unsigned int*)dest;
+                        dest_ptr = reinterpret_cast<unsigned int*>(dest);
                         dest_ptr[0] = value1;
                         dest_ptr[1] = value2;
 
-                        dest_ptr = (unsigned int*)(dest + _mveBW);
+                        dest_ptr = reinterpret_cast<unsigned int*>(dest + _mveBW);
                         dest_ptr[0] = value1;
                         dest_ptr[1] = value2;
 
@@ -2720,11 +2720,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                     value2 = byte | (byte << 8) | (byte << 16) | (byte << 24);
 
                     for (i = 0; i < 2; i++) {
-                        dest_ptr = (unsigned int*)dest;
+                        dest_ptr = reinterpret_cast<unsigned int*>(dest);
                         dest_ptr[0] = value1;
                         dest_ptr[1] = value2;
 
-                        dest_ptr = (unsigned int*)(dest + _mveBW);
+                        dest_ptr = reinterpret_cast<unsigned int*>(dest + _mveBW);
                         dest_ptr[0] = value1;
                         dest_ptr[1] = value2;
 
@@ -2738,11 +2738,11 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                     value2 = byte | (byte << 8) | (byte << 16) | (byte << 24);
 
                     for (i = 0; i < 2; i++) {
-                        dest_ptr = (unsigned int*)dest;
+                        dest_ptr = reinterpret_cast<unsigned int*>(dest);
                         dest_ptr[0] = value1;
                         dest_ptr[1] = value2;
 
-                        dest_ptr = (unsigned int*)(dest + _mveBW);
+                        dest_ptr = reinterpret_cast<unsigned int*>(dest + _mveBW);
                         dest_ptr[0] = value1;
                         dest_ptr[1] = value2;
 
@@ -2769,12 +2769,12 @@ static void _nfPkDecomp(unsigned char* a1, unsigned char* a2, int a3, int a4, in
                     }
 
                     for (i = 0; i < 4; i++) {
-                        dest_ptr = (unsigned int*)dest;
+                        dest_ptr = reinterpret_cast<unsigned int*>(dest);
                         dest_ptr[0] = value1;
                         dest_ptr[1] = value1;
                         dest += _mveBW;
 
-                        dest_ptr = (unsigned int*)dest;
+                        dest_ptr = reinterpret_cast<unsigned int*>(dest);
                         dest_ptr[0] = value2;
                         dest_ptr[1] = value2;
                         dest += _mveBW;

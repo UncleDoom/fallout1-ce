@@ -386,12 +386,12 @@ static void purgeProgram(Program* program)
 }
 
 // 0x45B924
-void interpretFreeProgram(Program* program)
+void Program::freeProgram()
 {
     // NOTE: Uninline.
-    detachProgram(program);
+    detachProgram(this);
 
-    Program* curr = program->child;
+    Program* curr = child;
     while (curr != NULL) {
         // NOTE: Uninline.
         purgeProgram(curr);
@@ -405,24 +405,24 @@ void interpretFreeProgram(Program* program)
     }
 
     // NOTE: Uninline.
-    purgeProgram(program);
+    purgeProgram(this);
 
-    if (program->dynamicStrings != NULL) {
-        myfree(program->dynamicStrings, __FILE__, __LINE__); // "..\int\INTRPRET.C", 371
+    if (dynamicStrings != NULL) {
+        myfree(dynamicStrings, __FILE__, __LINE__); // "..\int\INTRPRET.C", 371
     }
 
-    if (program->data != NULL) {
-        myfree(program->data, __FILE__, __LINE__); // "..\int\INTRPRET.C", 372
+    if (data != NULL) {
+        myfree(data, __FILE__, __LINE__); // "..\int\INTRPRET.C", 372
     }
 
-    if (program->name != NULL) {
-        myfree(program->name, __FILE__, __LINE__); // "..\int\INTRPRET.C", 373
+    if (name != NULL) {
+        myfree(name, __FILE__, __LINE__); // "..\int\INTRPRET.C", 373
     }
 
-    delete program->stackValues;
-    delete program->returnStackValues;
+    stackValues.reset();
+    returnStackValues.reset();
 
-    myfree(program, __FILE__, __LINE__); // "..\int\INTRPRET.C", 377
+    myfree(this, __FILE__, __LINE__); // "..\int\INTRPRET.C", 377
 }
 
 // 0x45BA44
@@ -436,11 +436,11 @@ Program* allocateProgram(const char* path)
         return NULL;
     }
 
-    int fileSize = db_filelength(stream);
+    int fileSize = stream->filelength();
     unsigned char* data = (unsigned char*)mymalloc(fileSize, __FILE__, __LINE__); // ..\int\INTRPRET.C, 398
 
-    db_fread(data, 1, fileSize, stream);
-    db_fclose(stream);
+    stream->fread(data, 1, fileSize);
+    stream->fclose();
 
     Program* program = (Program*)mymalloc(sizeof(Program), __FILE__, __LINE__); // ..\int\INTRPRET.C, 402
     memset(program, 0, sizeof(Program));
@@ -459,8 +459,8 @@ Program* allocateProgram(const char* path)
     program->identifiers = sizeof(Procedure) * fetchLong(program->procedures, 0) + program->procedures + 4;
     program->staticStrings = program->identifiers + fetchLong(program->identifiers, 0) + 4;
 
-    program->stackValues = new ProgramStack();
-    program->returnStackValues = new ProgramStack();
+    program->stackValues = std::make_unique<ProgramStack>();
+    program->returnStackValues = std::make_unique<ProgramStack>();
 
     return program;
 }
@@ -478,36 +478,36 @@ static opcode_t getOp(Program* program)
 }
 
 // 0x45BC2C
-char* interpretGetString(Program* program, opcode_t opcode, int offset)
+char* Program::getString(opcode_t opcode, int offset)
 {
     // The order of checks is important, because dynamic string flag is
     // always used with static string flag.
 
     if ((opcode & RAW_VALUE_TYPE_DYNAMIC_STRING) != 0) {
-        return (char*)(program->dynamicStrings + 4 + offset);
+        return (char*)(dynamicStrings + 4 + offset);
     }
 
     if ((opcode & RAW_VALUE_TYPE_STATIC_STRING) != 0) {
-        return (char*)(program->staticStrings + 4 + offset);
+        return (char*)(staticStrings + 4 + offset);
     }
 
     return NULL;
 }
 
 // 0x45BC58
-char* interpretGetName(Program* program, int offset)
+char* Program::getName(int offset)
 {
-    return (char*)(program->identifiers + offset);
+    return (char*)(identifiers + offset);
 }
 
 // 0x45BC64
-int interpretAddString(Program* program, char* string)
+int Program::addString(char* string)
 {
     int v27;
     unsigned char* v20;
     unsigned char* v23;
 
-    if (program == NULL) {
+    if (this == NULL) {
         return 0;
     }
 
@@ -518,15 +518,15 @@ int interpretAddString(Program* program, char* string)
         v27++;
     }
 
-    if (program->dynamicStrings != NULL) {
+    if (dynamicStrings != NULL) {
         // TODO: Needs testing, lots of pointer stuff.
-        unsigned char* heap = program->dynamicStrings + 4;
+        unsigned char* heap = dynamicStrings + 4;
         while (*(unsigned short*)heap != 0x8000) {
             short v2 = *(short*)heap;
             if (v2 >= 0) {
                 if (v2 == v27) {
                     if (strcmp(string, (char*)(heap + 4)) == 0) {
-                        return (heap + 4) - (program->dynamicStrings + 4);
+                        return (heap + 4) - (dynamicStrings + 4);
                     }
                 }
             } else {
@@ -544,26 +544,26 @@ int interpretAddString(Program* program, char* string)
                     strcpy((char*)(heap + 4), string);
 
                     *(heap + v27 + 3) = '\0';
-                    return (heap + 4) - (program->dynamicStrings + 4);
+                    return (heap + 4) - (dynamicStrings + 4);
                 }
             }
             heap += v2 + 4;
         }
     } else {
-        program->dynamicStrings = (unsigned char*)mymalloc(8, __FILE__, __LINE__); // "..\int\INTRPRET.C", 459
-        *(int*)(program->dynamicStrings) = 0;
-        *(unsigned short*)(program->dynamicStrings + 4) = 0x8000;
-        *(short*)(program->dynamicStrings + 6) = 1;
+        dynamicStrings = (unsigned char*)mymalloc(8, __FILE__, __LINE__); // "..\int\INTRPRET.C", 459
+        *(int*)(dynamicStrings) = 0;
+        *(unsigned short*)(dynamicStrings + 4) = 0x8000;
+        *(short*)(dynamicStrings + 6) = 1;
     }
 
-    program->dynamicStrings = (unsigned char*)myrealloc(program->dynamicStrings, *(int*)(program->dynamicStrings) + 8 + 4 + v27, __FILE__, __LINE__); // "..\int\INTRPRET.C", 466
+    dynamicStrings = (unsigned char*)myrealloc(dynamicStrings, *(int*)(dynamicStrings) + 8 + 4 + v27, __FILE__, __LINE__); // "..\int\INTRPRET.C", 466
 
-    v20 = program->dynamicStrings + *(int*)(program->dynamicStrings) + 4;
+    v20 = dynamicStrings + *(int*)(dynamicStrings) + 4;
     if ((*(short*)v20 & 0xFFFF) != 0x8000) {
         interpretError("Internal consistancy error, string table mangled");
     }
 
-    *(int*)(program->dynamicStrings) += v27 + 4;
+    *(int*)(dynamicStrings) += v27 + 4;
 
     *(short*)(v20) = v27;
     *(short*)(v20 + 2) = 0;
@@ -575,7 +575,7 @@ int interpretAddString(Program* program, char* string)
     *(unsigned short*)(v23 + 4) = 0x8000;
     *(short*)(v23 + 6) = 1;
 
-    return v20 + 4 - (program->dynamicStrings + 4);
+    return v20 + 4 - (dynamicStrings + 4);
 }
 
 // 0x45BDB4
@@ -594,7 +594,7 @@ static void op_const(Program* program)
     ProgramValue result;
     result.opcode = (program->flags >> 16) & 0xFFFF;
     result.integerValue = value;
-    programStackPushValue(program, result);
+    program->stackPushValue(result);
 }
 
 // - Pops value from stack, which is a number of arguments in the procedure.
@@ -604,15 +604,15 @@ static void op_const(Program* program)
 // 0x45BE00
 static void op_push_base(Program* program)
 {
-    int argumentCount = programStackPopInteger(program);
-    programReturnStackPushInteger(program, program->framePointer);
+    int argumentCount = program->stackPopInteger();
+    program->returnStackPushInteger(program->framePointer);
     program->framePointer = program->stackValues->size() - argumentCount;
 }
 
 // 0x45BE5C
 static void op_pop_base(Program* program)
 {
-    int data = programReturnStackPopInteger(program);
+    int data = program->returnStackPopInteger();
     program->framePointer = data;
 }
 
@@ -620,7 +620,7 @@ static void op_pop_base(Program* program)
 static void op_pop_to_base(Program* program)
 {
     while (program->stackValues->size() != program->framePointer) {
-        programStackPopValue(program);
+        program->stackPopValue();
     }
 }
 
@@ -633,11 +633,11 @@ static void op_set_global(Program* program)
 // 0x45BEF8
 static void op_dump(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     // NOTE: Original code is slightly different - it goes backwards to -1.
     for (int index = 0; index < data; index++) {
-        programStackPopValue(program);
+        program->stackPopValue();
     }
 }
 
@@ -647,7 +647,7 @@ static void op_call_at(Program* program)
     int data[2];
 
     for (int arg = 0; arg < 2; arg++) {
-        data[arg] = programStackPopInteger(program);
+        data[arg] = program->stackPopInteger();
     }
 
     unsigned char* procedure_ptr = program->procedures + 4 + sizeof(Procedure) * data[0];
@@ -665,7 +665,7 @@ static void op_call_condition(Program* program)
     int data[2];
 
     for (int arg = 0; arg < 2; arg++) {
-        data[arg] = programStackPopInteger(program);
+        data[arg] = program->stackPopInteger();
     }
 
     unsigned char* procedure_ptr = program->procedures + 4 + sizeof(Procedure) * data[0];
@@ -678,7 +678,7 @@ static void op_call_condition(Program* program)
 // 0x45C210
 static void op_wait(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     program->waitStart = 1000 * timerFunc() / timerTick;
     program->waitEnd = program->waitStart + data;
@@ -689,7 +689,7 @@ static void op_wait(Program* program)
 // 0x45C294
 static void op_cancel(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (data >= fetchLong(program->procedures, 0)) {
         interpretError("Invalid procedure offset given to cancel");
@@ -719,30 +719,30 @@ static void op_cancelall(Program* program)
 // 0x45C4A0
 static void op_if(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     if (!value.isEmpty()) {
-        programStackPopValue(program);
+        program->stackPopValue();
     } else {
-        program->instructionPointer = programStackPopInteger(program);
+        program->instructionPointer = program->stackPopInteger();
     }
 }
 
 // 0x45C4F4
 static void op_while(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     if (value.isEmpty()) {
-        program->instructionPointer = programStackPopInteger(program);
+        program->instructionPointer = program->stackPopInteger();
     }
 }
 
 // 0x45C530
 static void op_store(Program* program)
 {
-    int addr = programStackPopInteger(program);
-    ProgramValue value = programStackPopValue(program);
+    int addr = program->stackPopInteger();
+    ProgramValue value = program->stackPopValue();
     size_t pos = program->framePointer + addr;
 
     program->stackValues->at(pos) = value;
@@ -751,10 +751,10 @@ static void op_store(Program* program)
 // 0x45C5D0
 static void op_fetch(Program* program)
 {
-    int addr = programStackPopInteger(program);
+    int addr = program->stackPopInteger();
 
     ProgramValue value = program->stackValues->at(program->framePointer + addr);
-    programStackPushValue(program, value);
+    program->stackPushValue(value);
 }
 
 // 0x45C69C
@@ -766,18 +766,18 @@ static void op_not_equal(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_STRING:
     case VALUE_TYPE_DYNAMIC_STRING:
-        strings[1] = interpretGetString(program, value[1].opcode, value[1].integerValue);
+        strings[1] = program->getString(value[1].opcode, value[1].integerValue);
 
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             break;
         case VALUE_TYPE_FLOAT:
             snprintf(stringBuffers[0], sizeof(stringBuffers[0]), "%.5f", value[0].floatValue);
@@ -799,7 +799,7 @@ static void op_not_equal(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%.5f", value[1].floatValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) != 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -818,7 +818,7 @@ static void op_not_equal(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%d", value[1].integerValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) != 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -850,7 +850,7 @@ static void op_not_equal(Program* program)
         assert(false && "Should be unreachable");
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45C9DC
@@ -862,18 +862,18 @@ static void op_equal(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_STRING:
     case VALUE_TYPE_DYNAMIC_STRING:
-        strings[1] = interpretGetString(program, value[1].opcode, value[1].integerValue);
+        strings[1] = program->getString(value[1].opcode, value[1].integerValue);
 
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             break;
         case VALUE_TYPE_FLOAT:
             snprintf(stringBuffers[0], sizeof(stringBuffers[0]), "%.5f", value[0].floatValue);
@@ -895,7 +895,7 @@ static void op_equal(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%.5f", value[1].floatValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) == 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -914,7 +914,7 @@ static void op_equal(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%d", value[1].integerValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) == 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -946,7 +946,7 @@ static void op_equal(Program* program)
         assert(false && "Should be unreachable");
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45CD1C
@@ -958,18 +958,18 @@ static void op_less_equal(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_STRING:
     case VALUE_TYPE_DYNAMIC_STRING:
-        strings[1] = interpretGetString(program, value[1].opcode, value[1].integerValue);
+        strings[1] = program->getString(value[1].opcode, value[1].integerValue);
 
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             break;
         case VALUE_TYPE_FLOAT:
             snprintf(stringBuffers[0], sizeof(stringBuffers[0]), "%.5f", value[0].floatValue);
@@ -991,7 +991,7 @@ static void op_less_equal(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%.5f", value[1].floatValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) <= 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -1010,7 +1010,7 @@ static void op_less_equal(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%d", value[1].integerValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) <= 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -1037,7 +1037,7 @@ static void op_less_equal(Program* program)
         assert(false && "Should be unreachable");
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45D05C
@@ -1050,18 +1050,18 @@ static void op_greater_equal(Program* program)
 
     // NOTE: original code does not use loop
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_STRING:
     case VALUE_TYPE_DYNAMIC_STRING:
-        strings[1] = interpretGetString(program, value[1].opcode, value[1].integerValue);
+        strings[1] = program->getString(value[1].opcode, value[1].integerValue);
 
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             break;
         case VALUE_TYPE_FLOAT:
             snprintf(stringBuffers[0], sizeof(stringBuffers[0]), "%.5f", value[0].floatValue);
@@ -1083,7 +1083,7 @@ static void op_greater_equal(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%.5f", value[1].floatValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) >= 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -1102,7 +1102,7 @@ static void op_greater_equal(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%d", value[1].integerValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) >= 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -1119,7 +1119,7 @@ static void op_greater_equal(Program* program)
         assert(false && "Should be unreachable");
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45D39C
@@ -1131,18 +1131,18 @@ static void op_less(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_STRING:
     case VALUE_TYPE_DYNAMIC_STRING:
-        str_ptr[1] = interpretGetString(program, value[1].opcode, value[1].integerValue);
+        str_ptr[1] = program->getString(value[1].opcode, value[1].integerValue);
 
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            str_ptr[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            str_ptr[0] = program->getString(value[0].opcode, value[0].integerValue);
             break;
         case VALUE_TYPE_FLOAT:
             snprintf(text[0], sizeof(text[0]), "%.5f", value[0].floatValue);
@@ -1164,7 +1164,7 @@ static void op_less(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(text[1], sizeof(text[1]), "%.5f", value[1].floatValue);
             str_ptr[1] = text[1];
-            str_ptr[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            str_ptr[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(str_ptr[1], str_ptr[0]) < 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -1183,7 +1183,7 @@ static void op_less(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(text[1], sizeof(text[1]), "%d", value[1].integerValue);
             str_ptr[1] = text[1];
-            str_ptr[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            str_ptr[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(str_ptr[1], str_ptr[0]) < 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -1200,7 +1200,7 @@ static void op_less(Program* program)
         assert(false && "Should be unreachable");
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45D6DC
@@ -1212,18 +1212,18 @@ static void op_greater(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_STRING:
     case VALUE_TYPE_DYNAMIC_STRING:
-        strings[1] = interpretGetString(program, value[1].opcode, value[1].integerValue);
+        strings[1] = program->getString(value[1].opcode, value[1].integerValue);
 
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             break;
         case VALUE_TYPE_FLOAT:
             snprintf(stringBuffers[0], sizeof(stringBuffers[0]), "%.5f", value[0].floatValue);
@@ -1245,7 +1245,7 @@ static void op_greater(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%.5f", value[1].floatValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) > 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -1264,7 +1264,7 @@ static void op_greater(Program* program)
         case VALUE_TYPE_DYNAMIC_STRING:
             snprintf(stringBuffers[1], sizeof(stringBuffers[1]), "%d", value[1].integerValue);
             strings[1] = stringBuffers[1];
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             result = strcmp(strings[1], strings[0]) > 0;
             break;
         case VALUE_TYPE_FLOAT:
@@ -1291,7 +1291,7 @@ static void op_greater(Program* program)
         assert(false && "Should be unreachable");
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45DA1C
@@ -1302,18 +1302,18 @@ static void op_add(Program* program)
     char* tempString;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_STRING:
     case VALUE_TYPE_DYNAMIC_STRING:
-        strings[1] = interpretGetString(program, value[1].opcode, value[1].integerValue);
+        strings[1] = program->getString(value[1].opcode, value[1].integerValue);
 
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            tempString = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            tempString = program->getString(value[0].opcode, value[0].integerValue);
             strings[0] = (char*)mymalloc(strlen(tempString) + 1, __FILE__, __LINE__); // "..\\int\\INTRPRET.C", 1002
             strcpy(strings[0], tempString);
             break;
@@ -1335,7 +1335,7 @@ static void op_add(Program* program)
         strcpy(tempString, strings[1]);
         strcat(tempString, strings[0]);
 
-        programStackPushString(program, tempString);
+        program->stackPushString(tempString);
 
         myfree(strings[0], __FILE__, __LINE__); // "..\\int\\INTRPRET.C", 1019
         myfree(tempString, __FILE__, __LINE__); // "..\\int\\INTRPRET.C", 1020
@@ -1344,20 +1344,20 @@ static void op_add(Program* program)
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             tempString = (char*)mymalloc(strlen(strings[0]) + 80, __FILE__, __LINE__); // "..\\int\\INTRPRET.C", 1039
             snprintf(tempString, strlen(strings[0]) + 80, "%.5f", value[1].floatValue);
             strcat(tempString, strings[0]);
 
-            programStackPushString(program, tempString);
+            program->stackPushString(tempString);
 
             myfree(tempString, __FILE__, __LINE__); // "..\\int\\INTRPRET.C", 1044
             break;
         case VALUE_TYPE_FLOAT:
-            programStackPushFloat(program, value[1].floatValue + value[0].floatValue);
+            program->stackPushFloat(value[1].floatValue + value[0].floatValue);
             break;
         case VALUE_TYPE_INT:
-            programStackPushFloat(program, value[1].floatValue + (float)value[0].integerValue);
+            program->stackPushFloat(value[1].floatValue + (float)value[0].integerValue);
             break;
         }
         break;
@@ -1365,24 +1365,24 @@ static void op_add(Program* program)
         switch (value[0].opcode) {
         case VALUE_TYPE_STRING:
         case VALUE_TYPE_DYNAMIC_STRING:
-            strings[0] = interpretGetString(program, value[0].opcode, value[0].integerValue);
+            strings[0] = program->getString(value[0].opcode, value[0].integerValue);
             tempString = (char*)mymalloc(strlen(strings[0]) + 80, __FILE__, __LINE__); // "..\\int\\INTRPRET.C", 1070
             snprintf(tempString, strlen(strings[0]) + 80, "%d", value[1].integerValue);
             strcat(tempString, strings[0]);
 
-            programStackPushString(program, tempString);
+            program->stackPushString(tempString);
 
             myfree(tempString, __FILE__, __LINE__); // "..\\int\\INTRPRET.C", 1075
             break;
         case VALUE_TYPE_FLOAT:
-            programStackPushFloat(program, (float)value[1].integerValue + value[0].floatValue);
+            program->stackPushFloat((float)value[1].integerValue + value[0].floatValue);
             break;
         case VALUE_TYPE_INT:
             if ((value[0].integerValue <= 0 || (INT_MAX - value[0].integerValue) > value[1].integerValue)
                 && (value[0].integerValue >= 0 || (INT_MIN - value[0].integerValue) <= value[1].integerValue)) {
-                programStackPushInteger(program, value[1].integerValue + value[0].integerValue);
+                program->stackPushInteger(value[1].integerValue + value[0].integerValue);
             } else {
-                programStackPushFloat(program, (float)value[1].integerValue + (float)value[0].integerValue);
+                program->stackPushFloat((float)value[1].integerValue + (float)value[0].integerValue);
             }
             break;
         }
@@ -1396,27 +1396,27 @@ static void op_sub(Program* program)
     ProgramValue value[2];
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_FLOAT:
         switch (value[0].opcode) {
         case VALUE_TYPE_FLOAT:
-            programStackPushFloat(program, value[1].floatValue - value[0].floatValue);
+            program->stackPushFloat(value[1].floatValue - value[0].floatValue);
             break;
         default:
-            programStackPushFloat(program, value[1].floatValue - (float)value[0].integerValue);
+            program->stackPushFloat(value[1].floatValue - (float)value[0].integerValue);
             break;
         }
         break;
     case VALUE_TYPE_INT:
         switch (value[0].opcode) {
         case VALUE_TYPE_FLOAT:
-            programStackPushFloat(program, value[1].integerValue - value[0].floatValue);
+            program->stackPushFloat(value[1].integerValue - value[0].floatValue);
             break;
         default:
-            programStackPushInteger(program, value[1].integerValue - value[0].integerValue);
+            program->stackPushInteger(value[1].integerValue - value[0].integerValue);
             break;
         }
         break;
@@ -1429,27 +1429,27 @@ static void op_mul(Program* program)
     ProgramValue value[2];
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
     case VALUE_TYPE_FLOAT:
         switch (value[0].opcode) {
         case VALUE_TYPE_FLOAT:
-            programStackPushFloat(program, value[1].floatValue * value[0].floatValue);
+            program->stackPushFloat(value[1].floatValue * value[0].floatValue);
             break;
         default:
-            programStackPushFloat(program, value[1].floatValue * value[0].integerValue);
+            program->stackPushFloat(value[1].floatValue * value[0].integerValue);
             break;
         }
         break;
     case VALUE_TYPE_INT:
         switch (value[0].opcode) {
         case VALUE_TYPE_FLOAT:
-            programStackPushFloat(program, value[1].integerValue * value[0].floatValue);
+            program->stackPushFloat(value[1].integerValue * value[0].floatValue);
             break;
         default:
-            programStackPushInteger(program, value[0].integerValue * value[1].integerValue);
+            program->stackPushInteger(value[0].integerValue * value[1].integerValue);
             break;
         }
         break;
@@ -1463,7 +1463,7 @@ static void op_div(Program* program)
     float divisor;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
@@ -1481,7 +1481,7 @@ static void op_div(Program* program)
             interpretError("Division (DIV) by zero");
         }
 
-        programStackPushFloat(program, value[1].floatValue / divisor);
+        program->stackPushFloat(value[1].floatValue / divisor);
         break;
     case VALUE_TYPE_INT:
         if (value[0].opcode == VALUE_TYPE_FLOAT) {
@@ -1492,13 +1492,13 @@ static void op_div(Program* program)
                 interpretError("Division (DIV) by zero");
             }
 
-            programStackPushFloat(program, (float)value[1].integerValue / divisor);
+            program->stackPushFloat((float)value[1].integerValue / divisor);
         } else {
             if (value[0].integerValue == 0) {
                 interpretError("Division (DIV) by zero");
             }
 
-            programStackPushInteger(program, value[1].integerValue / value[0].integerValue);
+            program->stackPushInteger(value[1].integerValue / value[0].integerValue);
         }
         break;
     }
@@ -1510,7 +1510,7 @@ static void op_mod(Program* program)
     ProgramValue value[2];
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     if (value[1].opcode == VALUE_TYPE_FLOAT) {
@@ -1529,7 +1529,7 @@ static void op_mod(Program* program)
         interpretError("Division (MOD) by zero");
     }
 
-    programStackPushInteger(program, value[1].integerValue % value[0].integerValue);
+    program->stackPushInteger(value[1].integerValue % value[0].integerValue);
 }
 
 // 0x45E3B8
@@ -1539,7 +1539,7 @@ static void op_and(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
@@ -1624,7 +1624,7 @@ static void op_and(Program* program)
         assert(false && "Should be unreachable");
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45E5A0
@@ -1634,7 +1634,7 @@ static void op_or(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
@@ -1713,27 +1713,27 @@ static void op_or(Program* program)
         assert(false && "Should be unreachable");
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45E764
 static void op_not(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
-    programStackPushInteger(program, value.integerValue == 0);
+    ProgramValue value = program->stackPopValue();
+    program->stackPushInteger(value.integerValue == 0);
 }
 
 // 0x45E7B0
 static void op_negate(Program* program)
 {
     // SFALL: Fix vanilla negate operator for float values.
-    ProgramValue programValue = programStackPopValue(program);
+    ProgramValue programValue = program->stackPopValue();
     switch (programValue.opcode) {
     case VALUE_TYPE_INT:
-        programStackPushInteger(program, -programValue.integerValue);
+        program->stackPushInteger(-programValue.integerValue);
         break;
     case VALUE_TYPE_FLOAT:
-        programStackPushFloat(program, -programValue.floatValue);
+        program->stackPushFloat(-programValue.floatValue);
         break;
     default:
         interpretError("Invalid arg given to NEG");
@@ -1743,14 +1743,14 @@ static void op_negate(Program* program)
 // 0x45E7F0
 static void op_bwnot(Program* program)
 {
-    int value = programStackPopInteger(program);
-    programStackPushInteger(program, ~value);
+    int value = program->stackPopInteger();
+    program->stackPushInteger(~value);
 }
 
 // 0x45E830
 static void op_floor(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     if (value.opcode == VALUE_TYPE_STRING) {
         interpretError("Invalid arg given to floor()");
@@ -1759,7 +1759,7 @@ static void op_floor(Program* program)
         value.integerValue = (int)value.floatValue;
     }
 
-    programStackPushValue(program, value);
+    program->stackPushValue(value);
 }
 
 // 0x45E8BC
@@ -1769,7 +1769,7 @@ static void op_bwand(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
@@ -1797,7 +1797,7 @@ static void op_bwand(Program* program)
         return;
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45E9A4
@@ -1807,7 +1807,7 @@ static void op_bwor(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
@@ -1835,7 +1835,7 @@ static void op_bwor(Program* program)
         return;
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45EA8C
@@ -1845,7 +1845,7 @@ static void op_bwxor(Program* program)
     int result;
 
     for (int arg = 0; arg < 2; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     switch (value[1].opcode) {
@@ -1873,16 +1873,16 @@ static void op_bwxor(Program* program)
         return;
     }
 
-    programStackPushInteger(program, result);
+    program->stackPushInteger(result);
 }
 
 // 0x45EB74
 static void op_swapa(Program* program)
 {
-    ProgramValue v1 = programReturnStackPopValue(program);
-    ProgramValue v2 = programReturnStackPopValue(program);
-    programReturnStackPushValue(program, v1);
-    programReturnStackPushValue(program, v2);
+    ProgramValue v1 = program->returnStackPopValue();
+    ProgramValue v2 = program->returnStackPopValue();
+    program->returnStackPushValue(v1);
+    program->returnStackPushValue(v2);
 }
 
 // 0x45EBF4
@@ -1900,7 +1900,7 @@ static void op_critical_start(Program* program)
 // 0x45EC04
 static void op_jmp(Program* program)
 {
-    program->instructionPointer = programStackPopInteger(program);
+    program->instructionPointer = program->stackPopInteger();
 }
 
 // 0x45EC6C
@@ -1919,13 +1919,13 @@ static void op_call(Program* program)
     Program tempProgram;
     char err[256];
 
-    data = programStackPopInteger(program);
+    data = program->stackPopInteger();
 
     procedurePtr = program->procedures + 4 + sizeof(Procedure) * data;
 
     procedureFlags = fetchLong(procedurePtr, 4);
     if ((procedureFlags & PROCEDURE_FLAG_IMPORTED) != 0) {
-        // procedureIdentifier = interpretGetName(program, fetchLong(procedurePtr, 0));
+        // procedureIdentifier = program->getName(fetchLong(procedurePtr, 0));
         // externalProgram = exportFindProcedure(procedureIdentifier, &externalProcedureAddress, &externalProcedureArgumentCount);
         // if (externalProgram == NULL) {
         //     interpretError("External procedure %s not found", procedureIdentifier);
@@ -2006,22 +2006,22 @@ static void op_call(Program* program)
 // 0x45F124
 static void op_pop_flags(Program* program)
 {
-    program->windowId = programStackPopInteger(program);
-    program->checkWaitFunc = (InterpretCheckWaitFunc*)programStackPopPointer(program);
-    program->flags = programStackPopInteger(program) & 0xFFFF;
+    program->windowId = program->stackPopInteger();
+    program->checkWaitFunc = (InterpretCheckWaitFunc*)program->stackPopPointer();
+    program->flags = program->stackPopInteger() & 0xFFFF;
 }
 
 // pop stack 2 -> set program address
 // 0x45F17C
 static void op_pop_return(Program* program)
 {
-    program->instructionPointer = programReturnStackPopInteger(program);
+    program->instructionPointer = program->returnStackPopInteger();
 }
 
 // 0x45F1A0
 static void op_pop_exit(Program* program)
 {
-    program->instructionPointer = programReturnStackPopInteger(program);
+    program->instructionPointer = program->returnStackPopInteger();
 
     program->flags |= PROGRAM_FLAG_0x40;
 }
@@ -2043,28 +2043,28 @@ static void op_pop_flags_exit(Program* program)
 // 0x45F20C
 static void op_pop_flags_return_val_exit(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     op_pop_flags(program);
     op_pop_exit(program);
 
-    programStackPushValue(program, value);
+    program->stackPushValue(value);
 }
 
 // 0x45F26C
 static void op_pop_flags_return_val_exit_extern(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     op_pop_flags(program);
 
-    Program* v1 = (Program*)programReturnStackPopPointer(program);
-    v1->checkWaitFunc = (InterpretCheckWaitFunc*)programReturnStackPopPointer(program);
-    v1->flags = programReturnStackPopInteger(program);
+    Program* v1 = (Program*)program->returnStackPopPointer();
+    v1->checkWaitFunc = (InterpretCheckWaitFunc*)program->returnStackPopPointer();
+    v1->flags = program->returnStackPopInteger();
 
     op_pop_exit(program);
 
-    programStackPushValue(program, value);
+    program->stackPushValue(value);
 }
 
 // 0x45F32C
@@ -2073,9 +2073,9 @@ static void op_pop_flags_return_extern(Program* program)
 
     op_pop_flags(program);
 
-    Program* v1 = (Program*)programReturnStackPopPointer(program);
-    v1->checkWaitFunc = (InterpretCheckWaitFunc*)programReturnStackPopPointer(program);
-    v1->flags = programReturnStackPopInteger(program);
+    Program* v1 = (Program*)program->returnStackPopPointer();
+    v1->checkWaitFunc = (InterpretCheckWaitFunc*)program->returnStackPopPointer();
+    v1->flags = program->returnStackPopInteger();
 
     op_pop_return(program);
 }
@@ -2085,9 +2085,9 @@ static void op_pop_flags_exit_extern(Program* program)
 {
     op_pop_flags(program);
 
-    Program* v1 = (Program*)programReturnStackPopPointer(program);
-    v1->checkWaitFunc = (InterpretCheckWaitFunc*)programReturnStackPopPointer(program);
-    v1->flags = programReturnStackPopInteger(program);
+    Program* v1 = (Program*)program->returnStackPopPointer();
+    v1->checkWaitFunc = (InterpretCheckWaitFunc*)program->returnStackPopPointer();
+    v1->flags = program->returnStackPopInteger();
 
     op_pop_exit(program);
 }
@@ -2096,21 +2096,21 @@ static void op_pop_flags_exit_extern(Program* program)
 // 0x45F40C
 static void op_pop_flags_return_val_extern(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     op_pop_flags(program);
 
-    Program* v10 = (Program*)programReturnStackPopPointer(program);
-    v10->checkWaitFunc = (InterpretCheckWaitFunc*)programReturnStackPopPointer(program);
-    v10->flags = programReturnStackPopInteger(program);
+    Program* v10 = (Program*)program->returnStackPopPointer();
+    v10->checkWaitFunc = (InterpretCheckWaitFunc*)program->returnStackPopPointer();
+    v10->flags = program->returnStackPopInteger();
     if ((value.opcode & 0xF7FF) == VALUE_TYPE_STRING) {
-        char* string = interpretGetString(program, value.opcode, value.integerValue);
+        char* string = program->getString(value.opcode, value.integerValue);
         ProgramValue otherValue;
-        otherValue.integerValue = interpretAddString(v10, string);
+        otherValue.integerValue = v10->addString(string);
         otherValue.opcode = VALUE_TYPE_DYNAMIC_STRING;
-        programStackPushValue(v10, otherValue);
+        v10->stackPushValue(otherValue);
     } else {
-        programStackPushValue(v10, value);
+        v10->stackPushValue(value);
     }
 
     if (v10->flags & 0x80) {
@@ -2124,21 +2124,21 @@ static void op_pop_flags_return_val_extern(Program* program)
 // 0x45F544
 static void op_pop_address(Program* program)
 {
-    programReturnStackPopValue(program);
+    program->returnStackPopValue();
 }
 
 // 0x45F564
 static void op_a_to_d(Program* program)
 {
-    ProgramValue value = programReturnStackPopValue(program);
-    programStackPushValue(program, value);
+    ProgramValue value = program->returnStackPopValue();
+    program->stackPushValue(value);
 }
 
 // 0x45F5AC
 static void op_d_to_a(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
-    programReturnStackPushValue(program, value);
+    ProgramValue value = program->stackPopValue();
+    program->returnStackPushValue(value);
 }
 
 // 0x45F5F4
@@ -2156,17 +2156,17 @@ static void op_stop_prog(Program* program)
 // 0x45F604
 static void op_fetch_global(Program* program)
 {
-    int addr = programStackPopInteger(program);
+    int addr = program->stackPopInteger();
 
     ProgramValue value = program->stackValues->at(program->basePointer + addr);
-    programStackPushValue(program, value);
+    program->stackPushValue(value);
 }
 
 // 0x45F69C
 static void op_store_global(Program* program)
 {
-    int addr = programStackPopInteger(program);
-    ProgramValue value = programStackPopValue(program);
+    int addr = program->stackPopInteger();
+    ProgramValue value = program->stackPopValue();
 
     program->stackValues->at(program->basePointer + addr) = value;
 }
@@ -2174,19 +2174,19 @@ static void op_store_global(Program* program)
 // 0x45F73C
 static void op_swap(Program* program)
 {
-    ProgramValue v1 = programStackPopValue(program);
-    ProgramValue v2 = programStackPopValue(program);
-    programStackPushValue(program, v1);
-    programStackPushValue(program, v2);
+    ProgramValue v1 = program->stackPopValue();
+    ProgramValue v2 = program->stackPopValue();
+    program->stackPushValue(v1);
+    program->stackPushValue(v2);
 }
 
 // 0x45F7BC
 static void op_fetch_proc_address(Program* program)
 {
-    int procedureIndex = programStackPopInteger(program);
+    int procedureIndex = program->stackPopInteger();
 
     int address = fetchLong(program->procedures + 4 + sizeof(Procedure) * procedureIndex, 16);
-    programStackPushInteger(program, address);
+    program->stackPushInteger(address);
 }
 
 // Pops value from stack and throws it away.
@@ -2194,24 +2194,24 @@ static void op_fetch_proc_address(Program* program)
 // 0x45F874
 static void op_pop(Program* program)
 {
-    programStackPopValue(program);
+    program->stackPopValue();
 }
 
 // 0x45F894
 static void op_dup(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
-    programStackPushValue(program, value);
-    programStackPushValue(program, value);
+    ProgramValue value = program->stackPopValue();
+    program->stackPushValue(value);
+    program->stackPushValue(value);
 }
 
 // 0x45F8FC
 static void op_store_external(Program* program)
 {
-    ProgramValue addr = programStackPopValue(program);
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue addr = program->stackPopValue();
+    ProgramValue value = program->stackPopValue();
 
-    const char* identifier = interpretGetName(program, addr.integerValue);
+    const char* identifier = program->getName(addr.integerValue);
 
     if (exportStoreVariable(program, identifier, value)) {
         char err[256];
@@ -2223,9 +2223,9 @@ static void op_store_external(Program* program)
 // 0x45F990
 static void op_fetch_external(Program* program)
 {
-    ProgramValue addr = programStackPopValue(program);
+    ProgramValue addr = program->stackPopValue();
 
-    const char* identifier = interpretGetName(program, addr.integerValue);
+    const char* identifier = program->getName(addr.integerValue);
 
     ProgramValue value;
     if (exportFetchVariable(program, identifier, value) != 0) {
@@ -2234,18 +2234,18 @@ static void op_fetch_external(Program* program)
         interpretError(err);
     }
 
-    programStackPushValue(program, value);
+    program->stackPushValue(value);
 }
 
 // 0x45FA30
 static void op_export_proc(Program* program)
 {
-    int procedureIndex = programStackPopInteger(program);
-    int argumentCount = programStackPopInteger(program);
+    int procedureIndex = program->stackPopInteger();
+    int argumentCount = program->stackPopInteger();
 
     unsigned char* proc_ptr = program->procedures + 4 + sizeof(Procedure) * procedureIndex;
 
-    char* procedureName = interpretGetName(program, fetchLong(proc_ptr, 0));
+    char* procedureName = program->getName(fetchLong(proc_ptr, 0));
     int procedureAddress = fetchLong(proc_ptr, 16);
 
     if (exportExportProcedure(program, procedureName, procedureAddress, argumentCount) != 0) {
@@ -2258,9 +2258,9 @@ static void op_export_proc(Program* program)
 // 0x45FB08
 static void op_export_var(Program* program)
 {
-    ProgramValue addr = programStackPopValue(program);
+    ProgramValue addr = program->stackPopValue();
 
-    const char* identifier = interpretGetName(program, addr.integerValue);
+    const char* identifier = program->getName(addr.integerValue);
 
     if (exportExportVariable(program, identifier)) {
         char err[256];
@@ -2299,7 +2299,7 @@ static void op_callstart(Program* program)
 
     program->flags |= PROGRAM_FLAG_0x20;
 
-    char* name = programStackPopString(program);
+    char* name = program->stackPopString();
 
     // NOTE: Uninline.
     program->child = runScript(name);
@@ -2322,7 +2322,7 @@ static void op_spawn(Program* program)
 
     program->flags |= PROGRAM_FLAG_0x0100;
 
-    char* name = programStackPopString(program);
+    char* name = program->stackPopString();
 
     // NOTE: Uninline.
     program->child = runScript(name);
@@ -2337,14 +2337,14 @@ static void op_spawn(Program* program)
 
     if ((program->flags & PROGRAM_FLAG_CRITICAL_SECTION) != 0) {
         program->child->flags |= PROGRAM_FLAG_CRITICAL_SECTION;
-        interpret(program->child, -1);
+        program->child->interpret(-1);
     }
 }
 
 // 0x45FE30
 static Program* op_fork_helper(Program* program)
 {
-    char* name = programStackPopString(program);
+    char* name = program->stackPopString();
     Program* forked = runScript(name);
 
     if (forked == NULL) {
@@ -2384,12 +2384,12 @@ static void op_exec(Program* program)
 // 0x45FF68
 static void op_check_arg_count(Program* program)
 {
-    int expectedArgumentCount = programStackPopInteger(program);
-    int procedureIndex = programStackPopInteger(program);
+    int expectedArgumentCount = program->stackPopInteger();
+    int procedureIndex = program->stackPopInteger();
 
     int actualArgumentCount = fetchLong(program->procedures + 4 + sizeof(Procedure) * procedureIndex, 20);
     if (actualArgumentCount != expectedArgumentCount) {
-        const char* identifier = interpretGetName(program, fetchLong(program->procedures + 4 + sizeof(Procedure) * procedureIndex, 0));
+        const char* identifier = program->getName(fetchLong(program->procedures + 4 + sizeof(Procedure) * procedureIndex, 0));
         char err[260];
         snprintf(err, sizeof(err), "Wrong number of args to procedure %s\n", identifier);
         interpretError(err);
@@ -2399,7 +2399,7 @@ static void op_check_arg_count(Program* program)
 // 0x460048
 static void op_lookup_string_proc(Program* program)
 {
-    const char* procedureNameToLookup = programStackPopString(program);
+    const char* procedureNameToLookup = program->stackPopString();
     int procedureCount = fetchLong(program->procedures, 0);
 
     // Skip procedure count (4 bytes) and main procedure, which cannot be
@@ -2410,9 +2410,9 @@ static void op_lookup_string_proc(Program* program)
     // index 0.
     for (int index = 1; index < procedureCount; index++) {
         int offset = fetchLong(procedurePtr, 0);
-        const char* procedureName = interpretGetName(program, offset);
+        const char* procedureName = program->getName(offset);
         if (compat_stricmp(procedureName, procedureNameToLookup) == 0) {
-            programStackPushInteger(program, index);
+            program->stackPushInteger(index);
             return;
         }
 
@@ -2533,7 +2533,7 @@ void interpretEnableInterpreter(int value)
 }
 
 // 0x460658
-void interpret(Program* program, int a2)
+void Program::interpret(int a2)
 {
     // 0x59E798
     static int busy;
@@ -2550,56 +2550,56 @@ void interpret(Program* program, int a2)
         return;
     }
 
-    if (program->exited || (program->flags & PROGRAM_FLAG_0x20) != 0 || (program->flags & PROGRAM_FLAG_0x0100) != 0) {
+    if (exited || (flags & PROGRAM_FLAG_0x20) != 0 || (flags & PROGRAM_FLAG_0x0100) != 0) {
         return;
     }
 
-    if (program->field_78 == -1) {
-        program->field_78 = 1000 * timerFunc() / timerTick;
+    if (field_78 == -1) {
+        field_78 = 1000 * timerFunc() / timerTick;
     }
 
-    currentProgram = program;
+    currentProgram = this;
 
-    if (setjmp(program->env)) {
+    if (setjmp(env)) {
         currentProgram = oldCurrentProgram;
-        program->flags |= PROGRAM_FLAG_EXITED | PROGRAM_FLAG_0x04;
+        flags |= PROGRAM_FLAG_EXITED | PROGRAM_FLAG_0x04;
         return;
     }
 
-    if ((program->flags & PROGRAM_FLAG_CRITICAL_SECTION) != 0 && a2 < 3) {
+    if ((flags & PROGRAM_FLAG_CRITICAL_SECTION) != 0 && a2 < 3) {
         a2 = 3;
     }
 
-    while ((program->flags & PROGRAM_FLAG_CRITICAL_SECTION) != 0 || --a2 != -1) {
-        if ((program->flags & (PROGRAM_FLAG_EXITED | PROGRAM_FLAG_0x04 | PROGRAM_FLAG_STOPPED | PROGRAM_FLAG_0x20 | PROGRAM_FLAG_0x40 | PROGRAM_FLAG_0x0100)) != 0) {
+    while ((flags & PROGRAM_FLAG_CRITICAL_SECTION) != 0 || --a2 != -1) {
+        if ((flags & (PROGRAM_FLAG_EXITED | PROGRAM_FLAG_0x04 | PROGRAM_FLAG_STOPPED | PROGRAM_FLAG_0x20 | PROGRAM_FLAG_0x40 | PROGRAM_FLAG_0x0100)) != 0) {
             break;
         }
 
-        if (program->exited) {
+        if (exited) {
             break;
         }
 
-        if ((program->flags & PROGRAM_IS_WAITING) != 0) {
+        if ((flags & PROGRAM_IS_WAITING) != 0) {
             busy = 1;
 
-            if (program->checkWaitFunc != NULL) {
-                if (!program->checkWaitFunc(program)) {
+            if (checkWaitFunc != NULL) {
+                if (!checkWaitFunc(this)) {
                     busy = 0;
                     continue;
                 }
             }
 
             busy = 0;
-            program->checkWaitFunc = NULL;
-            program->flags &= ~PROGRAM_IS_WAITING;
+            checkWaitFunc = NULL;
+            flags &= ~PROGRAM_IS_WAITING;
         }
 
         // NOTE: Uninline.
-        opcode_t opcode = getOp(program);
+        opcode_t opcode = getOp(this);
 
         // TODO: Replace with field_82 and field_80?
-        program->flags &= 0xFFFF;
-        program->flags |= (opcode << 16);
+        flags &= 0xFFFF;
+        flags |= (opcode << 16);
 
         if (!((opcode >> 8) & 0x80)) {
             snprintf(err, sizeof(err), "Bad opcode %x %c %d.", opcode, opcode, opcode);
@@ -2613,20 +2613,20 @@ void interpret(Program* program, int a2)
             interpretError(err);
         }
 
-        handler(program);
+        handler(this);
     }
 
-    if ((program->flags & PROGRAM_FLAG_EXITED) != 0) {
-        if (program->parent != NULL) {
-            if (program->parent->flags & PROGRAM_FLAG_0x20) {
-                program->parent->flags &= ~PROGRAM_FLAG_0x20;
-                program->parent->child = NULL;
-                program->parent = NULL;
+    if ((flags & PROGRAM_FLAG_EXITED) != 0) {
+        if (parent != NULL) {
+            if (parent->flags & PROGRAM_FLAG_0x20) {
+                parent->flags &= ~PROGRAM_FLAG_0x20;
+                parent->child = NULL;
+                parent = NULL;
             }
         }
     }
 
-    program->flags &= ~PROGRAM_FLAG_0x40;
+    flags &= ~PROGRAM_FLAG_0x40;
     currentProgram = oldCurrentProgram;
 }
 
@@ -2636,17 +2636,17 @@ void interpret(Program* program, int a2)
 static void setupCallWithReturnVal(Program* program, int address, int returnAddress)
 {
     // Save current instruction pointer
-    programReturnStackPushInteger(program, program->instructionPointer);
+    program->returnStackPushInteger(program->instructionPointer);
 
     // Save return address
-    programReturnStackPushInteger(program, returnAddress);
+    program->returnStackPushInteger(returnAddress);
 
     // Save program flags
-    programStackPushInteger(program, program->flags & 0xFFFF);
+    program->stackPushInteger(program->flags & 0xFFFF);
 
-    programStackPushPointer(program, (void*)program->checkWaitFunc);
+    program->stackPushPointer((void*)program->checkWaitFunc);
 
-    programStackPushInteger(program, program->windowId);
+    program->stackPushInteger(program->windowId);
 
     program->flags &= ~0xFFFF;
     program->instructionPointer = address;
@@ -2656,27 +2656,27 @@ static void setupCallWithReturnVal(Program* program, int address, int returnAddr
 static void setupCall(Program* program, int address, int returnAddress)
 {
     setupCallWithReturnVal(program, address, returnAddress);
-    programStackPushInteger(program, 0);
+    program->stackPushInteger(0);
 }
 
 // 0x460968
 static void setupExternalCallWithReturnVal(Program* program1, Program* program2, int address, int a4)
 {
-    programReturnStackPushInteger(program2, program2->instructionPointer);
+    program2->returnStackPushInteger(program2->instructionPointer);
 
-    programReturnStackPushInteger(program2, program1->flags & 0xFFFF);
+    program2->returnStackPushInteger(program1->flags & 0xFFFF);
 
-    programReturnStackPushPointer(program2, (void*)program1->checkWaitFunc);
+    program2->returnStackPushPointer((void*)program1->checkWaitFunc);
 
-    programReturnStackPushPointer(program2, program1);
+    program2->returnStackPushPointer(program1);
 
-    programReturnStackPushInteger(program2, a4);
+    program2->returnStackPushInteger(a4);
 
-    programStackPushInteger(program2, program2->flags & 0xFFFF);
+    program2->stackPushInteger(program2->flags & 0xFFFF);
 
-    programStackPushPointer(program2, (void*)program2->checkWaitFunc);
+    program2->stackPushPointer((void*)program2->checkWaitFunc);
 
-    programStackPushInteger(program2, program2->windowId);
+    program2->stackPushInteger(program2->windowId);
 
     program2->flags &= ~0xFFFF;
     program2->instructionPointer = address;
@@ -2689,11 +2689,11 @@ static void setupExternalCallWithReturnVal(Program* program1, Program* program2,
 static void setupExternalCall(Program* program1, Program* program2, int address, int a4)
 {
     setupExternalCallWithReturnVal(program1, program2, address, a4);
-    programStackPushInteger(program2, 0);
+    program2->stackPushInteger(0);
 }
 
 // 0x461728
-void executeProc(Program* program, int procedureIndex)
+void Program::executeProc(int procedureIndex)
 {
     unsigned char* procedurePtr;
     char* procedureIdentifier;
@@ -2704,10 +2704,10 @@ void executeProc(Program* program, int procedureIndex)
     int procedureFlags;
     char err[256];
 
-    procedurePtr = program->procedures + 4 + sizeof(Procedure) * procedureIndex;
+    procedurePtr = procedures + 4 + sizeof(Procedure) * procedureIndex;
     procedureFlags = fetchLong(procedurePtr, 4);
     if ((procedureFlags & PROCEDURE_FLAG_IMPORTED) != 0) {
-        procedureIdentifier = interpretGetName(program, fetchLong(procedurePtr, 0));
+        procedureIdentifier = getName(fetchLong(procedurePtr, 0));
         externalProgram = exportFindProcedure(procedureIdentifier, &externalProcedureAddress, &externalProcedureArgumentCount);
         if (externalProgram != NULL) {
             if (externalProcedureArgumentCount == 0) {
@@ -2721,7 +2721,7 @@ void executeProc(Program* program, int procedureIndex)
         }
 
         // NOTE: Uninline.
-        setupExternalCall(program, externalProgram, externalProcedureAddress, 28);
+        setupExternalCall(this, externalProgram, externalProcedureAddress, 28);
 
         procedurePtr = externalProgram->procedures + 4 + sizeof(Procedure) * procedureIndex;
         procedureFlags = fetchLong(procedurePtr, 4);
@@ -2729,18 +2729,18 @@ void executeProc(Program* program, int procedureIndex)
         if ((procedureFlags & PROCEDURE_FLAG_CRITICAL) != 0) {
             // NOTE: Uninline.
             op_critical_start(externalProgram);
-            interpret(externalProgram, 0);
+            externalProgram->interpret(0);
         }
     } else {
         procedureAddress = fetchLong(procedurePtr, 16);
 
         // NOTE: Uninline.
-        setupCall(program, procedureAddress, 20);
+        setupCall(this, procedureAddress, 20);
 
         if ((procedureFlags & PROCEDURE_FLAG_CRITICAL) != 0) {
             // NOTE: Uninline.
-            op_critical_start(program);
-            interpret(program, 0);
+            op_critical_start(this);
+            interpret(0);
         }
     }
 }
@@ -2749,14 +2749,14 @@ void executeProc(Program* program, int procedureIndex)
 // procedure exists.
 //
 // 0x461938
-int interpretFindProcedure(Program* program, const char* name)
+int Program::findProcedure(const char* name)
 {
-    int procedureCount = fetchLong(program->procedures, 0);
+    int procedureCount = fetchLong(procedures, 0);
 
-    unsigned char* ptr = program->procedures + 4;
+    unsigned char* ptr = procedures + 4;
     for (int index = 0; index < procedureCount; index++) {
         int identifierOffset = fetchLong(ptr, offsetof(Procedure, field_0));
-        if (compat_stricmp((char*)(program->identifiers + identifierOffset), name) == 0) {
+        if (compat_stricmp((char*)(identifiers + identifierOffset), name) == 0) {
             return index;
         }
 
@@ -2767,7 +2767,7 @@ int interpretFindProcedure(Program* program, const char* name)
 }
 
 // 0x4619D4
-void executeProcedure(Program* program, int procedureIndex)
+void Program::executeProcedure(int procedureIndex)
 {
     unsigned char* procedurePtr;
     char* procedureIdentifier;
@@ -2779,18 +2779,18 @@ void executeProcedure(Program* program, int procedureIndex)
     char err[256];
     jmp_buf env;
 
-    procedurePtr = program->procedures + 4 + sizeof(Procedure) * procedureIndex;
+    procedurePtr = procedures + 4 + sizeof(Procedure) * procedureIndex;
     procedureFlags = fetchLong(procedurePtr, 4);
 
     if ((procedureFlags & PROCEDURE_FLAG_IMPORTED) != 0) {
-        procedureIdentifier = interpretGetName(program, fetchLong(procedurePtr, 0));
+        procedureIdentifier = getName(fetchLong(procedurePtr, 0));
         externalProgram = exportFindProcedure(procedureIdentifier, &externalProcedureAddress, &externalProcedureArgumentCount);
         if (externalProgram != NULL) {
             if (externalProcedureArgumentCount == 0) {
                 // NOTE: Uninline.
-                setupExternalCall(program, externalProgram, externalProcedureAddress, 32);
-                memcpy(env, program->env, sizeof(env));
-                interpret(externalProgram, -1);
+                setupExternalCall(this, externalProgram, externalProcedureAddress, 32);
+                memcpy(env, this->env, sizeof(env));
+                externalProgram->interpret(-1);
                 memcpy(externalProgram->env, env, sizeof(env));
             } else {
                 snprintf(err, sizeof(err), "External procedure cannot take arguments in interrupt context");
@@ -2804,10 +2804,10 @@ void executeProcedure(Program* program, int procedureIndex)
         procedureAddress = fetchLong(procedurePtr, 16);
 
         // NOTE: Uninline.
-        setupCall(program, procedureAddress, 24);
-        memcpy(env, program->env, sizeof(env));
-        interpret(program, -1);
-        memcpy(program->env, env, sizeof(env));
+        setupCall(this, procedureAddress, 24);
+        memcpy(env, this->env, sizeof(env));
+        interpret(-1);
+        memcpy(this->env, env, sizeof(env));
     }
 }
 
@@ -2845,10 +2845,10 @@ static void doEvents()
 
                 programListNode->program->flags = 0;
                 programListNode->program->instructionPointer = fetchLong(procedurePtr, 12);
-                interpret(programListNode->program, -1);
+                programListNode->program->interpret(-1);
 
                 if ((programListNode->program->flags & PROGRAM_FLAG_0x04) == 0) {
-                    data = programStackPopInteger(programListNode->program);
+                    data = programListNode->program->stackPopInteger();
 
                     programListNode->program->flags = oldProgramFlags;
                     programListNode->program->instructionPointer = oldInstructionPointer;
@@ -2856,7 +2856,7 @@ static void doEvents()
                     if (data != 0) {
                         // NOTE: Uninline.
                         storeLong(0, procedurePtr, 4);
-                        executeProc(programListNode->program, procedureIndex);
+                        programListNode->program->executeProc(procedureIndex);
                     }
                 }
 
@@ -2865,7 +2865,7 @@ static void doEvents()
                 if ((unsigned int)fetchLong(procedurePtr, 8) < time) {
                     // NOTE: Uninline.
                     storeLong(0, procedurePtr, 4);
-                    executeProc(programListNode->program, procedureIndex);
+                    programListNode->program->executeProc(procedureIndex);
                 }
             }
             procedurePtr += sizeof(Procedure);
@@ -2892,7 +2892,7 @@ static void removeProgList(ProgramListNode* programListNode)
         head = programListNode->next;
     }
 
-    interpretFreeProgram(programListNode->program);
+    programListNode->program->freeProgram();
     myfree(programListNode, __FILE__, __LINE__); // "..\int\INTRPRET.C", 2690
 }
 
@@ -2912,10 +2912,10 @@ static void insertProgram(Program* program)
 }
 
 // 0x461E90
-void runProgram(Program* program)
+void Program::run()
 {
-    program->flags |= PROGRAM_FLAG_0x02;
-    insertProgram(program);
+    flags |= PROGRAM_FLAG_0x02;
+    insertProgram(this);
 }
 
 // 0x461ED8
@@ -2927,8 +2927,8 @@ Program* runScript(char* name)
     program = allocateProgram(interpretMangleName(name));
     if (program != NULL) {
         // NOTE: Uninline.
-        runProgram(program);
-        interpret(program, 24);
+        program->run();
+        program->interpret(24);
     }
 
     return program;
@@ -2951,7 +2951,7 @@ void updatePrograms()
     while (curr != NULL) {
         ProgramListNode* next = curr->next;
         if (curr->program != NULL) {
-            interpret(curr->program, cpuBurstSize);
+            curr->program->interpret(cpuBurstSize);
         }
         if (curr->program->exited) {
             removeProgList(curr);
@@ -3106,89 +3106,89 @@ int interpretLoadProgramState()
     return 0;
 }
 
-void programStackPushValue(Program* program, ProgramValue& programValue)
+void Program::stackPushValue(ProgramValue& programValue)
 {
-    if (program->stackValues->size() > STACK_SIZE) {
+    if (stackValues->size() > STACK_SIZE) {
         interpretError("programStackPushValue: Stack overflow.");
     }
 
-    program->stackValues->push_back(programValue);
+    stackValues->push_back(programValue);
 }
 
-void programStackPushInteger(Program* program, int value)
+void Program::stackPushInteger(int value)
 {
     ProgramValue programValue;
     programValue.opcode = VALUE_TYPE_INT;
     programValue.integerValue = value;
-    programStackPushValue(program, programValue);
+    stackPushValue(programValue);
 }
 
-void programStackPushFloat(Program* program, float value)
+void Program::stackPushFloat(float value)
 {
     ProgramValue programValue;
     programValue.opcode = VALUE_TYPE_FLOAT;
     programValue.floatValue = value;
-    programStackPushValue(program, programValue);
+    stackPushValue(programValue);
 }
 
-void programStackPushString(Program* program, char* value)
+void Program::stackPushString(char* value)
 {
     ProgramValue programValue;
     programValue.opcode = VALUE_TYPE_DYNAMIC_STRING;
-    programValue.integerValue = interpretAddString(program, value);
-    programStackPushValue(program, programValue);
+    programValue.integerValue = addString(value);
+    stackPushValue(programValue);
 }
 
-void programStackPushPointer(Program* program, void* value)
+void Program::stackPushPointer(void* value)
 {
     ProgramValue programValue;
     programValue.opcode = VALUE_TYPE_PTR;
     programValue.pointerValue = value;
-    programStackPushValue(program, programValue);
+    stackPushValue(programValue);
 }
 
-ProgramValue programStackPopValue(Program* program)
+ProgramValue Program::stackPopValue()
 {
-    if (program->stackValues->empty()) {
+    if (stackValues->empty()) {
         interpretError("programStackPopValue: Stack underflow.");
     }
 
-    ProgramValue programValue = program->stackValues->back();
-    program->stackValues->pop_back();
+    ProgramValue programValue = stackValues->back();
+    stackValues->pop_back();
 
     return programValue;
 }
 
-int programStackPopInteger(Program* program)
+int Program::stackPopInteger()
 {
-    ProgramValue programValue = programStackPopValue(program);
+    ProgramValue programValue = stackPopValue();
     if (programValue.opcode != VALUE_TYPE_INT) {
         interpretError("integer expected, got %x", programValue.opcode);
     }
     return programValue.integerValue;
 }
 
-float programStackPopFloat(Program* program)
+float Program::stackPopFloat()
 {
-    ProgramValue programValue = programStackPopValue(program);
+    ProgramValue programValue = stackPopValue();
     if (programValue.opcode != VALUE_TYPE_INT) {
         interpretError("float expected, got %x", programValue.opcode);
     }
     return programValue.floatValue;
 }
 
-char* programStackPopString(Program* program)
+char* Program::stackPopString()
 {
-    ProgramValue programValue = programStackPopValue(program);
+    ProgramValue programValue = stackPopValue();
     if ((programValue.opcode & VALUE_TYPE_MASK) != VALUE_TYPE_STRING) {
         interpretError("string expected, got %x", programValue.opcode);
     }
-    return interpretGetString(program, programValue.opcode, programValue.integerValue);
+    return getString(programValue.opcode, programValue.integerValue);
 }
 
-void* programStackPopPointer(Program* program)
+void* Program::stackPopPointer()
 {
-    ProgramValue programValue = programStackPopValue(program);
+    ProgramValue programValue = stackPopValue();
 
     // There are certain places in the scripted code where they refer to
     // uninitialized exported variables designed to hold objects (pointers).
@@ -3203,52 +3203,52 @@ void* programStackPopPointer(Program* program)
     return programValue.pointerValue;
 }
 
-void programReturnStackPushValue(Program* program, ProgramValue& programValue)
+void Program::returnStackPushValue(ProgramValue& programValue)
 {
-    if (program->returnStackValues->size() > STACK_SIZE) {
+    if (returnStackValues->size() > STACK_SIZE) {
         interpretError("programReturnStackPushValue: Stack overflow.");
     }
 
-    program->returnStackValues->push_back(programValue);
+    returnStackValues->push_back(programValue);
 }
 
-void programReturnStackPushInteger(Program* program, int value)
+void Program::returnStackPushInteger(int value)
 {
     ProgramValue programValue;
     programValue.opcode = VALUE_TYPE_INT;
     programValue.integerValue = value;
-    programReturnStackPushValue(program, programValue);
+    returnStackPushValue(programValue);
 }
 
-void programReturnStackPushPointer(Program* program, void* value)
+void Program::returnStackPushPointer(void* value)
 {
     ProgramValue programValue;
     programValue.opcode = VALUE_TYPE_PTR;
     programValue.pointerValue = value;
-    programReturnStackPushValue(program, programValue);
+    returnStackPushValue(programValue);
 }
 
-ProgramValue programReturnStackPopValue(Program* program)
+ProgramValue Program::returnStackPopValue()
 {
-    if (program->returnStackValues->empty()) {
+    if (returnStackValues->empty()) {
         interpretError("programReturnStackPopValue: Stack underflow.");
     }
 
-    ProgramValue programValue = program->returnStackValues->back();
-    program->returnStackValues->pop_back();
+    ProgramValue programValue = returnStackValues->back();
+    returnStackValues->pop_back();
 
     return programValue;
 }
 
-int programReturnStackPopInteger(Program* program)
+int Program::returnStackPopInteger()
 {
-    ProgramValue programValue = programReturnStackPopValue(program);
+    ProgramValue programValue = returnStackPopValue();
     return programValue.integerValue;
 }
 
-void* programReturnStackPopPointer(Program* program)
+void* Program::returnStackPopPointer()
 {
-    ProgramValue programValue = programReturnStackPopValue(program);
+    ProgramValue programValue = returnStackPopValue();
     return programValue.pointerValue;
 }
 

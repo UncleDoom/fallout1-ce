@@ -1,6 +1,6 @@
 #include "plib/gnw/grbuf.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "plib/color/color.h"
 

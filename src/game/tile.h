@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_TILE_H_
-#define FALLOUT_GAME_TILE_H_
+#pragma once
+
 
 #include "game/map.h"
 #include "game/object_types.h"
@@ -7,11 +7,11 @@
 
 namespace fallout {
 
-#define TILE_SET_CENTER_REFRESH_WINDOW 0x01
-#define TILE_SET_CENTER_FLAG_IGNORE_SCROLL_RESTRICTIONS 0x02
+inline constexpr int TILE_SET_CENTER_REFRESH_WINDOW = 0x01;
+inline constexpr int TILE_SET_CENTER_FLAG_IGNORE_SCROLL_RESTRICTIONS = 0x02;
 
-typedef void(TileWindowRefreshProc)(Rect* rect);
-typedef void(TileWindowRefreshElevationProc)(Rect* rect, int elevation);
+using TileWindowRefreshProc = void(Rect* rect);
+using TileWindowRefreshElevationProc = void(Rect* rect, int elevation);
 
 extern int off_tile[2][6];
 
@@ -70,5 +70,3 @@ bool tile_point_inside_bound(int x, int y);
 void bounds_render(Rect* rect, int elevation);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_TILE_H_ */

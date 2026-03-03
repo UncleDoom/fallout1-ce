@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_AUTOMAP_H_
-#define FALLOUT_GAME_AUTOMAP_H_
+#pragma once
+
 
 #include "game/map_defs.h"
 #include "plib/db/db.h"
@@ -10,9 +10,9 @@ namespace fallout {
 #define AUTOMAP_TMP "AUTOMAP.TMP"
 
 // The number of map entries that is stored in automap.db.
-#define AUTOMAP_MAP_COUNT 66
+inline constexpr int AUTOMAP_MAP_COUNT = 66;
 
-typedef struct AutomapHeader {
+struct AutomapHeader {
     unsigned char version;
 
     // The size of entire automap database (including header itself).
@@ -25,12 +25,12 @@ typedef struct AutomapHeader {
     // of 0 specifies that there is no data for appropriate map/elevation
     // combination.
     int offsets[AUTOMAP_MAP_COUNT][ELEVATION_COUNT];
-} AutomapHeader;
+};
 
-typedef struct AutomapEntry {
+struct AutomapEntry {
     int dataSize;
     unsigned char isCompressed;
-} AutomapEntry;
+};
 
 int automap_init();
 int automap_reset();
@@ -44,5 +44,3 @@ int YesWriteIndex(int mapIndex, int elevation);
 int ReadAMList(AutomapHeader** automapHeaderPtr);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_AUTOMAP_H_ */

@@ -1,9 +1,9 @@
 #include "plib/gnw/debug.h"
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <SDL.h>
 
@@ -21,7 +21,7 @@ static void debug_scroll();
 static void debug_exit(void);
 
 // 0x539D5C
-static FILE* fd = NULL;
+static FILE* fd = nullptr;
 
 // 0x539D60
 static int curx = 0;
@@ -30,7 +30,7 @@ static int curx = 0;
 static int cury = 0;
 
 // 0x539D68
-static DebugFunc* debug_func = NULL;
+static DebugFunc* debug_func = nullptr;
 
 // 0x4B2D90
 void GNW_debug_init()
@@ -42,9 +42,9 @@ void GNW_debug_init()
 void debug_register_mono()
 {
     if (debug_func != debug_mono) {
-        if (fd != NULL) {
+        if (fd != nullptr) {
             fclose(fd);
-            fd = NULL;
+            fd = nullptr;
         }
 
         debug_func = debug_mono;
@@ -56,7 +56,7 @@ void debug_register_mono()
 void debug_register_log(const char* fileName, const char* mode)
 {
     if ((mode[0] == 'w' && mode[1] == 'a') && mode[1] == 't') {
-        if (fd != NULL) {
+        if (fd != nullptr) {
             fclose(fd);
         }
 
@@ -69,9 +69,9 @@ void debug_register_log(const char* fileName, const char* mode)
 void debug_register_screen()
 {
     if (debug_func != debug_screen) {
-        if (fd != NULL) {
+        if (fd != nullptr) {
             fclose(fd);
-            fd = NULL;
+            fd = nullptr;
         }
 
         debug_func = debug_screen;
@@ -82,12 +82,12 @@ void debug_register_screen()
 void debug_register_env()
 {
     const char* type = getenv("DEBUGACTIVE");
-    if (type == NULL) {
+    if (type == nullptr) {
         return;
     }
 
-    char* copy = (char*)mem_malloc(strlen(type) + 1);
-    if (copy == NULL) {
+    char* copy = static_cast<char*>(mem_malloc(strlen(type) + 1));
+    if (copy == nullptr) {
         return;
     }
 
@@ -104,9 +104,9 @@ void debug_register_env()
         debug_register_screen();
     } else if (strcmp(copy, "gnw") == 0) {
         if (debug_func != win_debug) {
-            if (fd != NULL) {
+            if (fd != nullptr) {
                 fclose(fd);
-                fd = NULL;
+                fd = nullptr;
             }
 
             debug_func = win_debug;
@@ -120,9 +120,9 @@ void debug_register_env()
 void debug_register_func(DebugFunc* proc)
 {
     if (debug_func != proc) {
-        if (fd != NULL) {
+        if (fd != nullptr) {
             fclose(fd);
-            fd = NULL;
+            fd = nullptr;
         }
 
         debug_func = proc;
@@ -137,7 +137,7 @@ int debug_printf(const char* format, ...)
 
     int rc;
 
-    if (debug_func != NULL) {
+    if (debug_func != nullptr) {
         char string[260];
         vsnprintf(string, sizeof(string), format, args);
 
@@ -157,7 +157,7 @@ int debug_printf(const char* format, ...)
 // 0x4B3054
 int debug_puts(char* string)
 {
-    if (debug_func != NULL) {
+    if (debug_func != nullptr) {
         return debug_func(string);
     }
 
@@ -171,7 +171,7 @@ void debug_clear()
     int x;
     int y;
 
-    buffer = NULL;
+    buffer = nullptr;
 
     if (debug_func == debug_mono) {
         buffer = (char*)0xB0000;
@@ -179,7 +179,7 @@ void debug_clear()
         buffer = (char*)0xB8000;
     }
 
-    if (buffer != NULL) {
+    if (buffer != nullptr) {
         for (y = 0; y < 25; y++) {
             for (x = 0; x < 80; x++) {
                 *buffer++ = ' ';
@@ -207,7 +207,7 @@ static int debug_mono(char* string)
 static int debug_log(char* string)
 {
     if (debug_func == debug_log) {
-        if (fd == NULL) {
+        if (fd == nullptr) {
             return -1;
         }
 
@@ -305,7 +305,7 @@ static void debug_scroll()
 // 0x4B32A8
 static void debug_exit(void)
 {
-    if (fd != NULL) {
+    if (fd != nullptr) {
         fclose(fd);
     }
 }

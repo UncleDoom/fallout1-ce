@@ -1,9 +1,9 @@
 #include "plib/db/db.h"
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -19,45 +19,16 @@
 
 namespace fallout {
 
-#define DB_DATABASE_LIST_CAPACITY 10
-#define DB_DATABASE_FILE_LIST_CAPACITY 32
-#define DB_HASH_TABLE_SIZE 4095
+static constexpr int DB_DATABASE_LIST_CAPACITY = 10;
+static constexpr int DB_HASH_TABLE_SIZE = 4095;
 
 #if defined(_WIN32)
-#define PATH_SEP '\\'
+static constexpr char PATH_SEP = '\\';
 #else
-#define PATH_SEP '/'
+static constexpr char PATH_SEP = '/';
 #endif
 
-typedef struct DB_FILE {
-    DB_DATABASE* database;
-    unsigned int flags;
-    int field_8;
-    union {
-        int field_C;
-        FILE* uncompressed_file_stream;
-    };
-    int field_10;
-    int field_14;
-    int field_18;
-    unsigned char* field_1C;
-    unsigned char* field_20;
-} DB_FILE;
-
-typedef struct DB_DATABASE {
-    char* datafile;
-    FILE* stream;
-    char* datafile_path;
-    char* patches_path;
-    unsigned char should_free_patches_path;
-    assoc_array root;
-    assoc_array* entries;
-    int files_length;
-    DB_FILE files[DB_DATABASE_FILE_LIST_CAPACITY];
-    unsigned char* hash_table;
-} DB_DATABASE;
-
-typedef struct DB_FIND_DATA {
+struct DB_FIND_DATA {
 #if defined(_WIN32)
     HANDLE hFind;
     WIN32_FIND_DATAA ffd;
@@ -66,7 +37,7 @@ typedef struct DB_FIND_DATA {
     struct dirent* entry;
     char path[COMPAT_MAX_PATH];
 #endif
-} DB_FIND_DATA;
+};
 
 static int db_read_long(FILE* stream, int* value_ptr);
 static int db_write_long(FILE* stream, int value);
@@ -76,20 +47,8 @@ static int db_assoc_load_db_dir_entry(DB_FILE* stream, void* buffer, size_t size
 static int db_assoc_save_db_dir_entry(DB_FILE* stream, void* buffer, size_t size, int flags);
 static int db_create_database(DB_DATABASE** database_ptr);
 static int db_destroy_database(DB_DATABASE** database_ptr);
-static int db_init_database(DB_DATABASE* database, const char* datafile, const char* datafile_path);
-static void db_exit_database(DB_DATABASE* database);
-static int db_init_patches(DB_DATABASE* database, const char* path);
-static void db_exit_patches(DB_DATABASE* database);
-static int db_init_hash_table(DB_DATABASE* database);
-static int db_reset_hash_table(DB_DATABASE* database);
-static int db_fill_hash_table(DB_DATABASE* database, const char* path);
-static int db_add_hash_entry_to_database(DB_DATABASE* database, const char* path, int sep);
-static int db_set_hash_value(DB_DATABASE* database, unsigned int key, unsigned char enabled);
-static int db_get_hash_value(DB_DATABASE* database, const char* path, int sep, int* value_ptr);
 static int db_hash_string_to_key(const char* path, int sep, unsigned int* key_ptr);
-static void db_exit_hash_table(DB_DATABASE* database);
 static DB_FILE* db_add_fp_rec(FILE* stream, unsigned char* a2, int a3, int flags);
-static int db_delete_fp_rec(DB_FILE* stream);
 static int db_find_empty_position(int* position_ptr);
 static int db_find_dir_entry(char* path, dir_entry* de);
 static int db_findfirst(const char* path, DB_FIND_DATA* find_data);
@@ -101,7 +60,6 @@ static void internal_free(void* ptr);
 static void* db_default_malloc(size_t size);
 static char* db_default_strdup(const char* string);
 static void db_default_free(void* ptr);
-static void db_preload_buffer(DB_FILE* stream);
 static int fread_short(FILE* stream, unsigned short* s);
 
 static inline bool fileFindIsDirectory(DB_FIND_DATA* find_data);
@@ -111,7 +69,7 @@ static inline char* fileFindGetName(DB_FIND_DATA* find_data);
 static char empty_patches_path[] = "";
 
 // 0x539D34
-static DB_DATABASE* current_database = NULL;
+static DB_DATABASE* current_database = nullptr;
 
 // 0x539D38
 static bool db_used_malloc = false;
@@ -139,7 +97,7 @@ static size_t read_count = 0;
 static size_t read_threshold = 16384;
 
 // 0x539D54
-static db_read_callback* read_callback = NULL;
+static db_read_callback* read_callback = nullptr;
 
 // 0x6713C8
 static DB_DATABASE* database_list[DB_DATABASE_LIST_CAPACITY];
@@ -153,23 +111,23 @@ DB_DATABASE* db_init(const char* datafile, const char* datafile_path, const char
         return INVALID_DATABASE_HANDLE;
     }
 
-    if (db_init_database(database, datafile, datafile_path) != 0) {
-        db_close(database);
+    if (database->init_database(datafile, datafile_path) != 0) {
+        database->close();
         return INVALID_DATABASE_HANDLE;
     }
 
-    if (db_init_patches(database, patches_path) != 0) {
-        db_close(database);
+    if (database->init_patches(patches_path) != 0) {
+        database->close();
         return INVALID_DATABASE_HANDLE;
     }
 
-    if (current_database == NULL) {
+    if (current_database == nullptr) {
         current_database = database;
     }
 
     if (hash_is_on) {
-        if (db_init_hash_table(database) != 0) {
-            database->hash_table = NULL;
+        if (database->init_hash_table() != 0) {
+            database->hash_table = nullptr;
         }
     }
 
@@ -177,17 +135,13 @@ DB_DATABASE* db_init(const char* datafile, const char* datafile_path, const char
 }
 
 // 0x4AEF10
-int db_select(DB_DATABASE* db_handle)
+int DB_DATABASE::select()
 {
     int index;
 
-    if (db_handle == INVALID_DATABASE_HANDLE) {
-        return -1;
-    }
-
     for (index = 0; index < DB_DATABASE_LIST_CAPACITY; index++) {
-        if (database_list[index] == db_handle) {
-            current_database = database_list[index];
+        if (database_list[index] == this) {
+            current_database = this;
             return 0;
         }
     }
@@ -198,7 +152,7 @@ int db_select(DB_DATABASE* db_handle)
 // 0x4AEF54
 DB_DATABASE* db_current()
 {
-    if (current_database != NULL) {
+    if (current_database != nullptr) {
         return current_database;
     }
 
@@ -213,7 +167,7 @@ int db_total()
 
     count = 0;
     for (index = 0; index < DB_DATABASE_LIST_CAPACITY; index++) {
-        if (database_list[index] != NULL) {
+        if (database_list[index] != nullptr) {
             count++;
         }
     }
@@ -222,23 +176,19 @@ int db_total()
 }
 
 // 0x4AEF88
-int db_close(DB_DATABASE* db_handle)
+int DB_DATABASE::close()
 {
     int index;
 
-    if (db_handle == NULL || db_handle == INVALID_DATABASE_HANDLE) {
-        return -1;
-    }
-
     for (index = 0; index < DB_DATABASE_LIST_CAPACITY; index++) {
-        if (database_list[index] == (DB_DATABASE*)db_handle) {
+        if (database_list[index] == this) {
             if (database_list[index] == current_database) {
-                current_database = NULL;
+                current_database = nullptr;
             }
 
-            db_exit_database(database_list[index]);
-            db_exit_patches(database_list[index]);
-            db_exit_hash_table(database_list[index]);
+            database_list[index]->exit_database();
+            database_list[index]->exit_patches();
+            database_list[index]->exit_hash_table();
             db_destroy_database(&(database_list[index]));
 
             return 0;
@@ -254,8 +204,8 @@ void db_exit()
     int index;
 
     for (index = 0; index < DB_DATABASE_LIST_CAPACITY; index++) {
-        if (database_list[index] != NULL) {
-            db_close(database_list[index]);
+        if (database_list[index] != nullptr) {
+            database_list[index]->close();
         }
     }
 }
@@ -269,15 +219,15 @@ int db_dir_entry(const char* name, dir_entry* de)
     int value;
     FILE* stream;
 
-    if (current_database == NULL) {
+    if (current_database == nullptr) {
         return -1;
     }
 
-    if (name == NULL) {
+    if (name == nullptr) {
         return -1;
     }
 
-    if (de == NULL) {
+    if (de == nullptr) {
         return -1;
     }
 
@@ -287,8 +237,8 @@ int db_dir_entry(const char* name, dir_entry* de)
         v2 = false;
     }
 
-    if (current_database->patches_path != NULL) {
-        stream = NULL;
+    if (current_database->patches_path != nullptr) {
+        stream = nullptr;
         v3 = false;
 
         if (v2) {
@@ -297,7 +247,7 @@ int db_dir_entry(const char* name, dir_entry* de)
 
         compat_windows_path_to_native(path);
 
-        if (db_get_hash_value(current_database, path, PATH_SEP, &value) != 0 || value == 1) {
+        if (current_database->get_hash_value(path, PATH_SEP, &value) != 0 || value == 1) {
             v3 = true;
         }
 
@@ -305,7 +255,7 @@ int db_dir_entry(const char* name, dir_entry* de)
             stream = compat_fopen(path, "rb");
         }
 
-        if (stream != NULL) {
+        if (stream != nullptr) {
             de->flags = 4;
             de->offset = 0;
             de->length = getFileSize(stream);
@@ -315,7 +265,7 @@ int db_dir_entry(const char* name, dir_entry* de)
         }
     }
 
-    if (current_database->datafile == NULL) {
+    if (current_database->datafile == nullptr) {
         return -1;
     }
 
@@ -354,15 +304,15 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
     unsigned char* end;
     unsigned short v4;
 
-    if (current_database == NULL) {
+    if (current_database == nullptr) {
         return -1;
     }
 
-    if (filename == NULL) {
+    if (filename == nullptr) {
         return -1;
     }
 
-    if (buf == NULL) {
+    if (buf == nullptr) {
         return -1;
     }
 
@@ -372,8 +322,8 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
         v1 = false;
     }
 
-    if (current_database->patches_path != NULL) {
-        stream = NULL;
+    if (current_database->patches_path != nullptr) {
+        stream = nullptr;
         v3 = false;
 
         if (v1) {
@@ -382,7 +332,7 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
 
         compat_windows_path_to_native(path);
 
-        if (db_get_hash_value(current_database, path, PATH_SEP, &hash_value) != 0 || hash_value == 1) {
+        if (current_database->get_hash_value(path, PATH_SEP, &hash_value) != 0 || hash_value == 1) {
             v3 = true;
         }
 
@@ -390,9 +340,9 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
             stream = compat_fopen(path, "rb");
         }
 
-        if (stream != NULL) {
+        if (stream != nullptr) {
             size = getFileSize(stream);
-            if (read_callback != NULL) {
+            if (read_callback != nullptr) {
                 remaining_size = size;
                 chunk_size = read_threshold - read_count;
 
@@ -421,7 +371,7 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
         }
     }
 
-    if (current_database->datafile == NULL) {
+    if (current_database->datafile == nullptr) {
         return -1;
     }
 
@@ -435,7 +385,7 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
         return -1;
     }
 
-    if (current_database->stream == NULL) {
+    if (current_database->stream == nullptr) {
         return -1;
     }
 
@@ -452,7 +402,7 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
         lzss_decode_to_buf(current_database->stream, buf, de.field_C);
         break;
     case 32:
-        if (read_callback != NULL) {
+        if (read_callback != nullptr) {
             remaining_size = de.length;
             chunk_size = read_threshold - read_count;
 
@@ -477,7 +427,7 @@ int db_read_to_buf(const char* filename, unsigned char* buf)
         break;
     case 64:
         end = buf + de.length;
-        if (read_callback != NULL) {
+        if (read_callback != nullptr) {
             while (buf < end) {
                 if (fread_short(current_database->stream, &v4) == 0) {
                     if ((v4 & 0x8000) != 0) {
@@ -533,20 +483,20 @@ DB_FILE* db_fopen(const char* filename, const char* mode)
     dir_entry de;
     unsigned char* buf;
 
-    if (current_database == NULL) {
-        return NULL;
+    if (current_database == nullptr) {
+        return nullptr;
     }
 
-    if (filename == NULL) {
-        return NULL;
+    if (filename == nullptr) {
+        return nullptr;
     }
 
-    if (mode == NULL) {
-        return NULL;
+    if (mode == nullptr) {
+        return nullptr;
     }
 
     if (current_database->files_length >= DB_DATABASE_FILE_LIST_CAPACITY) {
-        return NULL;
+        return nullptr;
     }
 
     mode_value = -1;
@@ -568,10 +518,10 @@ DB_FILE* db_fopen(const char* filename, const char* mode)
     }
 
     if (mode_value == -1) {
-        return NULL;
+        return nullptr;
     }
 
-    stream = NULL;
+    stream = nullptr;
     flags = 1;
     if (mode_is_text) {
         flags = 2;
@@ -583,7 +533,7 @@ DB_FILE* db_fopen(const char* filename, const char* mode)
         v1 = false;
     }
 
-    if (current_database->patches_path != NULL) {
+    if (current_database->patches_path != nullptr) {
         v2 = false;
 
         if (v1) {
@@ -593,10 +543,10 @@ DB_FILE* db_fopen(const char* filename, const char* mode)
         compat_windows_path_to_native(path);
 
         if (mode_value == 0) {
-            db_add_hash_entry_to_database(current_database, path, PATH_SEP);
+            current_database->add_hash_entry(path, PATH_SEP);
             v2 = true;
         } else {
-            if (db_get_hash_value(current_database, path, PATH_SEP, &hash_value) != 0 || hash_value == 1) {
+            if (current_database->get_hash_value(path, PATH_SEP, &hash_value) != 0 || hash_value == 1) {
                 v2 = true;
             }
         }
@@ -605,17 +555,17 @@ DB_FILE* db_fopen(const char* filename, const char* mode)
             stream = compat_fopen(path, mode);
         }
 
-        if (stream != NULL) {
-            return db_add_fp_rec(stream, NULL, 0, flags | 0x4);
+        if (stream != nullptr) {
+            return db_add_fp_rec(stream, nullptr, 0, flags | 0x4);
         }
     }
 
     if (mode_value == 0) {
-        return NULL;
+        return nullptr;
     }
 
-    if (current_database->datafile == NULL) {
-        return NULL;
+    if (current_database->datafile == nullptr) {
+        return nullptr;
     }
 
     if (v1) {
@@ -625,15 +575,15 @@ DB_FILE* db_fopen(const char* filename, const char* mode)
     compat_strupr(path);
 
     if (db_find_dir_entry(path, &de) == -1) {
-        return NULL;
+        return nullptr;
     }
 
-    if (current_database->stream == NULL) {
-        return NULL;
+    if (current_database->stream == nullptr) {
+        return nullptr;
     }
 
     if (fseek(current_database->stream, de.offset, SEEK_SET) != 0) {
-        return NULL;
+        return nullptr;
     }
 
     if (de.flags == 0) {
@@ -642,33 +592,33 @@ DB_FILE* db_fopen(const char* filename, const char* mode)
 
     switch (de.flags & 0xF0) {
     case 16:
-        buf = (unsigned char*)internal_malloc(de.length);
-        if (buf != NULL) {
+        buf = static_cast<unsigned char*>(internal_malloc(de.length));
+        if (buf != nullptr) {
             lzss_decode_to_buf(current_database->stream, buf, de.field_C);
-            return db_add_fp_rec(NULL, buf, de.length, flags | 0x10 | 0x8);
+            return db_add_fp_rec(nullptr, buf, de.length, flags | 0x10 | 0x8);
         }
         break;
     case 32:
-        return db_add_fp_rec(current_database->stream, NULL, de.length, flags | 0x20 | 0x8);
+        return db_add_fp_rec(current_database->stream, nullptr, de.length, flags | 0x20 | 0x8);
     case 64:
-        buf = (unsigned char*)internal_malloc(0x4000);
-        if (buf != NULL) {
+        buf = static_cast<unsigned char*>(internal_malloc(0x4000));
+        if (buf != nullptr) {
             return db_add_fp_rec(current_database->stream, buf, de.length, flags | 0x40 | 0x8);
         }
         break;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x4B2664
-int db_fclose(DB_FILE* stream)
+int DB_FILE::fclose()
 {
-    return db_delete_fp_rec(stream);
+    return deleteRecord();
 }
 
 // 0x4AFD50
-size_t db_fread(void* ptr, size_t size, size_t count, DB_FILE* stream)
+size_t DB_FILE::fread(void* ptr, size_t size, size_t count)
 {
     int remaining_size;
     int chunk_size;
@@ -677,57 +627,99 @@ size_t db_fread(void* ptr, size_t size, size_t count, DB_FILE* stream)
     size_t elements_read;
     size_t v1;
 
-    buf = (unsigned char*)ptr;
+    buf = reinterpret_cast<unsigned char*>(ptr);
     elements_read = 0;
 
-    if (stream != NULL) {
-        if ((stream->flags & 0x4) != 0) {
-            if (read_callback != NULL) {
-                remaining_size = size * count;
-                chunk_size = read_threshold - read_count;
+    if ((flags & 0x4) != 0) {
+        if (read_callback != nullptr) {
+            remaining_size = size * count;
+            chunk_size = read_threshold - read_count;
 
-                while (remaining_size >= chunk_size) {
-                    bytes_read = fread(buf, 1, chunk_size, stream->uncompressed_file_stream);
-                    buf += bytes_read;
-                    remaining_size -= bytes_read;
-                    elements_read += bytes_read;
+            while (remaining_size >= chunk_size) {
+                bytes_read = ::fread(buf, 1, chunk_size, uncompressed_file_stream);
+                buf += bytes_read;
+                remaining_size -= bytes_read;
+                elements_read += bytes_read;
 
-                    read_count = 0;
-                    read_callback();
+                read_count = 0;
+                read_callback();
 
-                    chunk_size = read_threshold;
-                }
-
-                if (remaining_size != 0) {
-                    elements_read += fread(buf, 1, remaining_size, stream->uncompressed_file_stream);
-                    read_count += remaining_size;
-                }
-
-                elements_read /= size;
-            } else {
-                elements_read = fread(buf, size, count, stream->uncompressed_file_stream);
+                chunk_size = read_threshold;
             }
+
+            if (remaining_size != 0) {
+                elements_read += ::fread(buf, 1, remaining_size, uncompressed_file_stream);
+                read_count += remaining_size;
+            }
+
+            elements_read /= size;
         } else {
-            if (ptr != NULL) {
-                switch (stream->flags & 0xF0) {
-                case 16:
-                    if (stream->field_10 != 0) {
-                        elements_read = stream->field_10 / size;
-                        if (elements_read > count) {
-                            elements_read = count;
+            elements_read = ::fread(buf, size, count, uncompressed_file_stream);
+        }
+    } else {
+        if (ptr != nullptr) {
+            switch (flags & 0xF0) {
+            case 16:
+                if (field_10 != 0) {
+                    elements_read = field_10 / size;
+                    if (elements_read > count) {
+                        elements_read = count;
+                    }
+
+                    if (elements_read != 0) {
+                        remaining_size = elements_read * size;
+                        if (read_callback != nullptr) {
+                            chunk_size = read_threshold - read_count;
+                            while (remaining_size >= chunk_size) {
+                                remaining_size -= chunk_size;
+                                memcpy(buf, field_20, chunk_size);
+
+                                buf += chunk_size;
+                                field_20 += chunk_size;
+                                field_10 -= chunk_size;
+
+                                read_count = 0;
+                                read_callback();
+
+                                chunk_size = read_threshold;
+                            }
+
+                            if (remaining_size != 0) {
+                                memcpy(buf, field_20, remaining_size);
+                                field_20 += remaining_size;
+                                field_10 -= remaining_size;
+                                read_count += remaining_size;
+                            }
+                        } else {
+                            memcpy(ptr, field_20, remaining_size);
+                            field_20 += remaining_size;
+                            field_10 -= remaining_size;
                         }
+                    }
+                }
+                break;
+            case 32:
+                if (field_10 != 0) {
+                    elements_read = field_10 / size;
+                    if (elements_read > count) {
+                        elements_read = count;
+                    }
 
-                        if (elements_read != 0) {
-                            remaining_size = elements_read * size;
-                            if (read_callback != NULL) {
+                    if (elements_read != 0) {
+                        if (::fseek(database->stream, field_18, SEEK_SET) == 0) {
+                            if (read_callback != nullptr) {
+                                remaining_size = elements_read * size;
                                 chunk_size = read_threshold - read_count;
-                                while (remaining_size >= chunk_size) {
-                                    remaining_size -= chunk_size;
-                                    memcpy(buf, stream->field_20, chunk_size);
 
-                                    buf += chunk_size;
-                                    stream->field_20 += chunk_size;
-                                    stream->field_10 -= chunk_size;
+                                // CE: Reuse `elements_read` to represent
+                                // number of bytes read.
+                                elements_read = 0;
+
+                                while (remaining_size >= chunk_size) {
+                                    bytes_read = ::fread(buf, 1, chunk_size, database->stream);
+                                    buf += bytes_read;
+                                    remaining_size -= bytes_read;
+                                    elements_read += bytes_read;
 
                                     read_count = 0;
                                     read_callback();
@@ -736,144 +728,100 @@ size_t db_fread(void* ptr, size_t size, size_t count, DB_FILE* stream)
                                 }
 
                                 if (remaining_size != 0) {
-                                    memcpy(buf, stream->field_20, remaining_size);
-                                    stream->field_20 += remaining_size;
-                                    stream->field_10 -= remaining_size;
+                                    elements_read += ::fread(buf, 1, remaining_size, database->stream);
                                     read_count += remaining_size;
                                 }
+
+                                field_18 = ::ftell(database->stream);
+                                field_10 -= elements_read * size;
+
+                                elements_read /= size;
                             } else {
-                                memcpy(ptr, stream->field_20, remaining_size);
-                                stream->field_20 += remaining_size;
-                                stream->field_10 -= remaining_size;
+                                elements_read = ::fread(buf, size, elements_read, database->stream);
+                                field_18 = ::ftell(database->stream);
+                                field_10 -= elements_read * size;
                             }
                         }
                     }
-                    break;
-                case 32:
-                    if (stream->field_10 != 0) {
-                        elements_read = stream->field_10 / size;
-                        if (elements_read > count) {
-                            elements_read = count;
-                        }
-
-                        if (elements_read != 0) {
-                            if (fseek(stream->database->stream, stream->field_18, SEEK_SET) == 0) {
-                                if (read_callback != NULL) {
-                                    remaining_size = elements_read * size;
-                                    chunk_size = read_threshold - read_count;
-
-                                    // CE: Reuse `elements_read` to represent
-                                    // number of bytes read.
-                                    elements_read = 0;
-
-                                    while (remaining_size >= chunk_size) {
-                                        bytes_read = fread(buf, 1, chunk_size, stream->database->stream);
-                                        buf += bytes_read;
-                                        remaining_size -= bytes_read;
-                                        elements_read += bytes_read;
-
-                                        read_count = 0;
-                                        read_callback();
-
-                                        chunk_size = read_threshold;
-                                    }
-
-                                    if (remaining_size != 0) {
-                                        elements_read += fread(buf, 1, remaining_size, stream->database->stream);
-                                        read_count += remaining_size;
-                                    }
-
-                                    stream->field_18 = ftell(stream->database->stream);
-                                    stream->field_10 -= elements_read * size;
-
-                                    elements_read /= size;
-                                } else {
-                                    elements_read = fread(buf, size, elements_read, stream->database->stream);
-                                    stream->field_18 = ftell(stream->database->stream);
-                                    stream->field_10 -= elements_read * size;
-                                }
-                            }
-                        }
-                    }
-                    break;
-                case 64:
-                    if (stream->field_10 != 0) {
-                        elements_read = stream->field_10 / size;
-                        if (elements_read > count) {
-                            elements_read = count;
-                        }
-
-                        if (elements_read != 0) {
-                            remaining_size = elements_read * size;
-                            if (read_callback != NULL) {
-                                chunk_size = read_threshold - read_count;
-                                while (remaining_size > chunk_size) {
-                                    db_preload_buffer(stream);
-
-                                    v1 = stream->field_1C - (stream->field_20 - 0x4000);
-                                    if (v1 > chunk_size) {
-                                        v1 = chunk_size;
-                                    }
-
-                                    // FIXME: Copying same data twice.
-                                    memcpy(buf, stream->field_20, v1);
-                                    memcpy(buf, stream->field_20, v1);
-
-                                    stream->field_20 += v1;
-                                    stream->field_10 -= v1;
-
-                                    buf += v1;
-                                    remaining_size -= v1;
-
-                                    read_count += v1;
-                                    if (read_count >= read_threshold) {
-                                        read_count = 0;
-                                        read_callback();
-                                    }
-
-                                    chunk_size = read_threshold - read_count;
-                                }
-
-                                while (remaining_size != 0) {
-                                    db_preload_buffer(stream);
-
-                                    v1 = stream->field_1C - (stream->field_20 - 0x4000);
-                                    if (v1 > remaining_size) {
-                                        v1 = remaining_size;
-                                    }
-
-                                    memcpy(buf, stream->field_20, v1);
-
-                                    buf += v1;
-                                    remaining_size -= v1;
-
-                                    stream->field_20 += v1;
-                                    stream->field_10 -= v1;
-
-                                    read_count += v1;
-                                }
-                            } else {
-                                while (remaining_size != 0) {
-                                    db_preload_buffer(stream);
-
-                                    v1 = stream->field_1C - (stream->field_20 - 0x4000);
-                                    if (v1 > remaining_size) {
-                                        v1 = remaining_size;
-                                    }
-
-                                    memcpy(buf, stream->field_20, v1);
-
-                                    buf += v1;
-                                    remaining_size -= v1;
-
-                                    stream->field_20 += v1;
-                                    stream->field_10 -= v1;
-                                }
-                            }
-                        }
-                    }
-                    break;
                 }
+                break;
+            case 64:
+                if (field_10 != 0) {
+                    elements_read = field_10 / size;
+                    if (elements_read > count) {
+                        elements_read = count;
+                    }
+
+                    if (elements_read != 0) {
+                        remaining_size = elements_read * size;
+                        if (read_callback != nullptr) {
+                            chunk_size = read_threshold - read_count;
+                            while (remaining_size > chunk_size) {
+                                preloadBuffer();
+
+                                v1 = field_1C - (field_20 - 0x4000);
+                                if (v1 > chunk_size) {
+                                    v1 = chunk_size;
+                                }
+
+                                // FIXME: Copying same data twice.
+                                memcpy(buf, field_20, v1);
+                                memcpy(buf, field_20, v1);
+
+                                field_20 += v1;
+                                field_10 -= v1;
+
+                                buf += v1;
+                                remaining_size -= v1;
+
+                                read_count += v1;
+                                if (read_count >= read_threshold) {
+                                    read_count = 0;
+                                    read_callback();
+                                }
+
+                                chunk_size = read_threshold - read_count;
+                            }
+
+                            while (remaining_size != 0) {
+                                preloadBuffer();
+
+                                v1 = field_1C - (field_20 - 0x4000);
+                                if (v1 > remaining_size) {
+                                    v1 = remaining_size;
+                                }
+
+                                memcpy(buf, field_20, v1);
+
+                                buf += v1;
+                                remaining_size -= v1;
+
+                                field_20 += v1;
+                                field_10 -= v1;
+
+                                read_count += v1;
+                            }
+                        } else {
+                            while (remaining_size != 0) {
+                                preloadBuffer();
+
+                                v1 = field_1C - (field_20 - 0x4000);
+                                if (v1 > remaining_size) {
+                                    v1 = remaining_size;
+                                }
+
+                                memcpy(buf, field_20, v1);
+
+                                buf += v1;
+                                remaining_size -= v1;
+
+                                field_20 += v1;
+                                field_10 -= v1;
+                            }
+                        }
+                    }
+                }
+                break;
             }
         }
     }
@@ -882,74 +830,72 @@ size_t db_fread(void* ptr, size_t size, size_t count, DB_FILE* stream)
 }
 
 // 0x4B02A0
-int db_fgetc(DB_FILE* stream)
+int DB_FILE::fgetc()
 {
     int ch = -1;
     int next_ch;
 
-    if (stream != NULL) {
-        if ((stream->flags & 0x4) != 0) {
-            ch = fgetc(stream->uncompressed_file_stream);
-        } else {
-            switch (stream->flags & 0xF0) {
-            case 16:
-                if (stream->field_10 != 0) {
-                    ch = *stream->field_20;
-                    stream->field_20++;
-                    stream->field_10--;
+    if ((flags & 0x4) != 0) {
+        ch = ::fgetc(uncompressed_file_stream);
+    } else {
+        switch (flags & 0xF0) {
+        case 16:
+            if (field_10 != 0) {
+                ch = *field_20;
+                field_20++;
+                field_10--;
 
-                    if (stream->field_10 != 0 && (stream->flags & 0x2) != 0 && ch == '\r') {
-                        next_ch = *stream->field_20;
-                        if (next_ch == '\n') {
-                            stream->field_20++;
-                            stream->field_10--;
-                            ch = '\n';
-                        }
+                if (field_10 != 0 && (flags & 0x2) != 0 && ch == '\r') {
+                    next_ch = *field_20;
+                    if (next_ch == '\n') {
+                        field_20++;
+                        field_10--;
+                        ch = '\n';
                     }
                 }
-                break;
-            case 32:
-                if (stream->field_10 != 0) {
-                    if (fseek(stream->database->stream, stream->field_18, SEEK_SET) == 0) {
-                        ch = fgetc(stream->database->stream);
-                        stream->field_10 -= 1;
-
-                        if (stream->field_10 != 0 && (stream->flags & 0x2) != 0 && ch == '\r') {
-                            next_ch = fgetc(stream->database->stream);
-                            if (next_ch == '\n') {
-                                stream->field_10--;
-                                ch = '\n';
-                            } else {
-                                ungetc(next_ch, stream->database->stream);
-                            }
-                        }
-                        stream->field_18 = ftell(stream->database->stream);
-                    }
-                }
-                break;
-            case 64:
-                db_preload_buffer(stream);
-
-                if (stream->field_10 != 0) {
-                    ch = *stream->field_20;
-                    stream->field_20++;
-                    stream->field_10--;
-
-                    if (stream->field_10 != 0 && (stream->flags & 0x2) != 0 && ch == '\r') {
-                        next_ch = *stream->field_20;
-                        if (next_ch == '\n') {
-                            stream->field_20++;
-                            stream->field_10--;
-                            ch = '\n';
-                        }
-                    }
-                }
-                break;
             }
+            break;
+        case 32:
+            if (field_10 != 0) {
+                if (::fseek(database->stream, field_18, SEEK_SET) == 0) {
+                    ch = ::fgetc(database->stream);
+                    field_10 -= 1;
+
+                    if (field_10 != 0 && (flags & 0x2) != 0 && ch == '\r') {
+                        next_ch = ::fgetc(database->stream);
+                        if (next_ch == '\n') {
+                            field_10--;
+                            ch = '\n';
+                        } else {
+                            ::ungetc(next_ch, database->stream);
+                        }
+                    }
+                    field_18 = ::ftell(database->stream);
+                }
+            }
+            break;
+        case 64:
+            preloadBuffer();
+
+            if (field_10 != 0) {
+                ch = *field_20;
+                field_20++;
+                field_10--;
+
+                if (field_10 != 0 && (flags & 0x2) != 0 && ch == '\r') {
+                    next_ch = *field_20;
+                    if (next_ch == '\n') {
+                        field_20++;
+                        field_10--;
+                        ch = '\n';
+                    }
+                }
+            }
+            break;
         }
     }
 
-    if (read_callback != NULL) {
+    if (read_callback != nullptr) {
         read_count++;
         if (read_count >= read_threshold) {
             read_callback();
@@ -961,38 +907,36 @@ int db_fgetc(DB_FILE* stream)
 }
 
 // 0x4B03F0
-int db_ungetc(int ch, DB_FILE* stream)
+int DB_FILE::ungetc(int ch)
 {
-    if (stream != NULL) {
-        if ((stream->flags & 0x4) != 0) {
-            return ungetc(ch, stream->uncompressed_file_stream);
-        } else {
-            // NOTE: Original implementation looks broken, it does not return
-            // `ch` into stream, but steps back in read stream.
-            switch (stream->flags & 0xF0) {
-            case 16:
-                if (stream->field_20 != stream->field_1C) {
-                    stream->field_20--;
-                    stream->field_10++;
-                }
-                break;
-            case 32:
-                if (stream->field_18 != stream->field_14) {
-                    if (fseek(stream->database->stream, stream->field_18, SEEK_SET) == 0) {
-                        if (fseek(stream->database->stream, -1, SEEK_CUR) == 0) {
-                            stream->field_18 = ftell(stream->database->stream);
-                            stream->field_10++;
-                        }
+    if ((flags & 0x4) != 0) {
+        return ::ungetc(ch, uncompressed_file_stream);
+    } else {
+        // NOTE: Original implementation looks broken, it does not return
+        // `ch` into stream, but steps back in read stream.
+        switch (flags & 0xF0) {
+        case 16:
+            if (field_20 != field_1C) {
+                field_20--;
+                field_10++;
+            }
+            break;
+        case 32:
+            if (field_18 != field_14) {
+                if (::fseek(database->stream, field_18, SEEK_SET) == 0) {
+                    if (::fseek(database->stream, -1, SEEK_CUR) == 0) {
+                        field_18 = ::ftell(database->stream);
+                        field_10++;
                     }
                 }
-                break;
-            case 64:
-                if (stream->field_20 != stream->field_1C) {
-                    stream->field_20--;
-                    stream->field_10++;
-                }
-                break;
             }
+            break;
+        case 64:
+            if (field_20 != field_1C) {
+                field_20--;
+                field_10++;
+            }
+            break;
         }
     }
 
@@ -1000,36 +944,34 @@ int db_ungetc(int ch, DB_FILE* stream)
 }
 
 // 0x4B04A4
-char* db_fgets(char* string, size_t size, DB_FILE* stream)
+char* DB_FILE::fgets(char* string, size_t size)
 {
-    char* res = NULL;
+    char* res = nullptr;
     size_t index;
     int ch;
 
-    if (stream != NULL) {
-        if ((stream->flags & 0x4) != 0) {
-            res = fgets(string, size, stream->uncompressed_file_stream);
-        } else {
-            if (string != NULL) {
-                for (index = 0; index < size - 1; index++) {
-                    ch = db_fgetc(stream);
-                    if (ch == -1) {
-                        break;
-                    }
-
-                    string[index] = ch;
-
-                    if (ch == '\n') {
-                        index++;
-                        break;
-                    }
+    if ((flags & 0x4) != 0) {
+        res = ::fgets(string, size, uncompressed_file_stream);
+    } else {
+        if (string != nullptr) {
+            for (index = 0; index < size - 1; index++) {
+                ch = fgetc();
+                if (ch == -1) {
+                    break;
                 }
 
-                string[index] = '\0';
+                string[index] = ch;
 
-                if (index != 0) {
-                    res = string;
+                if (ch == '\n') {
+                    index++;
+                    break;
                 }
+            }
+
+            string[index] = '\0';
+
+            if (index != 0) {
+                res = string;
             }
         }
     }
@@ -1038,81 +980,79 @@ char* db_fgets(char* string, size_t size, DB_FILE* stream)
 }
 
 // 0x4B051C
-int db_fseek(DB_FILE* stream, long offset, int origin)
+int DB_FILE::fseek(long offset, int origin)
 {
     int rc = -1;
     long current_offset;
     unsigned char* v1;
     int chunks;
 
-    if (stream != NULL) {
-        if ((stream->flags & 0x4) != 0) {
-            rc = fseek(stream->uncompressed_file_stream, offset, origin);
-        } else {
-            current_offset = db_ftell(stream);
+    if ((flags & 0x4) != 0) {
+        rc = ::fseek(uncompressed_file_stream, offset, origin);
+    } else {
+        current_offset = ftell();
 
-            switch (origin) {
-            case SEEK_SET:
-                break;
-            case SEEK_CUR:
-                offset += current_offset;
-                break;
-            case SEEK_END:
-                offset += stream->field_C;
-                break;
-            default:
-                offset = -1;
-                break;
-            }
+        switch (origin) {
+        case SEEK_SET:
+            break;
+        case SEEK_CUR:
+            offset += current_offset;
+            break;
+        case SEEK_END:
+            offset += field_C;
+            break;
+        default:
+            offset = -1;
+            break;
+        }
 
-            if (offset < 0 || offset > stream->field_C) {
-                return -1;
-            }
+        if (offset < 0 || offset > field_C) {
+            return -1;
+        }
 
-            switch (stream->flags & 0xF0) {
-            case 16:
-                stream->field_20 = stream->field_1C + offset;
-                stream->field_10 = stream->field_C - offset;
+        switch (flags & 0xF0) {
+        case 16:
+            field_20 = field_1C + offset;
+            field_10 = field_C - offset;
+            rc = 0;
+            break;
+        case 32:
+            if (::fseek(database->stream, field_14 + offset, SEEK_SET) == 0) {
+                field_18 = ::ftell(database->stream);
+                field_10 = field_C - offset;
                 rc = 0;
-                break;
-            case 32:
-                if (fseek(stream->database->stream, stream->field_14 + offset, SEEK_SET) == 0) {
-                    stream->field_18 = ftell(stream->database->stream);
-                    stream->field_10 = stream->field_C - offset;
-                    rc = 0;
-                }
-                break;
-            case 64:
-                v1 = stream->field_20 + offset - current_offset;
-                if (v1 >= stream->field_1C && v1 < stream->field_1C + 0x4000) {
-                    stream->field_20 = v1;
-                    stream->field_10 = current_offset - offset;
-                    rc = 0;
+            }
+            break;
+        case 64:
+            v1 = field_20 + offset - current_offset;
+            if (v1 >= field_1C && v1 < field_1C + 0x4000) {
+                field_20 = v1;
+                field_10 = current_offset - offset;
+                rc = 0;
+            } else {
+                if (offset < current_offset) {
+                    rewind();
+                    chunks = offset / 0x4000;
                 } else {
-                    if (offset < current_offset) {
-                        db_rewind(stream);
-                        chunks = offset / 0x4000;
-                    } else {
-                        stream->field_10 -= stream->field_1C - (stream->field_20 - 0x4000);
-                        stream->field_20 = stream->field_1C + 0x4000;
-                        db_preload_buffer(stream);
-                        chunks = (offset - db_ftell(stream)) / 0x4000;
-                    }
-
-                    while (chunks > 0) {
-                        stream->field_10 -= 0x4000;
-                        stream->field_20 = stream->field_1C + 0x4000;
-                        db_preload_buffer(stream);
-                        chunks--;
-                    }
-
-                    if (offset % 0x4000 != 0) {
-                        stream->field_10 -= offset % 0x4000;
-                        stream->field_20 += offset % 0x4000;
-                    }
-
-                    stream->field_10 = stream->field_C - offset;
+                    field_10 -= field_1C - (field_20 - 0x4000);
+                    field_20 = field_1C + 0x4000;
+                    preloadBuffer();
+                    chunks = (offset - ftell()) / 0x4000;
                 }
+
+                while (chunks > 0) {
+                    field_10 -= 0x4000;
+                    field_20 = field_1C + 0x4000;
+                    preloadBuffer();
+                    chunks--;
+                }
+
+                if (offset % 0x4000 != 0) {
+                    field_10 -= offset % 0x4000;
+                    field_20 += offset % 0x4000;
+                }
+
+                field_10 = field_C - offset;
             }
         }
     }
@@ -1121,19 +1061,17 @@ int db_fseek(DB_FILE* stream, long offset, int origin)
 }
 
 // 0x4B06A8
-long db_ftell(DB_FILE* stream)
+long DB_FILE::ftell()
 {
-    if (stream != NULL) {
-        if ((stream->flags & 0x4) != 0) {
-            return ftell(stream->uncompressed_file_stream);
-        } else {
-            switch (stream->flags & 0xF0) {
-            case 16:
-                return stream->field_C - stream->field_10;
-            case 32:
-            case 64:
-                return stream->field_C - stream->field_10;
-            }
+    if ((flags & 0x4) != 0) {
+        return ::ftell(uncompressed_file_stream);
+    } else {
+        switch (flags & 0xF0) {
+        case 16:
+            return field_C - field_10;
+        case 32:
+        case 64:
+            return field_C - field_10;
         }
     }
 
@@ -1141,66 +1079,64 @@ long db_ftell(DB_FILE* stream)
 }
 
 // 0x4B06F4
-void db_rewind(DB_FILE* stream)
+void DB_FILE::rewind()
 {
-    if (stream != NULL) {
-        if ((stream->flags & 0x4) != 0) {
-            rewind(stream->uncompressed_file_stream);
-        } else {
-            switch (stream->flags & 0xF0) {
-            case 16:
-                stream->field_10 = stream->field_C;
-                stream->field_20 = stream->field_1C;
-                break;
-            case 32:
-                stream->field_18 = stream->field_14;
-                stream->field_10 = stream->field_C;
-                break;
-            case 64:
-                stream->field_10 = stream->field_C;
-                stream->field_20 = stream->field_1C + 16384;
-                stream->field_18 = stream->field_14;
-                db_preload_buffer(stream);
-                break;
-            }
+    if ((flags & 0x4) != 0) {
+        ::rewind(uncompressed_file_stream);
+    } else {
+        switch (flags & 0xF0) {
+        case 16:
+            field_10 = field_C;
+            field_20 = field_1C;
+            break;
+        case 32:
+            field_18 = field_14;
+            field_10 = field_C;
+            break;
+        case 64:
+            field_10 = field_C;
+            field_20 = field_1C + 16384;
+            field_18 = field_14;
+            preloadBuffer();
+            break;
         }
     }
 }
 
 // 0x4B0764
-size_t db_fwrite(const void* buf, size_t size, size_t count, DB_FILE* stream)
+size_t DB_FILE::fwrite(const void* buf, size_t size, size_t count)
 {
-    if (stream != NULL && (stream->flags & 0x4) != 0) {
-        return fwrite(buf, size, count, stream->uncompressed_file_stream);
+    if ((flags & 0x4) != 0) {
+        return ::fwrite(buf, size, count, uncompressed_file_stream);
     }
 
     return count - 1;
 }
 
 // 0x4B077C
-int db_fputc(int ch, DB_FILE* stream)
+int DB_FILE::fputc(int ch)
 {
-    if (stream != NULL && (stream->flags & 0x4) != 0) {
-        return fputc(ch, stream->uncompressed_file_stream);
+    if ((flags & 0x4) != 0) {
+        return ::fputc(ch, uncompressed_file_stream);
     }
 
     return -1;
 }
 
 // 0x4B0794
-int db_fputs(const char* string, DB_FILE* stream)
+int DB_FILE::fputs(const char* string)
 {
-    if (stream != NULL && (stream->flags & 0x4) != 0) {
-        return fputs(string, stream->uncompressed_file_stream);
+    if ((flags & 0x4) != 0) {
+        return ::fputs(string, uncompressed_file_stream);
     }
 
     return -1;
 }
 
 // 0x4B07AC
-int db_freadByte(DB_FILE* stream, unsigned char* c)
+int DB_FILE::freadByte(unsigned char* c)
 {
-    int value = db_fgetc(stream);
+    int value = fgetc();
     if (value == -1) {
         return -1;
     }
@@ -1211,18 +1147,18 @@ int db_freadByte(DB_FILE* stream, unsigned char* c)
 }
 
 // 0x4B07C0
-int db_freadShort(DB_FILE* stream, unsigned short* s)
+int DB_FILE::freadShort(unsigned short* s)
 {
     unsigned char high;
     unsigned char low;
 
     // NOTE: Uninline.
-    if (db_freadByte(stream, &high) == -1) {
+    if (freadByte(&high) == -1) {
         return -1;
     }
 
     // NOTE: Uninline.
-    if (db_freadByte(stream, &low) == -1) {
+    if (freadByte(&low) == -1) {
         return -1;
     }
 
@@ -1232,16 +1168,16 @@ int db_freadShort(DB_FILE* stream, unsigned short* s)
 }
 
 // 0x4B0820
-int db_freadInt(DB_FILE* stream, int* i)
+int DB_FILE::freadInt(int* i)
 {
     unsigned short high;
     unsigned short low;
 
-    if (db_freadShort(stream, &high) == -1) {
+    if (freadShort(&high) == -1) {
         return -1;
     }
 
-    if (db_freadShort(stream, &low) == -1) {
+    if (freadShort(&low) == -1) {
         return -1;
     }
 
@@ -1251,38 +1187,38 @@ int db_freadInt(DB_FILE* stream, int* i)
 }
 
 // 0x4B0820
-int db_freadLong(DB_FILE* stream, unsigned long* l)
+int DB_FILE::freadLong(unsigned long* l)
 {
     int i;
 
-    if (db_freadInt(stream, &i) == -1) {
+    if (freadInt(&i) == -1) {
         return -1;
     }
 
-    *l = (unsigned long)i;
+    *l = static_cast<unsigned long>(i);
 
     return 0;
 }
 
 // 0x4B0820
-int db_freadFloat(DB_FILE* stream, float* q)
+int DB_FILE::freadFloat(float* q)
 {
     unsigned long l;
 
-    if (db_freadLong(stream, &l) == -1) {
+    if (freadLong(&l) == -1) {
         return -1;
     }
 
-    *q = *(float*)&l;
+    *q = *reinterpret_cast<float*>(&l);
 
     return 0;
 }
 
 // 0x4B0870
-int db_fwriteByte(DB_FILE* stream, unsigned char c)
+int DB_FILE::fwriteByte(unsigned char c)
 {
     // NOTE: Uninline.
-    if (db_fputc(c, stream) == -1) {
+    if (fputc(c) == -1) {
         return -1;
     }
 
@@ -1290,15 +1226,15 @@ int db_fwriteByte(DB_FILE* stream, unsigned char c)
 };
 
 // 0x4B08A0
-int db_fwriteShort(DB_FILE* stream, unsigned short s)
+int DB_FILE::fwriteShort(unsigned short s)
 {
     // NOTE: Uninline.
-    if (db_fwriteByte(stream, s >> 8) == -1) {
+    if (fwriteByte(s >> 8) == -1) {
         return -1;
     }
 
     // NOTE: Uninline.
-    if (db_fwriteByte(stream, s & 0xFF) == -1) {
+    if (fwriteByte(s & 0xFF) == -1) {
         return -1;
     }
 
@@ -1306,13 +1242,13 @@ int db_fwriteShort(DB_FILE* stream, unsigned short s)
 }
 
 // 0x4B08EC
-int db_fwriteInt(DB_FILE* stream, int i)
+int DB_FILE::fwriteInt(int i)
 {
-    if (db_fwriteShort(stream, i >> 16) == -1) {
+    if (fwriteShort(i >> 16) == -1) {
         return -1;
     }
 
-    if (db_fwriteShort(stream, i & 0xFFFF) == -1) {
+    if (fwriteShort(i & 0xFFFF) == -1) {
         return -1;
     }
 
@@ -1320,28 +1256,28 @@ int db_fwriteInt(DB_FILE* stream, int i)
 }
 
 // 0x4C6244
-int db_fwriteLong(DB_FILE* stream, unsigned long l)
+int DB_FILE::fwriteLong(unsigned long l)
 {
     // NOTE: Uninline.
-    return db_fwriteInt(stream, l);
+    return fwriteInt(l);
 }
 
 // 0x4B099C
-int db_fwriteFloat(DB_FILE* stream, float q)
+int DB_FILE::fwriteFloat(float q)
 {
     // NOTE: Uninline.
-    return db_fwriteLong(stream, *(unsigned long*)&q);
+    return fwriteLong(*reinterpret_cast<unsigned long*>(&q));
 }
 
 // 0x4B09D4
-int db_freadByteCount(DB_FILE* stream, unsigned char* c, int count)
+int DB_FILE::freadByteCount(unsigned char* c, int count)
 {
     int index;
     unsigned char value;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_freadByte(stream, &value) == -1) {
+        if (freadByte(&value) == -1) {
             return -1;
         }
 
@@ -1352,14 +1288,14 @@ int db_freadByteCount(DB_FILE* stream, unsigned char* c, int count)
 }
 
 // 0x4B0A14
-int db_freadShortCount(DB_FILE* stream, unsigned short* s, int count)
+int DB_FILE::freadShortCount(unsigned short* s, int count)
 {
     int index;
     unsigned short value;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_freadShort(stream, &value) == -1) {
+        if (freadShort(&value) == -1) {
             return -1;
         }
 
@@ -1370,14 +1306,14 @@ int db_freadShortCount(DB_FILE* stream, unsigned short* s, int count)
 }
 
 // 0x4B0AB0
-int db_freadIntCount(DB_FILE* stream, int* i, int count)
+int DB_FILE::freadIntCount(int* i, int count)
 {
     int index;
     int value;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_freadInt(stream, &value) == -1) {
+        if (freadInt(&value) == -1) {
             return -1;
         }
 
@@ -1388,14 +1324,14 @@ int db_freadIntCount(DB_FILE* stream, int* i, int count)
 }
 
 // 0x4B0AB0
-int db_freadLongCount(DB_FILE* stream, unsigned long* l, int count)
+int DB_FILE::freadLongCount(unsigned long* l, int count)
 {
     int index;
     unsigned long value;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_freadLong(stream, &value) == -1) {
+        if (freadLong(&value) == -1) {
             return -1;
         }
 
@@ -1406,14 +1342,14 @@ int db_freadLongCount(DB_FILE* stream, unsigned long* l, int count)
 }
 
 // 0x4B0AB0
-int db_freadFloatCount(DB_FILE* stream, float* q, int count)
+int DB_FILE::freadFloatCount(float* q, int count)
 {
     int index;
     float value;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_freadFloat(stream, &value) == -1) {
+        if (freadFloat(&value) == -1) {
             return -1;
         }
 
@@ -1424,13 +1360,13 @@ int db_freadFloatCount(DB_FILE* stream, float* q, int count)
 }
 
 // 0x4B0B80
-int db_fwriteByteCount(DB_FILE* stream, unsigned char* c, int count)
+int DB_FILE::fwriteByteCount(unsigned char* c, int count)
 {
     int index;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_fwriteByte(stream, c[index]) == -1) {
+        if (fwriteByte(c[index]) == -1) {
             return -1;
         }
     }
@@ -1439,13 +1375,13 @@ int db_fwriteByteCount(DB_FILE* stream, unsigned char* c, int count)
 }
 
 // 0x4B0BC8
-int db_fwriteShortCount(DB_FILE* stream, unsigned short* s, int count)
+int DB_FILE::fwriteShortCount(unsigned short* s, int count)
 {
     int index;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_fwriteShort(stream, s[index]) == -1) {
+        if (fwriteShort(s[index]) == -1) {
             return -1;
         }
     }
@@ -1454,13 +1390,13 @@ int db_fwriteShortCount(DB_FILE* stream, unsigned short* s, int count)
 }
 
 // 0x4B0C3C
-int db_fwriteIntCount(DB_FILE* stream, int* i, int count)
+int DB_FILE::fwriteIntCount(int* i, int count)
 {
     int index;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_fwriteInt(stream, i[index]) == -1) {
+        if (fwriteInt(i[index]) == -1) {
             return -1;
         }
     }
@@ -1469,13 +1405,13 @@ int db_fwriteIntCount(DB_FILE* stream, int* i, int count)
 }
 
 // 0x4B0C9C
-int db_fwriteLongCount(DB_FILE* stream, unsigned long* l, int count)
+int DB_FILE::fwriteLongCount(unsigned long* l, int count)
 {
     int index;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_fwriteLong(stream, l[index]) == -1) {
+        if (fwriteLong(l[index]) == -1) {
             return -1;
         }
     }
@@ -1484,13 +1420,13 @@ int db_fwriteLongCount(DB_FILE* stream, unsigned long* l, int count)
 }
 
 // 0x4B0D54
-int db_fwriteFloatCount(DB_FILE* stream, float* q, int count)
+int DB_FILE::fwriteFloatCount(float* q, int count)
 {
     int index;
 
     for (index = 0; index < count; index++) {
         // NOTE: Uninline.
-        if (db_fwriteFloat(stream, q[index]) == -1) {
+        if (fwriteFloat(q[index]) == -1) {
             return -1;
         }
     }
@@ -1539,14 +1475,14 @@ static int db_write_long(FILE* stream, int value)
 }
 
 // 0x4C5ED0
-int db_fprintf(DB_FILE* stream, const char* format, ...)
+int DB_FILE::fprintf(const char* format, ...)
 {
     int rc;
     va_list args;
 
     va_start(args, format);
-    if (stream != NULL && (stream->flags & 0x4) != 0) {
-        rc = vfprintf(stream->uncompressed_file_stream, format, args);
+    if ((flags & 0x4) != 0) {
+        rc = vfprintf(uncompressed_file_stream, format, args);
     } else {
         rc = -1;
     }
@@ -1556,21 +1492,17 @@ int db_fprintf(DB_FILE* stream, const char* format, ...)
 }
 
 // 0x4B0E98
-int db_feof(DB_FILE* stream)
+int DB_FILE::feof()
 {
-    if (stream == NULL) {
-        return -1;
-    }
-
-    if ((stream->flags & 0x4) != 0) {
-        return feof(stream->uncompressed_file_stream);
+    if ((flags & 0x4) != 0) {
+        return ::feof(uncompressed_file_stream);
     } else {
-        switch (stream->flags & 0xF0) {
+        switch (flags & 0xF0) {
         case 16:
-            return stream->field_10 == 0;
+            return field_10 == 0;
         case 32:
         case 64:
-            return stream->field_10 == 0;
+            return field_10 == 0;
         }
     }
 
@@ -1590,15 +1522,15 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
     int index;
     int count = 0;
 
-    if (current_database == NULL) {
+    if (current_database == nullptr) {
         return 0;
     }
 
-    if (filespec == NULL) {
+    if (filespec == nullptr) {
         return 0;
     }
 
-    if (filelist == NULL) {
+    if (filelist == nullptr) {
         return 0;
     }
 
@@ -1606,7 +1538,7 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
     char* filespec_copy = filespec_copy_buffer;
     strcpy(filespec_copy, filespec);
 
-    temp = NULL;
+    temp = nullptr;
 
     v1 = true;
     if (filespec_copy[0] == '@') {
@@ -1614,21 +1546,21 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
         v1 = false;
     }
 
-    *filelist = NULL;
+    *filelist = nullptr;
 
     sep = strrchr(filespec_copy, '\\');
-    filename = sep != NULL ? sep + 1 : filespec_copy;
+    filename = sep != nullptr ? sep + 1 : filespec_copy;
 
     if (strlen(filename) == 5 && filename[0] == '*' && filename[1] == '.') {
-        if (desclist != NULL) {
-            temp = (char*)internal_malloc(desclen);
-            if (temp == NULL) {
+        if (desclist != nullptr) {
+            temp = static_cast<char*>(internal_malloc(desclen));
+            if (temp == nullptr) {
                 return 0;
             }
         }
 
-        if (assoc_init(&ary, 10, desclen, NULL) == -1) {
-            if (temp != NULL) {
+        if (ary.init(10, desclen) == -1) {
+            if (temp != nullptr) {
                 internal_free(temp);
             }
             return 0;
@@ -1638,7 +1570,7 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
             strcpy(path, filespec_copy);
         }
 
-        if (current_database->datafile != NULL) {
+        if (current_database->datafile != nullptr) {
             pos = 0;
 
             if (v1) {
@@ -1648,7 +1580,7 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
             compat_strupr(path);
 
             sep = strrchr(path, '\\');
-            if (sep != NULL) {
+            if (sep != nullptr) {
                 char* v3;
 
                 *sep = '\0';
@@ -1662,7 +1594,7 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
                 }
 
                 if (strlen(v3) != 0) {
-                    pos = assoc_search(&(current_database->root), v3);
+                    pos = current_database->root.search(v3);
                 } else {
                     pos = 0;
                 }
@@ -1677,28 +1609,28 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
             if (pos != -1) {
                 char* name;
                 size_t name_len;
-                for (index = 0; index < current_database->entries[pos].size; index++) {
-                    name = current_database->entries[pos].list[index].name;
+                for (index = 0; index < current_database->entries[pos].getSize(); index++) {
+                    name = current_database->entries[pos].getEntry(index).name;
                     name_len = strlen(name);
                     if (name_len > 4) {
                         if (name[name_len - 3] == filename[2] && name[name_len - 2] == filename[3] && name[name_len - 1] == filename[4]) {
-                            if (temp != NULL) {
+                            if (temp != nullptr) {
                                 DB_FILE* stream = db_fopen(name, "rb");
-                                if (stream != NULL) {
-                                    if (db_fgets(temp, desclen, stream) != NULL) {
+                                if (stream != nullptr) {
+                                    if (stream->fgets(temp, desclen) != nullptr) {
                                         temp[strlen(temp) - 1] = '\0';
                                     }
-                                    db_fclose(stream);
+                                    stream->fclose();
                                 }
                             }
-                            assoc_insert(&ary, name, temp);
+                            ary.insert(name, temp);
                         }
                     }
                 }
             }
         }
 
-        if (current_database->patches_path != NULL) {
+        if (current_database->patches_path != nullptr) {
             DB_FIND_DATA find_data;
 
             if (v1) {
@@ -1709,42 +1641,42 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
 
             if (db_findfirst(path, &find_data) == 0) {
                 do {
-                    if (temp != NULL) {
+                    if (temp != nullptr) {
                         FILE* stream = compat_fopen(fileFindGetName(&find_data), "rb");
-                        if (stream != NULL) {
-                            if (fgets(temp, desclen, stream) != NULL) {
+                        if (stream != nullptr) {
+                            if (fgets(temp, desclen, stream) != nullptr) {
                                 temp[strlen(temp - 1)] = '\0';
                             }
                             fclose(stream);
                         }
                     }
-                    assoc_insert(&ary, fileFindGetName(&find_data), temp);
+                    ary.insert(fileFindGetName(&find_data), temp);
                 } while (db_findnext(&find_data) != -1);
 
                 db_findclose(&find_data);
             }
         }
 
-        count = ary.size;
-        if (ary.size > 0) {
+        count = ary.getSize();
+        if (ary.getSize() > 0) {
             // Allocate one continous chunk of memory which is split into two
             // parts. The first part contains pointers (packed end-to-end and
             // thus allows indexed access) to the second part (which are actual
             // storage for strings 13 bytes each).
             //
             // NOTE: The size of storage is 33 bytes in Mac OS binary.
-            *filelist = (char**)internal_malloc((sizeof(char*) + 13) * ary.size);
-            if (*filelist != NULL) {
-                for (index = 0; index < ary.size; index++) {
-                    (*filelist)[index] = (char*)*filelist + sizeof(char*) * ary.size + 13 * index;
-                    strcpy((*filelist)[index], ary.list[index].name);
+            *filelist = static_cast<char**>(internal_malloc((sizeof(char*) + 13) * ary.getSize()));
+            if (*filelist != nullptr) {
+                for (index = 0; index < ary.getSize(); index++) {
+                    (*filelist)[index] = reinterpret_cast<char*>(*filelist) + sizeof(char*) * ary.getSize() + 13 * index;
+                    strcpy((*filelist)[index], ary.getEntry(index).name);
                 }
             }
 
             // TODO: Incomplete.
         }
 
-        if (temp != NULL) {
+        if (temp != nullptr) {
             internal_free(temp);
         }
     }
@@ -1755,17 +1687,17 @@ int db_get_file_list(const char* filespec, char*** filelist, char*** desclist, i
 // 0x4B1518
 void db_free_file_list(char*** file_list, char*** desclist)
 {
-    if (file_list != NULL) {
-        if (*file_list != NULL) {
+    if (file_list != nullptr) {
+        if (*file_list != nullptr) {
             internal_free(*file_list);
-            *file_list = NULL;
+            *file_list = nullptr;
         }
     }
 
-    if (desclist != NULL) {
-        if (*desclist != NULL) {
+    if (desclist != nullptr) {
+        if (*desclist != nullptr) {
             internal_free(*desclist);
-            *desclist = NULL;
+            *desclist = nullptr;
         }
     }
 }
@@ -1778,7 +1710,7 @@ static int db_assoc_load_dir_entry(FILE* stream, void* buffer, size_t size, int 
     dir_entry* de;
     if (size != sizeof(*de)) return -1;
 
-    de = (dir_entry*)buffer;
+    de = static_cast<dir_entry*>(buffer);
     if (db_read_long(stream, &(de->flags)) != 0) return -1;
     if (db_read_long(stream, &(de->offset)) != 0) return -1;
     if (db_read_long(stream, &(de->length)) != 0) return -1;
@@ -1796,7 +1728,7 @@ static int db_assoc_save_dir_entry(FILE* stream, void* buffer, size_t size, int 
 
     if (size != sizeof(*de)) return -1;
 
-    de = (dir_entry*)buffer;
+    de = static_cast<dir_entry*>(buffer);
     if (db_write_long(stream, de->flags) != 0) return -1;
     if (db_write_long(stream, de->offset) != 0) return -1;
     if (db_write_long(stream, de->length) != 0) return -1;
@@ -1813,11 +1745,11 @@ static int db_assoc_load_db_dir_entry(DB_FILE* stream, void* buffer, size_t size
     dir_entry* de;
     if (size != sizeof(*de)) return -1;
 
-    de = (dir_entry*)buffer;
-    if (db_freadInt32(stream, &(de->flags)) != 0) return -1;
-    if (db_freadInt32(stream, &(de->offset)) != 0) return -1;
-    if (db_freadInt32(stream, &(de->length)) != 0) return -1;
-    if (db_freadInt32(stream, &(de->field_C)) != 0) return -1;
+    de = static_cast<dir_entry*>(buffer);
+    if (stream->freadInt32(&(de->flags)) != 0) return -1;
+    if (stream->freadInt32(&(de->offset)) != 0) return -1;
+    if (stream->freadInt32(&(de->length)) != 0) return -1;
+    if (stream->freadInt32(&(de->field_C)) != 0) return -1;
 
     return 0;
 }
@@ -1831,26 +1763,22 @@ static int db_assoc_save_db_dir_entry(DB_FILE* stream, void* buffer, size_t size
 
     if (size != sizeof(*de)) return -1;
 
-    de = (dir_entry*)buffer;
-    if (db_fwriteInt32(stream, de->flags) != 0) return -1;
-    if (db_fwriteInt32(stream, de->offset) != 0) return -1;
-    if (db_fwriteInt32(stream, de->length) != 0) return -1;
-    if (db_fwriteInt32(stream, de->field_C) != 0) return -1;
+    de = static_cast<dir_entry*>(buffer);
+    if (stream->fwriteInt32(de->flags) != 0) return -1;
+    if (stream->fwriteInt32(de->offset) != 0) return -1;
+    if (stream->fwriteInt32(de->length) != 0) return -1;
+    if (stream->fwriteInt32(de->field_C) != 0) return -1;
 
     return 0;
 }
 
 // 0x4B1A98
-long db_filelength(DB_FILE* stream)
+long DB_FILE::filelength()
 {
-    if (stream == NULL) {
-        return -1;
-    }
-
-    if ((stream->flags & 0x4) != 0) {
-        return getFileSize(stream->uncompressed_file_stream);
+    if ((flags & 0x4) != 0) {
+        return getFileSize(uncompressed_file_stream);
     } else {
-        return stream->field_C;
+        return field_C;
     }
 }
 
@@ -1858,7 +1786,7 @@ long db_filelength(DB_FILE* stream)
 void db_register_mem(db_malloc_func* malloc_func, db_strdup_func* strdup_func, db_free_func* free_func)
 {
     if (!db_used_malloc) {
-        if (malloc_func != NULL && strdup_func != NULL && free_func != NULL) {
+        if (malloc_func != nullptr && strdup_func != nullptr && free_func != nullptr) {
             db_malloc = malloc_func;
             db_strdup = strdup_func;
             db_free = free_func;
@@ -1873,11 +1801,11 @@ void db_register_mem(db_malloc_func* malloc_func, db_strdup_func* strdup_func, d
 // 0x4B1B14
 void db_register_callback(db_read_callback* callback, size_t threshold)
 {
-    if (callback != NULL && threshold != 0) {
+    if (callback != nullptr && threshold != 0) {
         read_callback = callback;
         read_threshold = threshold;
     } else {
-        read_callback = NULL;
+        read_callback = nullptr;
         read_threshold = 0;
     }
 }
@@ -1888,9 +1816,9 @@ static int db_create_database(DB_DATABASE** database_ptr)
     int index;
 
     for (index = 0; index < DB_DATABASE_LIST_CAPACITY; index++) {
-        if (database_list[index] == NULL) {
-            database_list[index] = (DB_DATABASE*)internal_malloc(sizeof(DB_DATABASE));
-            if (database_list[index] == NULL) {
+        if (database_list[index] == nullptr) {
+            database_list[index] = static_cast<DB_DATABASE*>(internal_malloc(sizeof(DB_DATABASE)));
+            if (database_list[index] == nullptr) {
                 return -1;
             }
 
@@ -1907,234 +1835,214 @@ static int db_create_database(DB_DATABASE** database_ptr)
 // 0x4B1B98
 static int db_destroy_database(DB_DATABASE** database_ptr)
 {
-    if (database_ptr == NULL) {
+    if (database_ptr == nullptr) {
         return -1;
     }
 
-    if (*database_ptr == NULL) {
+    if (*database_ptr == nullptr) {
         return -1;
     }
 
     db_free(*database_ptr);
-    *database_ptr = NULL;
+    *database_ptr = nullptr;
 
     return 0;
 }
 
 // 0x4B1BC4
-static int db_init_database(DB_DATABASE* database, const char* datafile, const char* datafile_path)
+int DB_DATABASE::init_database(const char* datafile_arg, const char* datafile_path_arg)
 {
     assoc_func_list funcs;
     int index;
     const char* v1;
     size_t v2;
 
-    if (database == NULL) {
-        return -1;
-    }
-
-    if (datafile == NULL) {
+    if (datafile_arg == nullptr) {
         return 0;
     }
 
-    database->datafile = internal_strdup(datafile);
-    if (database->datafile == NULL) {
+    datafile = internal_strdup(datafile_arg);
+    if (datafile == nullptr) {
         return -1;
     }
 
-    database->stream = compat_fopen(database->datafile, "rb");
-    if (database->stream == NULL) {
-        internal_free(database->datafile);
-        database->datafile = NULL;
+    stream = compat_fopen(datafile, "rb");
+    if (stream == nullptr) {
+        internal_free(datafile);
+        datafile = nullptr;
         return -1;
     }
 
-    if (assoc_init(&(database->root), 0, sizeof(*database->entries), NULL) != 0) {
-        fclose(database->stream);
-        internal_free(database->datafile);
-        database->datafile = NULL;
+    if (root.init(0, sizeof(*entries)) != 0) {
+        fclose(stream);
+        internal_free(datafile);
+        datafile = nullptr;
         return -1;
     }
 
-    if (assoc_load(database->stream, &(database->root), 0) != 0) {
-        fclose(database->stream);
-        internal_free(database->datafile);
-        database->datafile = NULL;
+    if (root.load(stream, 0) != 0) {
+        fclose(stream);
+        internal_free(datafile);
+        datafile = nullptr;
         return -1;
     }
 
-    database->entries = (assoc_array*)internal_malloc(sizeof(*database->entries) * database->root.size);
-    if (database->entries == NULL) {
-        assoc_free(&(database->root));
-        fclose(database->stream);
-        internal_free(database->datafile);
-        database->datafile = NULL;
+    entries = static_cast<assoc_array*>(internal_malloc(sizeof(*entries) * root.getSize()));
+    if (entries == nullptr) {
+        root.destroy();
+        fclose(stream);
+        internal_free(datafile);
+        datafile = nullptr;
         return -1;
     }
 
     funcs.loadFunc = db_assoc_load_dir_entry;
     funcs.saveFunc = db_assoc_save_dir_entry;
-    funcs.loadFuncDB = NULL;
-    funcs.saveFuncDB = NULL;
+    funcs.loadFuncDB = nullptr;
+    funcs.saveFuncDB = nullptr;
 
-    for (index = 0; index < database->root.size; index++) {
-        if (assoc_init(&(database->entries[index]), 0, sizeof(dir_entry), &funcs) != 0) {
+    for (index = 0; index < root.getSize(); index++) {
+        if (entries[index].init(0, sizeof(dir_entry), &funcs) != 0) {
             break;
         }
 
-        if (assoc_load(database->stream, &(database->entries[index]), 0) != 0) {
+        if (entries[index].load(stream, 0) != 0) {
             break;
         }
     }
 
-    if (index < database->root.size) {
+    if (index < root.getSize()) {
         while (--index >= 0) {
-            assoc_free(&(database->entries[index]));
+            entries[index].destroy();
         }
 
-        internal_free(database->entries);
-        assoc_free(&(database->root));
-        fclose(database->stream);
-        internal_free(database->datafile);
-        database->datafile = NULL;
+        internal_free(entries);
+        root.destroy();
+        fclose(stream);
+        internal_free(datafile);
+        datafile = nullptr;
         return -1;
     }
 
-    if (datafile_path != NULL && strlen(datafile_path) != 0) {
-        v1 = datafile_path;
-        if (datafile_path[0] == PATH_SEP) {
-            v1 = datafile_path + 1;
+    if (datafile_path_arg != nullptr && strlen(datafile_path_arg) != 0) {
+        v1 = datafile_path_arg;
+        if (datafile_path_arg[0] == PATH_SEP) {
+            v1 = datafile_path_arg + 1;
         }
     } else {
         v1 = ".\\";
     }
 
     v2 = strlen(v1);
-    database->datafile_path = (char*)internal_malloc(v2 + 2);
-    if (database->datafile_path == NULL) {
-        internal_free(database->entries);
-        assoc_free(&(database->root));
-        fclose(database->stream);
-        internal_free(database->datafile);
-        database->datafile = NULL;
+    datafile_path = static_cast<char*>(internal_malloc(v2 + 2));
+    if (datafile_path == nullptr) {
+        internal_free(entries);
+        root.destroy();
+        fclose(stream);
+        internal_free(datafile);
+        datafile = nullptr;
         return -1;
     }
 
-    strcpy(database->datafile_path, v1);
+    strcpy(datafile_path, v1);
 
-    if (database->datafile_path[v2 - 1] != '\\') {
-        database->datafile_path[v2] = '\\';
-        database->datafile_path[v2 + 1] = '\0';
+    if (datafile_path[v2 - 1] != '\\') {
+        datafile_path[v2] = '\\';
+        datafile_path[v2 + 1] = '\0';
     }
 
     return 0;
 }
 
 // 0x4B1DE0
-static void db_exit_database(DB_DATABASE* database)
+void DB_DATABASE::exit_database()
 {
     int index;
 
-    if (database == NULL) {
-        return;
+    if (stream != nullptr) {
+        fclose(stream);
+        stream = nullptr;
     }
 
-    if (database->stream != NULL) {
-        fclose(database->stream);
-        database->stream = NULL;
+    if (datafile != nullptr) {
+        internal_free(datafile);
+        datafile = nullptr;
     }
 
-    if (database->datafile != NULL) {
-        internal_free(database->datafile);
-        database->datafile = NULL;
-    }
-
-    if (database->entries != NULL) {
-        for (index = 0; index < database->root.size; index++) {
-            assoc_free(&(database->entries[index]));
+    if (entries != nullptr) {
+        for (index = 0; index < root.getSize(); index++) {
+            entries[index].destroy();
         }
-        internal_free(database->entries);
-        database->entries = NULL;
+        internal_free(entries);
+        entries = nullptr;
     }
 
-    assoc_free(&(database->root));
+    root.destroy();
 
-    if (database->datafile_path != NULL) {
-        internal_free(database->datafile_path);
-        database->datafile_path = NULL;
+    if (datafile_path != nullptr) {
+        internal_free(datafile_path);
+        datafile_path = nullptr;
     }
 }
 
 // 0x4B1E70
-static int db_init_patches(DB_DATABASE* database, const char* path)
+int DB_DATABASE::init_patches(const char* path)
 {
     size_t path_len;
 
-    if (database == NULL) {
-        return -1;
-    }
-
-    if (path == NULL) {
-        database->patches_path = NULL;
+    if (path == nullptr) {
+        patches_path = nullptr;
         return 0;
     }
 
     path_len = strlen(path);
     if (path_len == 0) {
-        database->patches_path = empty_patches_path;
+        patches_path = empty_patches_path;
         return 0;
     }
 
-    database->patches_path = (char*)internal_malloc(path_len + 2);
-    if (database->patches_path == NULL) {
+    patches_path = static_cast<char*>(internal_malloc(path_len + 2));
+    if (patches_path == nullptr) {
         return -1;
     }
 
-    database->should_free_patches_path = true;
-    strcpy(database->patches_path, path);
+    should_free_patches_path = true;
+    strcpy(patches_path, path);
 
-    if (database->patches_path[path_len - 1] != '\\') {
-        database->patches_path[path_len] = PATH_SEP;
-        database->patches_path[path_len + 1] = '\0';
+    if (patches_path[path_len - 1] != '\\') {
+        patches_path[path_len] = PATH_SEP;
+        patches_path[path_len + 1] = '\0';
     }
 
     return 0;
 }
 
 // 0x4B1F10
-static void db_exit_patches(DB_DATABASE* database)
+void DB_DATABASE::exit_patches()
 {
-    if (database == NULL) {
-        return;
-    }
-
-    if (database->patches_path != NULL) {
-        if (database->should_free_patches_path == true) {
-            internal_free(database->patches_path);
+    if (patches_path != nullptr) {
+        if (should_free_patches_path == true) {
+            internal_free(patches_path);
         }
     }
 
-    database->patches_path = empty_patches_path;
-    database->should_free_patches_path = false;
+    patches_path = empty_patches_path;
+    should_free_patches_path = false;
 }
 
 // 0x4B1F3C
-static int db_init_hash_table(DB_DATABASE* database)
+int DB_DATABASE::init_hash_table()
 {
     if (!hash_is_on) {
         return -1;
     }
 
-    if (database == NULL) {
+    hash_table = static_cast<unsigned char*>(internal_malloc(DB_HASH_TABLE_SIZE));
+    if (hash_table == nullptr) {
         return -1;
     }
 
-    database->hash_table = (unsigned char*)internal_malloc(DB_HASH_TABLE_SIZE);
-    if (database->hash_table == NULL) {
-        return -1;
-    }
-
-    return db_reset_hash_table(database);
+    return reset_hash_table();
 }
 
 // 0x4B1F90
@@ -2144,37 +2052,33 @@ void db_enable_hash_table()
 }
 
 // 0x4B1F9C
-static int db_reset_hash_table(DB_DATABASE* database)
+int DB_DATABASE::reset_hash_table()
 {
     if (!hash_is_on) {
         return -1;
     }
 
-    if (database == NULL) {
+    if (patches_path == nullptr) {
         return -1;
     }
 
-    if (database->patches_path == NULL) {
-        return -1;
-    }
-
-    if (database->hash_table == NULL) {
-        database->hash_table = (unsigned char*)internal_malloc(DB_HASH_TABLE_SIZE);
-        if (database->hash_table == NULL) {
+    if (hash_table == nullptr) {
+        hash_table = static_cast<unsigned char*>(internal_malloc(DB_HASH_TABLE_SIZE));
+        if (hash_table == nullptr) {
             return -1;
         }
     }
 
-    memset(database->hash_table, 0, DB_HASH_TABLE_SIZE);
+    memset(hash_table, 0, DB_HASH_TABLE_SIZE);
 
-    return db_fill_hash_table(database, database->patches_path);
+    return fill_hash_table(patches_path);
 }
 
 // NOTE: Originally not static, but that would require exposing `DB_DATABASE`
 // which is most likely considered implementation detail.
 //
 // 0x4B2028
-static int db_fill_hash_table(DB_DATABASE* database, const char* path)
+int DB_DATABASE::fill_hash_table(const char* path)
 {
     char pattern[COMPAT_MAX_PATH];
     DB_FIND_DATA find_data;
@@ -2185,11 +2089,7 @@ static int db_fill_hash_table(DB_DATABASE* database, const char* path)
         return -1;
     }
 
-    if (database == NULL) {
-        return -1;
-    }
-
-    if (database->hash_table == NULL) {
+    if (hash_table == nullptr) {
         return -1;
     }
 
@@ -2208,10 +2108,10 @@ static int db_fill_hash_table(DB_DATABASE* database, const char* path)
             if (is_directory) {
                 if (strcmp(filename, ".") != 0 && strcmp(filename, "..") != 0) {
                     snprintf(pattern, sizeof(pattern), "%s%s%c", path, filename, PATH_SEP);
-                    db_fill_hash_table(database, pattern);
+                    fill_hash_table(pattern);
                 }
             } else {
-                db_add_hash_entry_to_database(database, filename, PATH_SEP);
+                add_hash_entry(filename, PATH_SEP);
             }
         } while (db_findnext(&find_data) != -1);
 
@@ -2231,8 +2131,8 @@ int db_reset_hash_tables()
     }
 
     for (index = 0; index < DB_DATABASE_LIST_CAPACITY; index++) {
-        if (database_list[index] != NULL) {
-            db_reset_hash_table(database_list[index]);
+        if (database_list[index] != nullptr) {
+            database_list[index]->reset_hash_table();
         }
     }
 
@@ -2246,23 +2146,23 @@ int db_add_hash_entry(const char* path, int sep)
         return -1;
     }
 
-    if (current_database == NULL) {
+    if (current_database == nullptr) {
         return -1;
     }
 
-    if (current_database->hash_table == NULL) {
+    if (current_database->hash_table == nullptr) {
         return -1;
     }
 
-    if (path == NULL) {
+    if (path == nullptr) {
         return -1;
     }
 
-    return db_add_hash_entry_to_database(current_database, path, sep);
+    return current_database->add_hash_entry(path, sep);
 }
 
 // 0x4B21E0
-static int db_add_hash_entry_to_database(DB_DATABASE* database, const char* path, int sep)
+int DB_DATABASE::add_hash_entry(const char* path, int sep)
 {
     unsigned int key;
 
@@ -2270,11 +2170,7 @@ static int db_add_hash_entry_to_database(DB_DATABASE* database, const char* path
         return -1;
     }
 
-    if (database == NULL) {
-        return -1;
-    }
-
-    if (database->hash_table == NULL) {
+    if (hash_table == nullptr) {
         return -1;
     }
 
@@ -2282,17 +2178,17 @@ static int db_add_hash_entry_to_database(DB_DATABASE* database, const char* path
         return -1;
     }
 
-    return db_set_hash_value(database, key, 1);
+    return set_hash_value(key, 1);
 }
 
 // 0x4B2258
-static int db_set_hash_value(DB_DATABASE* database, unsigned int key, unsigned char enabled)
+int DB_DATABASE::set_hash_value(unsigned int key, unsigned char enabled)
 {
     if (!hash_is_on) {
         return -1;
     }
 
-    if (database->hash_table == NULL) {
+    if (hash_table == nullptr) {
         return -1;
     }
 
@@ -2301,16 +2197,16 @@ static int db_set_hash_value(DB_DATABASE* database, unsigned int key, unsigned c
     }
 
     if (enabled == true) {
-        database->hash_table[key / 8] |= 1 << (key % 8);
+        hash_table[key / 8] |= 1 << (key % 8);
     } else {
-        database->hash_table[key / 8] = 0;
+        hash_table[key / 8] = 0;
     }
 
     return 0;
 }
 
 // 0x4B2304
-static int db_get_hash_value(DB_DATABASE* database, const char* path, int sep, int* value_ptr)
+int DB_DATABASE::get_hash_value(const char* path, int sep, int* value_ptr)
 {
     unsigned int key;
 
@@ -2318,11 +2214,11 @@ static int db_get_hash_value(DB_DATABASE* database, const char* path, int sep, i
         return -1;
     }
 
-    if (database->hash_table == NULL) {
+    if (hash_table == nullptr) {
         return -1;
     }
 
-    if (path == NULL) {
+    if (path == nullptr) {
         return -1;
     }
 
@@ -2334,7 +2230,7 @@ static int db_get_hash_value(DB_DATABASE* database, const char* path, int sep, i
         return -1;
     }
 
-    *value_ptr = (database->hash_table[key / 8] >> (key % 8)) & 1;
+    *value_ptr = (hash_table[key / 8] >> (key % 8)) & 1;
 
     return 0;
 }
@@ -2350,15 +2246,15 @@ static int db_hash_string_to_key(const char* path, int sep, unsigned int* key_pt
 
     key = 1;
 
-    if (path == NULL) {
+    if (path == nullptr) {
         return -1;
     }
 
-    copy = (char*)internal_strdup(path);
+    copy = reinterpret_cast<char*>(internal_strdup(path));
     compat_strupr(copy);
 
     pch = strrchr(copy, sep);
-    if (pch != NULL) {
+    if (pch != nullptr) {
         filename = pch + 1;
     } else {
         filename = copy;
@@ -2377,12 +2273,12 @@ static int db_hash_string_to_key(const char* path, int sep, unsigned int* key_pt
 }
 
 // 0x4B2420
-static void db_exit_hash_table(DB_DATABASE* database)
+void DB_DATABASE::exit_hash_table()
 {
-    if (database->hash_table != NULL) {
-        internal_free(database->hash_table);
+    if (hash_table != nullptr) {
+        internal_free(hash_table);
     }
-    database->hash_table = NULL;
+    hash_table = nullptr;
 }
 
 // 0x4B2444
@@ -2391,7 +2287,7 @@ static DB_FILE* db_add_fp_rec(FILE* stream, unsigned char* a2, int a3, int flags
     DB_FILE* ptr;
     int pos;
 
-    ptr = NULL;
+    ptr = nullptr;
     if (current_database->files_length < DB_DATABASE_FILE_LIST_CAPACITY) {
         if (db_find_empty_position(&pos) == 0) {
             memset(&(current_database->files[pos]), 0, sizeof(*current_database->files));
@@ -2427,7 +2323,7 @@ static DB_FILE* db_add_fp_rec(FILE* stream, unsigned char* a2, int a3, int flags
         }
     }
 
-    if (ptr != NULL) {
+    if (ptr != nullptr) {
         current_database->files[pos].flags = flags;
         current_database->files[pos].field_8 = 1;
         current_database->files_length++;
@@ -2437,33 +2333,29 @@ static DB_FILE* db_add_fp_rec(FILE* stream, unsigned char* a2, int a3, int flags
 }
 
 // 0x4B2664
-static int db_delete_fp_rec(DB_FILE* stream)
+int DB_FILE::deleteRecord()
 {
-    if (stream == NULL) {
-        return -1;
-    }
-
-    if ((stream->flags & 0x4) != 0) {
-        fclose(stream->uncompressed_file_stream);
+    if ((flags & 0x4) != 0) {
+        ::fclose(uncompressed_file_stream);
     } else {
-        switch (stream->flags & 0xF0) {
+        switch (flags & 0xF0) {
         case 16:
-            if (stream->field_1C != NULL) {
-                internal_free(stream->field_1C);
+            if (field_1C != nullptr) {
+                internal_free(field_1C);
             }
             break;
         case 32:
             break;
         case 64:
-            if (stream->field_1C != NULL) {
-                internal_free(stream->field_1C);
+            if (field_1C != nullptr) {
+                internal_free(field_1C);
             }
             break;
         }
     }
 
-    stream->database->files_length -= 1;
-    memset(stream, 0, sizeof(*stream));
+    database->files_length -= 1;
+    memset(this, 0, sizeof(*this));
 
     return 0;
 }
@@ -2473,7 +2365,7 @@ static int db_find_empty_position(int* position_ptr)
 {
     int index;
 
-    if (position_ptr == NULL) {
+    if (position_ptr == nullptr) {
         return -1;
     }
 
@@ -2501,15 +2393,15 @@ static int db_find_dir_entry(char* path, dir_entry* de)
 
     normalized_path = path;
 
-    if (current_database->datafile == NULL) {
+    if (current_database->datafile == nullptr) {
         return -1;
     }
 
-    if (path == NULL) {
+    if (path == nullptr) {
         return -1;
     }
 
-    if (de == NULL) {
+    if (de == nullptr) {
         return -1;
     }
 
@@ -2530,7 +2422,7 @@ static int db_find_dir_entry(char* path, dir_entry* de)
 
     if (pos >= 0) {
         normalized_path[pos] = '\0';
-        dir_index = assoc_search(&(current_database->root), normalized_path);
+        dir_index = current_database->root.search(normalized_path);
     } else {
         dir_index = 0;
     }
@@ -2542,7 +2434,7 @@ static int db_find_dir_entry(char* path, dir_entry* de)
         return -1;
     }
 
-    entry_index = assoc_search(&(current_database->entries[dir_index]), normalized_path + pos + 1);
+    entry_index = current_database->entries[dir_index].search(normalized_path + pos + 1);
     if (entry_index == -1) {
         if (pos >= 0) {
             normalized_path[pos] = '\\';
@@ -2554,7 +2446,7 @@ static int db_find_dir_entry(char* path, dir_entry* de)
         normalized_path[pos] = '\\';
     }
 
-    *de = *((dir_entry*)current_database->entries[dir_index].list[entry_index].data);
+    *de = *(static_cast<dir_entry*>(current_database->entries[dir_index].getEntry(entry_index).data));
 
     return 0;
 }
@@ -2572,30 +2464,30 @@ static int db_findfirst(const char* path, DB_FIND_DATA* findData)
 
     char drive[COMPAT_MAX_DRIVE];
     char dir[COMPAT_MAX_DIR];
-    compat_splitpath(path, drive, dir, NULL, NULL);
+    compat_splitpath(path, drive, dir, nullptr, nullptr);
 
     char basePath[COMPAT_MAX_PATH];
-    compat_makepath(basePath, drive, dir, NULL, NULL);
+    compat_makepath(basePath, drive, dir, nullptr, nullptr);
 
     compat_resolve_path(basePath);
     findData->dir = opendir(basePath);
-    if (findData->dir == NULL) {
+    if (findData->dir == nullptr) {
         return -1;
     }
 
     findData->entry = readdir(findData->dir);
-    while (findData->entry != NULL) {
+    while (findData->entry != nullptr) {
         char entryPath[COMPAT_MAX_PATH];
-        compat_makepath(entryPath, drive, dir, fileFindGetName(findData), NULL);
+        compat_makepath(entryPath, drive, dir, fileFindGetName(findData), nullptr);
         if (fpattern_match(findData->path, entryPath)) {
             break;
         }
         findData->entry = readdir(findData->dir);
     }
 
-    if (findData->entry == NULL) {
+    if (findData->entry == nullptr) {
         closedir(findData->dir);
-        findData->dir = NULL;
+        findData->dir = nullptr;
         return -1;
     }
 #endif
@@ -2613,21 +2505,21 @@ static int db_findnext(DB_FIND_DATA* findData)
 #else
     char drive[COMPAT_MAX_DRIVE];
     char dir[COMPAT_MAX_DIR];
-    compat_splitpath(findData->path, drive, dir, NULL, NULL);
+    compat_splitpath(findData->path, drive, dir, nullptr, nullptr);
 
     findData->entry = readdir(findData->dir);
-    while (findData->entry != NULL) {
+    while (findData->entry != nullptr) {
         char entryPath[COMPAT_MAX_PATH];
-        compat_makepath(entryPath, drive, dir, fileFindGetName(findData), NULL);
+        compat_makepath(entryPath, drive, dir, fileFindGetName(findData), nullptr);
         if (fpattern_match(findData->path, entryPath)) {
             break;
         }
         findData->entry = readdir(findData->dir);
     }
 
-    if (findData->entry == NULL) {
+    if (findData->entry == nullptr) {
         closedir(findData->dir);
-        findData->dir = NULL;
+        findData->dir = nullptr;
         return -1;
     }
 #endif
@@ -2643,7 +2535,7 @@ static int db_findclose(DB_FIND_DATA* findData)
         return -1;
     }
 #else
-    if (findData->dir != NULL) {
+    if (findData->dir != nullptr) {
         if (closedir(findData->dir) != 0) {
             return -1;
         }
@@ -2692,24 +2584,24 @@ static void db_default_free(void* ptr)
 }
 
 // 0x4B28B0
-static void db_preload_buffer(DB_FILE* stream)
+void DB_FILE::preloadBuffer()
 {
     unsigned short v1;
 
-    if ((stream->flags & 0x8) != 0 && (stream->flags & 0xF0) == 64) {
-        if (stream->field_10 != 0) {
-            if (stream->field_20 >= stream->field_1C + 0x4000) {
-                if (fseek(stream->database->stream, stream->field_18, SEEK_SET) == 0) {
-                    if (fread_short(stream->database->stream, &v1) == 0) {
+    if ((flags & 0x8) != 0 && (flags & 0xF0) == 64) {
+        if (field_10 != 0) {
+            if (field_20 >= field_1C + 0x4000) {
+                if (::fseek(database->stream, field_18, SEEK_SET) == 0) {
+                    if (fread_short(database->stream, &v1) == 0) {
                         if ((v1 & 0x8000) != 0) {
                             v1 &= ~0x8000;
-                            fread(stream->field_1C, 1, v1, stream->database->stream);
+                            ::fread(field_1C, 1, v1, database->stream);
                         } else {
-                            lzss_decode_to_buf(stream->database->stream, stream->field_1C, v1);
+                            lzss_decode_to_buf(database->stream, field_1C, v1);
                         }
 
-                        stream->field_20 = stream->field_1C;
-                        stream->field_18 = ftell(stream->database->stream);
+                        field_20 = field_1C;
+                        field_18 = ::ftell(database->stream);
                     }
                 }
             }
@@ -2758,9 +2650,9 @@ static inline char* fileFindGetName(DB_FIND_DATA* findData)
 #endif
 }
 
-int db_freadUInt8(DB_FILE* stream, unsigned char* valuePtr)
+int DB_FILE::freadUInt8(unsigned char* valuePtr)
 {
-    int value = db_fgetc(stream);
+    int value = fgetc();
     if (value == -1) {
         return -1;
     }
@@ -2770,10 +2662,10 @@ int db_freadUInt8(DB_FILE* stream, unsigned char* valuePtr)
     return 0;
 }
 
-int db_freadInt8(DB_FILE* stream, char* valuePtr)
+int DB_FILE::freadInt8(char* valuePtr)
 {
     unsigned char value;
-    if (db_freadUInt8(stream, &value) == -1) {
+    if (freadUInt8(&value) == -1) {
         return -1;
     }
 
@@ -2782,15 +2674,15 @@ int db_freadInt8(DB_FILE* stream, char* valuePtr)
     return 0;
 }
 
-int db_freadUInt16(DB_FILE* stream, unsigned short* valuePtr)
+int DB_FILE::freadUInt16(unsigned short* valuePtr)
 {
-    return db_freadShort(stream, valuePtr);
+    return freadShort(valuePtr);
 }
 
-int db_freadInt16(DB_FILE* stream, short* valuePtr)
+int DB_FILE::freadInt16(short* valuePtr)
 {
     unsigned short value;
-    if (db_freadUInt16(stream, &value) == -1) {
+    if (freadUInt16(&value) == -1) {
         return -1;
     }
 
@@ -2799,10 +2691,10 @@ int db_freadInt16(DB_FILE* stream, short* valuePtr)
     return 0;
 }
 
-int db_freadUInt32(DB_FILE* stream, unsigned int* valuePtr)
+int DB_FILE::freadUInt32(unsigned int* valuePtr)
 {
     int value;
-    if (db_freadInt(stream, &value) == -1) {
+    if (freadInt(&value) == -1) {
         return -1;
     }
 
@@ -2811,10 +2703,10 @@ int db_freadUInt32(DB_FILE* stream, unsigned int* valuePtr)
     return 0;
 }
 
-int db_freadInt32(DB_FILE* stream, int* valuePtr)
+int DB_FILE::freadInt32(int* valuePtr)
 {
     unsigned int value;
-    if (db_freadUInt32(stream, &value) == -1) {
+    if (freadUInt32(&value) == -1) {
         return -1;
     }
 
@@ -2823,10 +2715,10 @@ int db_freadInt32(DB_FILE* stream, int* valuePtr)
     return 0;
 }
 
-int db_freadUInt8List(DB_FILE* stream, unsigned char* arr, int count)
+int DB_FILE::freadUInt8List(unsigned char* arr, int count)
 {
     for (int index = 0; index < count; index++) {
-        if (db_freadUInt8(stream, &(arr[index])) == -1) {
+        if (freadUInt8(&(arr[index])) == -1) {
             return -1;
         }
     }
@@ -2834,10 +2726,10 @@ int db_freadUInt8List(DB_FILE* stream, unsigned char* arr, int count)
     return 0;
 }
 
-int db_freadInt8List(DB_FILE* stream, char* arr, int count)
+int DB_FILE::freadInt8List(char* arr, int count)
 {
     for (int index = 0; index < count; index++) {
-        if (db_freadInt8(stream, &(arr[index])) == -1) {
+        if (freadInt8(&(arr[index])) == -1) {
             return -1;
         }
     }
@@ -2845,10 +2737,10 @@ int db_freadInt8List(DB_FILE* stream, char* arr, int count)
     return 0;
 }
 
-int db_freadInt16List(DB_FILE* stream, short* arr, int count)
+int DB_FILE::freadInt16List(short* arr, int count)
 {
     for (int index = 0; index < count; index++) {
-        if (db_freadInt16(stream, &(arr[index])) == -1) {
+        if (freadInt16(&(arr[index])) == -1) {
             return -1;
         }
     }
@@ -2856,10 +2748,10 @@ int db_freadInt16List(DB_FILE* stream, short* arr, int count)
     return 0;
 }
 
-int db_freadInt32List(DB_FILE* stream, int* arr, int count)
+int DB_FILE::freadInt32List(int* arr, int count)
 {
     for (int index = 0; index < count; index++) {
-        if (db_freadInt32(stream, &(arr[index])) == -1) {
+        if (freadInt32(&(arr[index])) == -1) {
             return -1;
         }
     }
@@ -2867,10 +2759,10 @@ int db_freadInt32List(DB_FILE* stream, int* arr, int count)
     return 0;
 }
 
-int db_freadBool(DB_FILE* stream, bool* valuePtr)
+int DB_FILE::freadBool(bool* valuePtr)
 {
     int value;
-    if (db_freadInt32(stream, &value) == -1) {
+    if (freadInt32(&value) == -1) {
         return -1;
     }
 
@@ -2879,40 +2771,40 @@ int db_freadBool(DB_FILE* stream, bool* valuePtr)
     return 0;
 }
 
-int db_fwriteUInt8(DB_FILE* stream, unsigned char value)
+int DB_FILE::fwriteUInt8(unsigned char value)
 {
-    return db_fputc(static_cast<int>(value), stream);
+    return fputc(static_cast<int>(value));
 }
 
-int db_fwriteInt8(DB_FILE* stream, char value)
+int DB_FILE::fwriteInt8(char value)
 {
-    return db_fwriteUInt8(stream, static_cast<unsigned char>(value));
+    return fwriteUInt8(static_cast<unsigned char>(value));
 }
 
-int db_fwriteUInt16(DB_FILE* stream, unsigned short value)
+int DB_FILE::fwriteUInt16(unsigned short value)
 {
-    return db_fwriteShort(stream, value);
+    return fwriteShort(value);
 }
 
-int db_fwriteInt16(DB_FILE* stream, short value)
+int DB_FILE::fwriteInt16(short value)
 {
-    return db_fwriteUInt16(stream, static_cast<unsigned short>(value));
+    return fwriteUInt16(static_cast<unsigned short>(value));
 }
 
-int db_fwriteUInt32(DB_FILE* stream, unsigned int value)
+int DB_FILE::fwriteUInt32(unsigned int value)
 {
-    return db_fwriteInt(stream, static_cast<int>(value));
+    return fwriteInt(static_cast<int>(value));
 }
 
-int db_fwriteInt32(DB_FILE* stream, int value)
+int DB_FILE::fwriteInt32(int value)
 {
-    return db_fwriteUInt32(stream, static_cast<unsigned int>(value));
+    return fwriteUInt32(static_cast<unsigned int>(value));
 }
 
-int db_fwriteUInt8List(DB_FILE* stream, unsigned char* arr, int count)
+int DB_FILE::fwriteUInt8List(unsigned char* arr, int count)
 {
     for (int index = 0; index < count; index++) {
-        if (db_fwriteUInt8(stream, arr[index]) == -1) {
+        if (fwriteUInt8(arr[index]) == -1) {
             return -1;
         }
     }
@@ -2920,10 +2812,10 @@ int db_fwriteUInt8List(DB_FILE* stream, unsigned char* arr, int count)
     return 0;
 }
 
-int db_fwriteInt8List(DB_FILE* stream, char* arr, int count)
+int DB_FILE::fwriteInt8List(char* arr, int count)
 {
     for (int index = 0; index < count; index++) {
-        if (db_fwriteInt8(stream, arr[index]) == -1) {
+        if (fwriteInt8(arr[index]) == -1) {
             return -1;
         }
     }
@@ -2931,10 +2823,10 @@ int db_fwriteInt8List(DB_FILE* stream, char* arr, int count)
     return 0;
 }
 
-int db_fwriteInt16List(DB_FILE* stream, short* arr, int count)
+int DB_FILE::fwriteInt16List(short* arr, int count)
 {
     for (int index = 0; index < count; index++) {
-        if (db_fwriteInt16(stream, arr[index]) == -1) {
+        if (fwriteInt16(arr[index]) == -1) {
             return -1;
         }
     }
@@ -2942,10 +2834,10 @@ int db_fwriteInt16List(DB_FILE* stream, short* arr, int count)
     return 0;
 }
 
-int db_fwriteInt32List(DB_FILE* stream, int* arr, int count)
+int DB_FILE::fwriteInt32List(int* arr, int count)
 {
     for (int index = 0; index < count; index++) {
-        if (db_fwriteInt32(stream, arr[index]) == -1) {
+        if (fwriteInt32(arr[index]) == -1) {
             return -1;
         }
     }
@@ -2953,9 +2845,9 @@ int db_fwriteInt32List(DB_FILE* stream, int* arr, int count)
     return 0;
 }
 
-int db_fwriteBool(DB_FILE* stream, bool value)
+int DB_FILE::fwriteBool(bool value)
 {
-    return db_fwriteInt32(stream, value ? 1 : 0);
+    return fwriteInt32(value ? 1 : 0);
 }
 
 } // namespace fallout

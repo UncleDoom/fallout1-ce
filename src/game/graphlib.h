@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_GRAPHLIB_H_
-#define FALLOUT_GAME_GRAPHLIB_H_
+#pragma once
+
 
 namespace fallout {
 
@@ -20,5 +20,3 @@ void InitGreyTable(int a1, int a2);
 void grey_buf(unsigned char* surface, int width, int height, int pitch);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_GRAPHLIB_H_ */

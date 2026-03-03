@@ -1,7 +1,7 @@
 #include "game/gmovie.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "game/cycle.h"
 #include "game/game.h"
@@ -23,8 +23,8 @@
 
 namespace fallout {
 
-#define GAME_MOVIE_WINDOW_WIDTH 640
-#define GAME_MOVIE_WINDOW_HEIGHT 480
+static constexpr int GAME_MOVIE_WINDOW_WIDTH = 640;
+static constexpr int GAME_MOVIE_WINDOW_HEIGHT = 480;
 
 static char* gmovie_subtitle_func(char* movieFilePath);
 
@@ -81,7 +81,7 @@ void gmovie_exit()
 // 0x44E638
 int gmovie_load(DB_FILE* stream)
 {
-    if (db_fread(gmovie_played_list, sizeof(*gmovie_played_list), MOVIE_COUNT, stream) != MOVIE_COUNT) {
+    if (stream->fread(gmovie_played_list, sizeof(*gmovie_played_list), MOVIE_COUNT) != MOVIE_COUNT) {
         return -1;
     }
 
@@ -91,7 +91,7 @@ int gmovie_load(DB_FILE* stream)
 // 0x44E664
 int gmovie_save(DB_FILE* stream)
 {
-    if (db_fwrite(gmovie_played_list, sizeof(*gmovie_played_list), MOVIE_COUNT, stream) != MOVIE_COUNT) {
+    if (stream->fwrite(gmovie_played_list, sizeof(*gmovie_played_list), MOVIE_COUNT) != MOVIE_COUNT) {
         return -1;
     }
 
@@ -141,7 +141,7 @@ int gmovie_play(int game_movie, int game_movie_flags)
     if (game_movie == MOVIE_BOIL3 || game_movie == MOVIE_BOIL1 || game_movie == MOVIE_BOIL2) {
         subtitlesEnabled = true;
     } else {
-        configGetBool(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_SUBTITLES_KEY, &subtitlesEnabled);
+        game_config.getBool(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_SUBTITLES_KEY, &subtitlesEnabled);
     }
 
     int movie_flags = 4;
@@ -195,7 +195,7 @@ int gmovie_play(int game_movie, int game_movie_flags)
         }
 
         Gesture gesture;
-        if (touch_get_gesture(&gesture) && gesture.state == kEnded) {
+        if (touch_get_gesture(&gesture) && gesture.state == GestureState::Ended) {
             break;
         }
 
@@ -226,9 +226,9 @@ int gmovie_play(int game_movie, int game_movie_flags)
 
         windowSetFont(oldFont);
 
-        float r = (float)((Color2RGB(oldTextColor) & 0x7C00) >> 10) / 31.0f;
-        float g = (float)((Color2RGB(oldTextColor) & 0x3E0) >> 5) / 31.0f;
-        float b = (float)(Color2RGB(oldTextColor) & 0x1F) / 31.0f;
+        float r = static_cast<float>((Color2RGB(oldTextColor) & 0x7C00) >> 10) / 31.0f;
+        float g = static_cast<float>((Color2RGB(oldTextColor) & 0x3E0) >> 5) / 31.0f;
+        float b = static_cast<float>(Color2RGB(oldTextColor) & 0x1F) / 31.0f;
         windowSetTextColor(r, g, b);
     }
 
@@ -268,10 +268,10 @@ static char* gmovie_subtitle_func(char* movie_file_path)
     char* language;
     char* separator;
 
-    config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_LANGUAGE_KEY, &language);
+    game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_LANGUAGE_KEY, &language);
 
     separator = strrchr(movie_file_path, '\\');
-    if (separator != NULL) {
+    if (separator != nullptr) {
         movie_file_path = separator + 1;
     }
 

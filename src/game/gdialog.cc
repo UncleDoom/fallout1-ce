@@ -1,8 +1,8 @@
 #include "game/gdialog.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 
 #include "game/actions.h"
 #include "game/combat.h"
@@ -43,34 +43,34 @@
 
 namespace fallout {
 
-#define GAME_DIALOG_WINDOW_WIDTH 640
-#define GAME_DIALOG_WINDOW_HEIGHT 480
+static constexpr int GAME_DIALOG_WINDOW_WIDTH = 640;
+static constexpr int GAME_DIALOG_WINDOW_HEIGHT = 480;
 
-#define GAME_DIALOG_REPLY_WINDOW_X 135
-#define GAME_DIALOG_REPLY_WINDOW_Y 225
-#define GAME_DIALOG_REPLY_WINDOW_WIDTH 379
-#define GAME_DIALOG_REPLY_WINDOW_HEIGHT 58
+static constexpr int GAME_DIALOG_REPLY_WINDOW_X = 135;
+static constexpr int GAME_DIALOG_REPLY_WINDOW_Y = 225;
+static constexpr int GAME_DIALOG_REPLY_WINDOW_WIDTH = 379;
+static constexpr int GAME_DIALOG_REPLY_WINDOW_HEIGHT = 58;
 
-#define GAME_DIALOG_OPTIONS_WINDOW_X 127
-#define GAME_DIALOG_OPTIONS_WINDOW_Y 335
-#define GAME_DIALOG_OPTIONS_WINDOW_WIDTH 393
-#define GAME_DIALOG_OPTIONS_WINDOW_HEIGHT 117
+static constexpr int GAME_DIALOG_OPTIONS_WINDOW_X = 127;
+static constexpr int GAME_DIALOG_OPTIONS_WINDOW_Y = 335;
+static constexpr int GAME_DIALOG_OPTIONS_WINDOW_WIDTH = 393;
+static constexpr int GAME_DIALOG_OPTIONS_WINDOW_HEIGHT = 117;
 
-#define GAME_DIALOG_REVIEW_WINDOW_WIDTH 640
-#define GAME_DIALOG_REVIEW_WINDOW_HEIGHT 480
+static constexpr int GAME_DIALOG_REVIEW_WINDOW_WIDTH = 640;
+static constexpr int GAME_DIALOG_REVIEW_WINDOW_HEIGHT = 480;
 
-#define DIALOG_REVIEW_ENTRIES_CAPACITY 80
+static constexpr int DIALOG_REVIEW_ENTRIES_CAPACITY = 80;
 
-#define DIALOG_OPTION_ENTRIES_CAPACITY 30
+static constexpr int DIALOG_OPTION_ENTRIES_CAPACITY = 30;
 
-typedef enum GameDialogReviewWindowButton {
+enum GameDialogReviewWindowButton {
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_SCROLL_UP,
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_SCROLL_DOWN,
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_DONE,
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_COUNT,
-} GameDialogReviewWindowButton;
+};
 
-typedef enum GameDialogReviewWindowButtonFrm {
+enum GameDialogReviewWindowButtonFrm {
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_ARROW_UP_NORMAL,
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_ARROW_UP_PRESSED,
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_ARROW_DOWN_NORMAL,
@@ -78,25 +78,25 @@ typedef enum GameDialogReviewWindowButtonFrm {
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_DONE_NORMAL,
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_DONE_PRESSED,
     GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_COUNT,
-} GameDialogReviewWindowButtonFrm;
+};
 
-typedef enum GameDialogReaction {
+enum GameDialogReaction {
     GAME_DIALOG_REACTION_GOOD = 49,
     GAME_DIALOG_REACTION_NEUTRAL = 50,
     GAME_DIALOG_REACTION_BAD = 51,
-} GameDialogReaction;
+};
 
-typedef struct GameDialogReviewEntry {
+struct GameDialogReviewEntry {
     int replyMessageListId;
     int replyMessageId;
-    // Can be NULL.
+    // Can be nullptr.
     char* replyText;
     int optionMessageListId;
     int optionMessageId;
     char* optionText;
-} GameDialogReviewEntry;
+};
 
-typedef struct GameDialogOptionEntry {
+struct GameDialogOptionEntry {
     int messageListId;
     int messageId;
     int reaction;
@@ -104,9 +104,9 @@ typedef struct GameDialogOptionEntry {
     int btn;
     int field_14;
     char text[900];
-} GameDialogOptionEntry;
+};
 
-typedef struct GameDialogBlock {
+struct GameDialogBlock {
     Program* program;
     int replyMessageListId;
     int replyMessageId;
@@ -125,7 +125,7 @@ typedef struct GameDialogBlock {
     char replyText[900];
     char field_394[1800];
     GameDialogOptionEntry options[DIALOG_OPTION_ENTRIES_CAPACITY];
-} GameDialogBlock;
+};
 
 static int gdialog_hide();
 static int gdialog_unhide();
@@ -194,10 +194,10 @@ static int about_lookup_name(const char* search);
 static int fidgetFID = 0;
 
 // 0x504FE0
-static CacheEntry* fidgetKey = NULL;
+static CacheEntry* fidgetKey = nullptr;
 
 // 0x504FE4
-static Art* fidgetFp = NULL;
+static Art* fidgetFp = nullptr;
 
 // 0x504FE8
 static int backgroundIndex = 2;
@@ -206,16 +206,16 @@ static int backgroundIndex = 2;
 static int lipsFID = 0;
 
 // 0x504FF0
-static CacheEntry* lipsKey = NULL;
+static CacheEntry* lipsKey = nullptr;
 
 // 0x504FF4
-static Art* lipsFp = NULL;
+static Art* lipsFp = nullptr;
 
 // 0x504FF8
 static bool gdialog_speech_playing = false;
 
 // 0x504FFC
-static unsigned char* headWindowBuffer = NULL;
+static unsigned char* headWindowBuffer = nullptr;
 
 // 0x505000
 static int dialogue_state = 0;
@@ -233,19 +233,19 @@ static bool gdDialogWentOff = false;
 static bool gdDialogTurnMouseOff = false;
 
 // 0x505014
-Object* dialog_target = NULL;
+Object* dialog_target = nullptr;
 
 // 0x505018
 int dialogue_scr_id = -1;
 
 // 0x50501C
-static Object* peon_table_obj = NULL;
+static Object* peon_table_obj = nullptr;
 
 // 0x505020
-static Object* barterer_table_obj = NULL;
+static Object* barterer_table_obj = nullptr;
 
 // 0x505024
-static Object* barterer_temp_obj = NULL;
+static Object* barterer_temp_obj = nullptr;
 
 // 0x505028
 static int gdBarterMod = 0;
@@ -293,10 +293,10 @@ static int gdPlayerTile = -1;
 int dialogue_head = 0;
 
 // 0x5050D4
-unsigned char* light_BlendTable = NULL;
+unsigned char* light_BlendTable = nullptr;
 
 // 0x5050D8
-unsigned char* dark_BlendTable = NULL;
+unsigned char* dark_BlendTable = nullptr;
 
 // 0x5050DC
 static int dialogue_just_started = 0;
@@ -403,7 +403,7 @@ static CacheEntry* reviewBackKey = INVALID_CACHE_ENTRY;
 static CacheEntry* reviewDispBackKey = INVALID_CACHE_ENTRY;
 
 // 0x5051E4
-static unsigned char* reviewDispBuf = NULL;
+static unsigned char* reviewDispBuf = nullptr;
 
 // 0x5051E8
 static int reviewFidWids[GAME_DIALOG_REVIEW_WINDOW_BUTTON_COUNT] = {
@@ -436,7 +436,7 @@ static int dgAboutWinKey = -1;
 static int gdAboutRebuildButtons = 1;
 
 // 0x505220
-static unsigned char* gdAboutWinBuf = NULL;
+static unsigned char* gdAboutWinBuf = nullptr;
 
 // 0x505224
 static bool dial_win_created = false;
@@ -445,16 +445,16 @@ static bool dial_win_created = false;
 static int about_win = -1;
 
 // 0x505234
-static unsigned char* about_win_buf = NULL;
+static unsigned char* about_win_buf = nullptr;
 
 // 0x505238
-static CacheEntry* about_button_up_key = NULL;
+static CacheEntry* about_button_up_key = nullptr;
 
 // 0x50523C
-static CacheEntry* about_button_down_key = NULL;
+static CacheEntry* about_button_down_key = nullptr;
 
 // 0x505240
-static char* about_input_string = NULL;
+static char* about_input_string = nullptr;
 
 // 0x505244
 static char about_input_cursor = '_';
@@ -607,10 +607,10 @@ void gdialog_enter(Object* target, int a2)
     if (PID_TYPE(target->pid) != OBJ_TYPE_ITEM && SID_TYPE(target->sid) != SCRIPT_TYPE_SPATIAL) {
         MessageListItem messageListItem;
 
-        if (make_path_func(obj_dude, obj_dude->tile, target->tile, NULL, 0, obj_sight_blocking_at) == 0) {
+        if (make_path_func(obj_dude, obj_dude->tile, target->tile, nullptr, 0, obj_sight_blocking_at) == 0) {
             // You can't see there.
             messageListItem.num = 660;
-            if (message_search(&proto_main_msg_file, &messageListItem)) {
+            if (proto_main_msg_file.search(&messageListItem)) {
                 if (a2) {
                     display_print(messageListItem.text);
                 } else {
@@ -625,7 +625,7 @@ void gdialog_enter(Object* target, int a2)
         if (tile_dist(obj_dude->tile, target->tile) > 12) {
             // Too far away.
             messageListItem.num = 661;
-            if (message_search(&proto_main_msg_file, &messageListItem)) {
+            if (proto_main_msg_file.search(&messageListItem)) {
                 if (a2) {
                     display_print(messageListItem.text);
                 } else {
@@ -794,11 +794,11 @@ int scr_dialogue_init(int headFid, int reaction)
     boxesWereDisabled = disable_box_bar_win();
     oldFont = text_curr();
     text_font(101);
-    dialogSetReplyWindow(135, 225, 379, 58, NULL);
+    dialogSetReplyWindow(135, 225, 379, 58, nullptr);
     dialogSetReplyColor(0.3f, 0.3f, 0.3f);
-    dialogSetOptionWindow(127, 335, 393, 117, NULL);
+    dialogSetOptionWindow(127, 335, 393, 117, nullptr);
     dialogSetOptionColor(0.2f, 0.2f, 0.2f);
-    dialogTitle(NULL);
+    dialogTitle(nullptr);
     dialogRegisterWinDrawCallbacks(demo_copy_title, demo_copy_options);
     talk_to_blend_table_init();
     cycle_disable();
@@ -859,17 +859,17 @@ int scr_dialogue_exit()
 
     text_font(oldFont);
 
-    if (fidgetFp != NULL) {
+    if (fidgetFp != nullptr) {
         art_ptr_unlock(fidgetKey);
-        fidgetFp = NULL;
+        fidgetFp = nullptr;
     }
 
-    if (lipsKey != NULL) {
+    if (lipsKey != nullptr) {
         if (art_ptr_unlock(lipsKey) == -1) {
             debug_printf("Failure unlocking lips frame!\n");
         }
-        lipsKey = NULL;
-        lipsFp = NULL;
+        lipsKey = nullptr;
+        lipsFp = nullptr;
         lipsFID = 0;
     }
 
@@ -1124,7 +1124,7 @@ int gDialogGo()
     if (gdNumOptions < 1) {
         dialogBlock.options[gdNumOptions].proc = 0;
 
-        if (gDialogOption(-1, -1, NULL, 50) == -1) {
+        if (gDialogOption(-1, -1, nullptr, 50) == -1) {
             interpretError("Error setting option.");
             rc = -1;
         }
@@ -1147,9 +1147,9 @@ static void gdReviewFree()
         entry->replyMessageListId = 0;
         entry->replyMessageId = 0;
 
-        if (entry->replyText != NULL) {
+        if (entry->replyText != nullptr) {
             mem_free(entry->replyText);
-            entry->replyText = NULL;
+            entry->replyText = nullptr;
         }
 
         entry->optionMessageListId = 0;
@@ -1193,17 +1193,17 @@ static int gdAddReviewReplyStr(const char* string)
     entry->replyMessageListId = -4;
     entry->replyMessageId = -4;
 
-    if (entry->replyText != NULL) {
+    if (entry->replyText != nullptr) {
         mem_free(entry->replyText);
-        entry->replyText = NULL;
+        entry->replyText = nullptr;
     }
 
-    entry->replyText = (char*)mem_malloc(strlen(string) + 1);
+    entry->replyText = static_cast<char*>(mem_malloc(strlen(string) + 1));
     strcpy(entry->replyText, string);
 
     entry->optionMessageListId = -3;
     entry->optionMessageId = -3;
-    entry->optionText = NULL;
+    entry->optionText = nullptr;
 
     curReviewSlot++;
 
@@ -1221,7 +1221,7 @@ static int gdAddReviewOptionChosen(int messageListId, int messageId)
     GameDialogReviewEntry* entry = &(reviewList[curReviewSlot - 1]);
     entry->optionMessageListId = messageListId;
     entry->optionMessageId = messageId;
-    entry->optionText = NULL;
+    entry->optionText = nullptr;
 
     return 0;
 }
@@ -1238,7 +1238,7 @@ static int gdAddReviewOptionChosenStr(const char* string)
     entry->optionMessageListId = -4;
     entry->optionMessageId = -4;
 
-    entry->optionText = (char*)mem_malloc(strlen(string) + 1);
+    entry->optionText = static_cast<char*>(mem_malloc(strlen(string) + 1));
     strcpy(entry->optionText, string);
 
     return 0;
@@ -1483,7 +1483,7 @@ static int gDialogProcessChoice(int a1)
 
     if (gdReenterLevel < 2) {
         if (dialogOptionEntry->proc != 0) {
-            executeProcedure(dialogBlock.program, dialogOptionEntry->proc);
+            dialogBlock.program->executeProcedure(dialogOptionEntry->proc);
         }
     }
 
@@ -1535,9 +1535,9 @@ static int gDialogProcessInit()
         -1,
         KEY_ARROW_UP,
         -1,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (upBtn != -1) {
         win_register_button_sound_func(upBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1554,9 +1554,9 @@ static int gDialogProcessInit()
         -1,
         KEY_ARROW_DOWN,
         -1,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (downBtn != -1) {
         win_register_button_sound_func(downBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1647,7 +1647,7 @@ static void gDialogProcessHighlight(int index)
     text_to_rect_wrapped(win_get_buf(gOptionWin),
         &optionRect,
         dialogOptionEntry->text,
-        NULL,
+        nullptr,
         text_height(),
         393,
         color);
@@ -1699,7 +1699,7 @@ static void gDialogProcessUnHighlight(int index)
     text_to_rect_wrapped(win_get_buf(gOptionWin),
         &optionRect,
         dialogOptionEntry->text,
-        NULL,
+        nullptr,
         text_height(),
         393,
         color);
@@ -1796,7 +1796,7 @@ static void gDialogProcessUpdate()
                 // Go on
                 messageListItem.num = 655;
                 if (stat_level(obj_dude, STAT_INTELLIGENCE) < 4) {
-                    if (message_search(&proto_main_msg_file, &messageListItem)) {
+                    if (proto_main_msg_file.search(&messageListItem)) {
                         strcpy(dialogOptionEntry->text, messageListItem.text);
                     } else {
                         debug_printf("\nError...can't find message!");
@@ -1810,7 +1810,7 @@ static void gDialogProcessUpdate()
         } else if (dialogOptionEntry->messageListId == -2) {
             // [Done]
             messageListItem.num = 650;
-            if (message_search(&proto_main_msg_file, &messageListItem)) {
+            if (proto_main_msg_file.search(&messageListItem)) {
                 snprintf(dialogOptionEntry->text, sizeof(dialogOptionEntry->text), "%c %s", '\x95', messageListItem.text);
             } else {
                 debug_printf("\nError...can't find message!");
@@ -1831,7 +1831,7 @@ static void gDialogProcessUpdate()
             text_to_rect_wrapped(win_get_buf(gOptionWin),
                 &optionRect,
                 dialogOptionEntry->text,
-                NULL,
+                nullptr,
                 text_height(),
                 393,
                 color);
@@ -1854,9 +1854,9 @@ static void gDialogProcessUpdate()
                 1300 + index,
                 -1,
                 49 + index,
-                NULL,
-                NULL,
-                NULL,
+                nullptr,
+                nullptr,
+                nullptr,
                 0);
             if (dialogOptionEntry->btn != -1) {
                 win_register_button_sound_func(dialogOptionEntry->btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1914,7 +1914,7 @@ static void demo_copy_title(int win)
     }
 
     unsigned char* src = win_get_buf(dialogueBackWindow);
-    if (src == NULL) {
+    if (src == nullptr) {
         debug_printf("\nError: demo_copy_title: couldn't get buffer!");
         return;
     }
@@ -1957,7 +1957,7 @@ static void demo_copy_options(int win)
     windowRect.uly -= (screenGetHeight() - GAME_DIALOG_WINDOW_HEIGHT) / 2;
 
     unsigned char* src = win_get_buf(dialogueWindow);
-    if (src == NULL) {
+    if (src == nullptr) {
         debug_printf("\nError: demo_copy_options: couldn't get buffer!");
         return;
     }
@@ -1969,8 +1969,8 @@ static void demo_copy_options(int win)
 // 0x43FACC
 static void gDialogRefreshOptionsRect(int win, Rect* drawRect)
 {
-    if (drawRect == NULL) {
-        debug_printf("\nError: gDialogRefreshOptionsRect: drawRect NULL!");
+    if (drawRect == nullptr) {
+        debug_printf("\nError: gDialogRefreshOptionsRect: drawRect nullptr!");
         return;
     }
 
@@ -1990,7 +1990,7 @@ static void gDialogRefreshOptionsRect(int win, Rect* drawRect)
     windowRect.uly -= (screenGetHeight() - GAME_DIALOG_WINDOW_HEIGHT) / 2;
 
     unsigned char* src = win_get_buf(dialogueWindow);
-    if (src == NULL) {
+    if (src == nullptr) {
         debug_printf("\nError: gDialogRefreshOptionsRect: couldn't get buffer!");
         return;
     }
@@ -2049,7 +2049,7 @@ static void head_bk()
         break;
     }
 
-    if (fidgetFp == NULL) {
+    if (fidgetFp == nullptr) {
         return;
     }
 
@@ -2061,7 +2061,7 @@ static void head_bk()
             lips_draw_head = false;
         }
 
-        if (!soundPlaying(lip_info.sound)) {
+        if (!lip_info.sound->isPlaying()) {
             gdialog_free_speech();
             talk_to_display_frame(lipsFp, 0);
             can_start_new_fidget = true;
@@ -2082,7 +2082,7 @@ static void head_bk()
     }
 
     if (elapsed_time(fidgetLastTime) >= fidgetTocksPerFrame) {
-        if (art_frame_max_frame(fidgetFp) <= fidgetFrameCounter) {
+        if (fidgetFp->maxFrame() <= fidgetFrameCounter) {
             talk_to_display_frame(fidgetFp, 0);
             can_start_new_fidget = true;
         } else {
@@ -2292,14 +2292,14 @@ static int gdialog_review()
 static int gdialog_review_init(int* win)
 {
     if (gdialog_speech_playing) {
-        if (soundPlaying(lip_info.sound)) {
+        if (lip_info.sound->isPlaying()) {
             gdialog_free_speech();
         }
     }
 
     reviewOldFont = text_curr();
 
-    if (win == NULL) {
+    if (win == nullptr) {
         return -1;
     }
 
@@ -2317,7 +2317,7 @@ static int gdialog_review_init(int* win)
 
     int fid = art_id(OBJ_TYPE_INTERFACE, 102, 0, 0, 0);
     unsigned char* backgroundFrmData = art_ptr_lock_data(fid, 0, 0, &reviewBackKey);
-    if (backgroundFrmData == NULL) {
+    if (backgroundFrmData == nullptr) {
         win_delete(*win);
         *win = -1;
         return -1;
@@ -2340,7 +2340,7 @@ static int gdialog_review_init(int* win)
     for (index = 0; index < GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_COUNT; index++) {
         int fid = art_id(OBJ_TYPE_INTERFACE, reviewFids[index], 0, 0, 0);
         buttonFrmData[index] = art_ptr_lock_data(fid, 0, 0, &(reviewKeys[index]));
-        if (buttonFrmData[index] == NULL) {
+        if (buttonFrmData[index] == nullptr) {
             break;
         }
     }
@@ -2361,7 +2361,7 @@ static int gdialog_review_init(int* win)
         KEY_ARROW_UP,
         buttonFrmData[GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_ARROW_UP_NORMAL],
         buttonFrmData[GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_ARROW_UP_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (upBtn == -1) {
         gdialog_review_exit(win);
@@ -2381,7 +2381,7 @@ static int gdialog_review_init(int* win)
         KEY_ARROW_DOWN,
         buttonFrmData[GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_ARROW_DOWN_NORMAL],
         buttonFrmData[GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_ARROW_DOWN_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (downBtn == -1) {
         gdialog_review_exit(win);
@@ -2401,7 +2401,7 @@ static int gdialog_review_init(int* win)
         KEY_ESCAPE,
         buttonFrmData[GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_DONE_NORMAL],
         buttonFrmData[GAME_DIALOG_REVIEW_WINDOW_BUTTON_FRM_DONE_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (doneBtn == -1) {
         gdialog_review_exit(win);
@@ -2418,7 +2418,7 @@ static int gdialog_review_init(int* win)
 
     int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 102, 0, 0, 0);
     reviewDispBuf = art_ptr_lock_data(backgroundFid, 0, 0, &reviewDispBackKey);
-    if (reviewDispBuf == NULL) {
+    if (reviewDispBuf == nullptr) {
         gdialog_review_exit(win);
         return -1;
     }
@@ -2441,12 +2441,12 @@ static int gdialog_review_exit(int* win)
     if (reviewDispBackKey != INVALID_CACHE_ENTRY) {
         art_ptr_unlock(reviewDispBackKey);
         reviewDispBackKey = INVALID_CACHE_ENTRY;
-        reviewDispBuf = NULL;
+        reviewDispBuf = nullptr;
     }
 
     text_font(reviewOldFont);
 
-    if (win == NULL) {
+    if (win == nullptr) {
         return -1;
     }
 
@@ -2467,7 +2467,7 @@ static void gdialog_review_display(int win, int origin)
 
     int v20 = text_height() + 2;
     unsigned char* windowBuffer = win_get_buf(win);
-    if (windowBuffer == NULL) {
+    if (windowBuffer == nullptr) {
         debug_printf("\nError: gdialog: review: can't find buffer!");
         return;
     }
@@ -2497,7 +2497,7 @@ static void gdialog_review_display(int win, int origin)
             replyText = scr_get_msg_str(dialogReviewEntry->replyMessageListId, dialogReviewEntry->replyMessageId);
         }
 
-        if (replyText == NULL) {
+        if (replyText == nullptr) {
             GNWSystemError("\nGDialog::Error Grabbing text message!");
             exit(1);
         }
@@ -2506,7 +2506,7 @@ static void gdialog_review_display(int win, int origin)
         y = text_to_rect_wrapped(windowBuffer + 113,
             &entriesRect,
             replyText,
-            NULL,
+            nullptr,
             text_height(),
             640,
             colorTable[768] | 0x2000000);
@@ -2523,7 +2523,7 @@ static void gdialog_review_display(int win, int origin)
                 optionText = scr_get_msg_str(dialogReviewEntry->optionMessageListId, dialogReviewEntry->optionMessageId);
             }
 
-            if (optionText == NULL) {
+            if (optionText == nullptr) {
                 GNWSystemError("\nGDialog::Error Grabbing text message!");
                 exit(1);
             }
@@ -2532,7 +2532,7 @@ static void gdialog_review_display(int win, int origin)
             y = text_to_rect_wrapped(windowBuffer + 113,
                 &entriesRect,
                 optionText,
-                NULL,
+                nullptr,
                 text_height(),
                 640,
                 colorTable[15855] | 0x2000000);
@@ -2560,15 +2560,15 @@ static int text_to_rect_wrapped(unsigned char* buffer, Rect* rect, char* string,
 static int text_to_rect_func(unsigned char* buffer, Rect* rect, char* string, int* a4, int height, int pitch, int color, int a7)
 {
     char* start;
-    if (a4 != NULL) {
+    if (a4 != nullptr) {
         start = string + *a4;
     } else {
         start = string;
     }
 
     int maxWidth = rect->lrx - rect->ulx;
-    char* end = NULL;
-    while (start != NULL && *start != '\0') {
+    char* end = nullptr;
+    while (start != nullptr && *start != '\0') {
         if (text_width(start) > maxWidth) {
             end = start + 1;
             while (*end != '\0' && *end != ' ') {
@@ -2577,18 +2577,18 @@ static int text_to_rect_func(unsigned char* buffer, Rect* rect, char* string, in
 
             if (*end != '\0') {
                 char* lookahead = end + 1;
-                while (lookahead != NULL) {
+                while (lookahead != nullptr) {
                     while (*lookahead != '\0' && *lookahead != ' ') {
                         lookahead++;
                     }
 
                     if (*lookahead == '\0') {
-                        lookahead = NULL;
+                        lookahead = nullptr;
                     } else {
                         *lookahead = '\0';
                         if (text_width(start) >= maxWidth) {
                             *lookahead = ' ';
-                            lookahead = NULL;
+                            lookahead = nullptr;
                         } else {
                             end = lookahead;
                             *lookahead = ' ';
@@ -2611,7 +2611,7 @@ static int text_to_rect_func(unsigned char* buffer, Rect* rect, char* string, in
                     text_to_buf(buffer + pitch * rect->uly, start, maxWidth, pitch, color);
                 }
 
-                if (a4 != NULL) {
+                if (a4 != nullptr) {
                     *a4 += strlen(start) + 1;
                 }
 
@@ -2627,7 +2627,7 @@ static int text_to_rect_func(unsigned char* buffer, Rect* rect, char* string, in
 
         if (a7 != 0) {
             if (rect->lry - text_height() < rect->uly) {
-                if (end != NULL && *end == '\0') {
+                if (end != nullptr && *end == '\0') {
                     *end = ' ';
                 }
                 return rect->uly;
@@ -2642,24 +2642,24 @@ static int text_to_rect_func(unsigned char* buffer, Rect* rect, char* string, in
             text_to_buf(dest + pitch * rect->uly, start, maxWidth, pitch, color);
         }
 
-        if (a4 != NULL && end != NULL) {
+        if (a4 != nullptr && end != nullptr) {
             *a4 += strlen(start) + 1;
         }
 
         rect->uly += height;
 
-        if (end != NULL) {
+        if (end != nullptr) {
             start = end + 1;
             if (*end == '\0') {
                 *end = ' ';
             }
-            end = NULL;
+            end = nullptr;
         } else {
-            start = NULL;
+            start = nullptr;
         }
     }
 
-    if (a4 != NULL) {
+    if (a4 != nullptr) {
         *a4 = 0;
     }
 
@@ -2710,17 +2710,17 @@ static int talk_to_create_barter_win()
     int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 111, 0, 0, 0);
     CacheEntry* backgroundHandle;
     Art* backgroundFrm = art_ptr_lock(backgroundFid, &backgroundHandle);
-    if (backgroundFrm == NULL) {
+    if (backgroundFrm == nullptr) {
         return -1;
     }
 
-    unsigned char* backgroundData = art_frame_data(backgroundFrm, 0, 0);
-    if (backgroundData == NULL) {
+    unsigned char* backgroundData = backgroundFrm->frameData(0, 0);
+    if (backgroundData == nullptr) {
         art_ptr_unlock(backgroundHandle);
         return -1;
     }
 
-    dialogue_subwin_len = art_frame_length(backgroundFrm, 0, 0);
+    dialogue_subwin_len = backgroundFrm->frameLength(0, 0);
 
     int barterWindowX = (screenGetWidth() - GAME_DIALOG_WINDOW_WIDTH) / 2;
     int barterWindowY = (screenGetHeight() - GAME_DIALOG_WINDOW_HEIGHT) / 2 + GAME_DIALOG_WINDOW_HEIGHT - dialogue_subwin_len;
@@ -2741,19 +2741,19 @@ static int talk_to_create_barter_win()
     unsigned char* backgroundWindowBuffer = win_get_buf(dialogueBackWindow);
     buf_to_buf(backgroundWindowBuffer + width * (480 - dialogue_subwin_len), width, dialogue_subwin_len, width, windowBuffer, width);
 
-    talk_to_scroll_subwin(dialogueWindow, 1, backgroundData, windowBuffer, NULL, dialogue_subwin_len, 0);
+    talk_to_scroll_subwin(dialogueWindow, 1, backgroundData, windowBuffer, nullptr, dialogue_subwin_len, 0);
 
     art_ptr_unlock(backgroundHandle);
 
     fid = art_id(OBJ_TYPE_INTERFACE, 96, 0, 0, 0);
     normal = art_ptr_lock_data(fid, 0, 0, &dialogue_redbut_Key1);
-    if (normal == NULL) {
+    if (normal == nullptr) {
         return -1;
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 95, 0, 0, 0);
     pressed = art_ptr_lock_data(fid, 0, 0, &dialogue_redbut_Key2);
-    if (pressed == NULL) {
+    if (pressed == nullptr) {
         return -1;
     }
 
@@ -2833,12 +2833,12 @@ static void talk_to_destroy_barter_win()
     art_ptr_unlock(dialogue_redbut_Key2);
 
     unsigned char* backgroundWindowBuffer = win_get_buf(dialogueBackWindow);
-    backgroundWindowBuffer += (GAME_DIALOG_WINDOW_WIDTH) * (480 - dialogue_subwin_len);
+    backgroundWindowBuffer += GAME_DIALOG_WINDOW_WIDTH * (480 - dialogue_subwin_len);
 
     CacheEntry* backgroundFrmHandle;
     int fid = art_id(OBJ_TYPE_INTERFACE, 111, 0, 0, 0);
     unsigned char* backgroundFrmData = art_ptr_lock_data(fid, 0, 0, &backgroundFrmHandle);
-    if (backgroundFrmData != NULL) {
+    if (backgroundFrmData != nullptr) {
         unsigned char* windowBuffer = win_get_buf(dialogueWindow);
         talk_to_scroll_subwin(dialogueWindow, 0, backgroundFrmData, windowBuffer, backgroundWindowBuffer, dialogue_subwin_len, 0);
         art_ptr_unlock(backgroundFrmHandle);
@@ -2869,7 +2869,7 @@ static void dialogue_barter_cleanup_tables()
         item_move_force(barterer_table_obj, dialog_target, item, quantity);
     }
 
-    if (barterer_temp_obj != NULL) {
+    if (barterer_temp_obj != nullptr) {
         inventory = &(barterer_temp_obj->data.inventory);
         length = inventory->length;
         for (int index = 0; index < length; index++) {
@@ -2896,7 +2896,7 @@ static void talk_to_pressed_barter(int btn, int keyCode)
     proto_ptr(dialog_target->pid, &proto);
     if ((proto->critter.data.flags & CRITTER_BARTER) != 0) {
         if (gdialog_speech_playing) {
-            if (soundPlaying(lip_info.sound)) {
+            if (lip_info.sound->isPlaying()) {
                 gdialog_free_speech();
             }
         }
@@ -2911,7 +2911,7 @@ static void talk_to_pressed_barter(int btn, int keyCode)
         // This person will not barter with you.
         messageListItem.num = 903;
 
-        if (message_search(&proto_main_msg_file, &messageListItem)) {
+        if (proto_main_msg_file.search(&messageListItem)) {
             gdialog_display_msg(messageListItem.text);
         } else {
             debug_printf("\nError: gdialog: Can't find message!");
@@ -2924,15 +2924,15 @@ static void talk_to_pressed_about(int btn, int keyCode)
 {
     MessageListItem mesg;
     int reaction;
-    int reaction_level;
+    NpcReaction reaction_level;
 
     if (PID_TYPE(dialog_target->pid) == OBJ_TYPE_CRITTER) {
         reaction = reaction_get(dialog_target);
         reaction_level = reaction_to_level(reaction);
-        if (reaction_level != 0) {
+        if (reaction_level != NpcReaction::NPC_REACTION_BAD) {
             if (map_data.field_34 != 35) {
                 if (gdialog_speech_playing == 1) {
-                    if (soundPlay(lip_info.sound)) {
+                    if (lip_info.sound->play()) {
                         gdialog_free_speech();
                     }
                 }
@@ -2941,21 +2941,21 @@ static void talk_to_pressed_about(int btn, int keyCode)
                 gdialog_hide();
             } else {
                 mesg.num = 904;
-                if (message_search(&proto_main_msg_file, &mesg) != 1) {
+                if (proto_main_msg_file.search(&mesg) != 1) {
                     debug_printf("\nError: gdialog: Can't find message!");
                 }
                 gdialog_display_msg(mesg.text);
             }
         } else {
             mesg.num = 904;
-            if (message_search(&proto_main_msg_file, &mesg) != 1) {
+            if (proto_main_msg_file.search(&mesg) != 1) {
                 debug_printf("\nError: gdialog: Can't find message!");
             }
             // NOTE: Message is not used.
         }
     } else {
         mesg.num = 904;
-        if (message_search(&proto_main_msg_file, &mesg) != 1) {
+        if (proto_main_msg_file.search(&mesg) != 1) {
             debug_printf("\nError: gdialog: Can't find message!");
         }
         // NOTE: Message is not used.
@@ -2985,16 +2985,16 @@ static int talk_to_create_dialogue_win()
     CacheEntry* backgroundFrmHandle;
     int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 99, 0, 0, 0);
     Art* backgroundFrm = art_ptr_lock(backgroundFid, &backgroundFrmHandle);
-    if (backgroundFrm == NULL) {
+    if (backgroundFrm == nullptr) {
         return -1;
     }
 
-    unsigned char* backgroundFrmData = art_frame_data(backgroundFrm, 0, 0);
-    if (backgroundFrmData == NULL) {
+    unsigned char* backgroundFrmData = backgroundFrm->frameData(0, 0);
+    if (backgroundFrmData == nullptr) {
         return -1;
     }
 
-    dialogue_subwin_len = art_frame_length(backgroundFrm, 0, 0);
+    dialogue_subwin_len = backgroundFrm->frameLength(0, 0);
 
     int dialogSubwindowX = (screenGetWidth() - GAME_DIALOG_WINDOW_WIDTH) / 2;
     int dialogSubwindowY = (screenGetHeight() - GAME_DIALOG_WINDOW_HEIGHT) / 2 + GAME_DIALOG_WINDOW_HEIGHT - dialogue_subwin_len;
@@ -3029,13 +3029,13 @@ static int talk_to_create_dialogue_win()
 
     fid = art_id(OBJ_TYPE_INTERFACE, 96, 0, 0, 0);
     normal = art_ptr_lock_data(fid, 0, 0, &dialogue_redbut_Key1);
-    if (normal == NULL) {
+    if (normal == nullptr) {
         return -1;
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 95, 0, 0, 0);
     pressed = art_ptr_lock_data(fid, 0, 0, &dialogue_redbut_Key2);
-    if (pressed == NULL) {
+    if (pressed == nullptr) {
         return -1;
     }
 
@@ -3051,10 +3051,10 @@ static int talk_to_create_dialogue_win()
         -1,
         normal,
         pressed,
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (dialogue_bids[0] != -1) {
-        win_register_button_func(dialogue_bids[0], NULL, NULL, NULL, talk_to_pressed_barter);
+        win_register_button_func(dialogue_bids[0], nullptr, nullptr, nullptr, talk_to_pressed_barter);
         win_register_button_sound_func(dialogue_bids[0], gsound_med_butt_press, gsound_med_butt_release);
     }
 
@@ -3073,13 +3073,13 @@ static int talk_to_create_dialogue_win()
         0,
         BUTTON_FLAG_TRANSPARENT);
     if (dialogue_bids[1] != -1) {
-        win_register_button_func(dialogue_bids[1], NULL, NULL, NULL, talk_to_pressed_about);
+        win_register_button_func(dialogue_bids[1], nullptr, nullptr, nullptr, talk_to_pressed_about);
         win_register_button_sound_func(dialogue_bids[1], gsound_med_butt_press, gsound_med_butt_release);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 97, 0, 0, 0);
     normal = art_ptr_lock_data(fid, 0, 0, &dialogue_rest_Key1);
-    if (normal == NULL) {
+    if (normal == nullptr) {
         return -1;
     }
 
@@ -3098,10 +3098,10 @@ static int talk_to_create_dialogue_win()
         -1,
         normal,
         pressed,
-        NULL,
+        nullptr,
         0);
     if (dialogue_bids[2] != -1) {
-        win_register_button_func(dialogue_bids[2], NULL, NULL, NULL, talk_to_pressed_review);
+        win_register_button_func(dialogue_bids[2], nullptr, nullptr, nullptr, talk_to_pressed_review);
         win_register_button_sound_func(dialogue_bids[2], gsound_red_butt_press, gsound_red_butt_release);
     }
 
@@ -3124,13 +3124,13 @@ static void talk_to_destroy_dialogue_win()
     art_ptr_unlock(dialogue_rest_Key1);
     art_ptr_unlock(dialogue_rest_Key2);
 
-    int offset = (GAME_DIALOG_WINDOW_WIDTH) * (480 - dialogue_subwin_len);
+    int offset = GAME_DIALOG_WINDOW_WIDTH * (480 - dialogue_subwin_len);
     unsigned char* backgroundWindowBuffer = win_get_buf(dialogueBackWindow) + offset;
 
     CacheEntry* backgroundFrmHandle;
     int fid = art_id(OBJ_TYPE_INTERFACE, 99, 0, 0, 0);
     unsigned char* backgroundFrmData = art_ptr_lock_data(fid, 0, 0, &backgroundFrmHandle);
-    if (backgroundFrmData != NULL) {
+    if (backgroundFrmData != nullptr) {
         unsigned char* windowBuffer = win_get_buf(dialogueWindow);
         talk_to_scroll_subwin(dialogueWindow, 0, backgroundFrmData, windowBuffer, backgroundWindowBuffer, dialogue_subwin_len, 0);
         art_ptr_unlock(backgroundFrmHandle);
@@ -3166,7 +3166,7 @@ static int talk_to_refresh_background_window()
     // alltlk.frm - dialog screen background
     int fid = art_id(OBJ_TYPE_INTERFACE, 103, 0, 0, 0);
     unsigned char* backgroundFrmData = art_ptr_lock_data(fid, 0, 0, &backgroundFrmHandle);
-    if (backgroundFrmData == NULL) {
+    if (backgroundFrmData == nullptr) {
         return -1;
     }
 
@@ -3201,8 +3201,8 @@ static int talk_to_create_head_window()
         Rect* rect = &(backgrndRects[index]);
         int width = rect->lrx - rect->ulx;
         int height = rect->lry - rect->uly;
-        backgrndBufs[index] = (unsigned char*)mem_malloc(width * height);
-        if (backgrndBufs[index] == NULL) {
+        backgrndBufs[index] = static_cast<unsigned char*>(mem_malloc(width * height));
+        if (backgrndBufs[index] == nullptr) {
             return -1;
         }
 
@@ -3216,7 +3216,7 @@ static int talk_to_create_head_window()
 
     headWindowBuffer = win_get_buf(dialogueBackWindow) + windowWidth * 14 + 126;
 
-    if (headWindowBuffer == NULL) {
+    if (headWindowBuffer == nullptr) {
         talk_to_destroy_head_window();
         return -1;
     }
@@ -3228,7 +3228,7 @@ static int talk_to_create_head_window()
 static void talk_to_destroy_head_window()
 {
     if (dialogueWindow != -1) {
-        headWindowBuffer = NULL;
+        headWindowBuffer = nullptr;
     }
 
     if (dialogue_state == 1) {
@@ -3257,14 +3257,14 @@ static void talk_to_set_up_fidget(int headFrmId, int reaction)
 
     if (headFrmId == -1) {
         fidgetFID = -1;
-        fidgetFp = NULL;
+        fidgetFp = nullptr;
         fidgetKey = INVALID_CACHE_ENTRY;
         fidgetAnim = -1;
         fidgetTocksPerFrame = 0;
         fidgetLastTime = 0;
-        talk_to_display_frame(NULL, 0);
+        talk_to_display_frame(nullptr, 0);
         lipsFID = 0;
-        lipsKey = NULL;
+        lipsKey = nullptr;
         lipsFp = 0;
         return;
     }
@@ -3284,8 +3284,8 @@ static void talk_to_set_up_fidget(int headFrmId, int reaction)
             if (art_ptr_unlock(lipsKey) == -1) {
                 debug_printf("failure unlocking lips frame!\n");
             }
-            lipsKey = NULL;
-            lipsFp = NULL;
+            lipsKey = nullptr;
+            lipsFp = nullptr;
             lipsFID = 0;
         }
     }
@@ -3294,7 +3294,7 @@ static void talk_to_set_up_fidget(int headFrmId, int reaction)
         phone_anim = anim;
         lipsFID = art_id(OBJ_TYPE_HEAD, headFrmId, anim, 0, 0);
         lipsFp = art_ptr_lock(lipsFID, &lipsKey);
-        if (lipsFp == NULL) {
+        if (lipsFp == nullptr) {
             debug_printf("failure!\n");
 
             char stats[200];
@@ -3338,7 +3338,7 @@ static void talk_to_set_up_fidget(int headFrmId, int reaction)
 
     debug_printf("Choosing fidget %d out of %d\n", fidget, fidgetCount);
 
-    if (fidgetFp != NULL) {
+    if (fidgetFp != nullptr) {
         if (art_ptr_unlock(fidgetKey) == -1) {
             debug_printf("failure!\n");
         }
@@ -3347,7 +3347,7 @@ static void talk_to_set_up_fidget(int headFrmId, int reaction)
     fidgetFID = art_id(OBJ_TYPE_HEAD, headFrmId, reaction, fidget, 0);
     fidgetFrameCounter = 0;
     fidgetFp = art_ptr_lock(fidgetFID, &fidgetKey);
-    if (fidgetFp == NULL) {
+    if (fidgetFp == nullptr) {
         debug_printf("failure!\n");
 
         char stats[200];
@@ -3357,13 +3357,13 @@ static void talk_to_set_up_fidget(int headFrmId, int reaction)
 
     fidgetLastTime = 0;
     fidgetAnim = reaction;
-    fidgetTocksPerFrame = 1000 / art_frame_fps(fidgetFp);
+    fidgetTocksPerFrame = 1000 / fidgetFp->fps();
 }
 
 // 0x441A30
 static void talk_to_wait_for_fidget()
 {
-    if (fidgetFp == NULL) {
+    if (fidgetFp == nullptr) {
         return;
     }
 
@@ -3373,7 +3373,7 @@ static void talk_to_wait_for_fidget()
 
     debug_printf("Waiting for fidget to complete...\n");
 
-    while (art_frame_max_frame(fidgetFp) > fidgetFrameCounter) {
+    while (fidgetFp->maxFrame() > fidgetFrameCounter) {
         sharedFpsLimiter.mark();
 
         if (elapsed_time(fidgetLastTime) >= fidgetTocksPerFrame) {
@@ -3392,7 +3392,7 @@ static void talk_to_wait_for_fidget()
 // 0x441AAC
 static void talk_to_play_transition(int anim)
 {
-    if (fidgetFp == NULL) {
+    if (fidgetFp == nullptr) {
         return;
     }
 
@@ -3406,25 +3406,25 @@ static void talk_to_play_transition(int anim)
 
     talk_to_wait_for_fidget();
 
-    if (fidgetFp != NULL) {
+    if (fidgetFp != nullptr) {
         if (art_ptr_unlock(fidgetKey) == -1) {
             debug_printf("\tError unlocking fidget in transition func...");
         }
-        fidgetFp = NULL;
+        fidgetFp = nullptr;
     }
 
     CacheEntry* headFrmHandle;
     int headFid = art_id(OBJ_TYPE_HEAD, dialogue_head, anim, 0, 0);
     Art* headFrm = art_ptr_lock(headFid, &headFrmHandle);
-    if (headFrm == NULL) {
+    if (headFrm == nullptr) {
         debug_printf("\tError locking transition...\n");
     }
 
-    unsigned int delay = 1000 / art_frame_fps(headFrm);
+    unsigned int delay = 1000 / headFrm->fps();
 
     int frame = 0;
     unsigned int time = 0;
-    while (frame < art_frame_max_frame(headFrm)) {
+    while (frame < headFrm->maxFrame()) {
         sharedFpsLimiter.mark();
 
         if (elapsed_time(time) >= delay) {
@@ -3478,7 +3478,7 @@ static void talk_to_display_frame(Art* headFrm, int frame)
         return;
     }
 
-    if (headFrm != NULL) {
+    if (headFrm != nullptr) {
         if (frame == 0) {
             totalHotx = 0;
         }
@@ -3487,12 +3487,12 @@ static void talk_to_display_frame(Art* headFrm, int frame)
 
         CacheEntry* backgroundHandle;
         Art* backgroundFrm = art_ptr_lock(backgroundFid, &backgroundHandle);
-        if (backgroundFrm == NULL) {
+        if (backgroundFrm == nullptr) {
             debug_printf("\tError locking background in display...\n");
         }
 
-        unsigned char* backgroundFrmData = art_frame_data(backgroundFrm, 0, 0);
-        if (backgroundFrmData != NULL) {
+        unsigned char* backgroundFrmData = backgroundFrm->frameData(0, 0);
+        if (backgroundFrmData != nullptr) {
             buf_to_buf(backgroundFrmData, 388, 200, 388, headWindowBuffer, GAME_DIALOG_WINDOW_WIDTH);
         } else {
             debug_printf("\tError getting background data in display...\n");
@@ -3500,22 +3500,22 @@ static void talk_to_display_frame(Art* headFrm, int frame)
 
         art_ptr_unlock(backgroundHandle);
 
-        int width = art_frame_width(headFrm, frame, 0);
-        int height = art_frame_length(headFrm, frame, 0);
-        unsigned char* data = art_frame_data(headFrm, frame, 0);
+        int width = headFrm->frameWidth(frame, 0);
+        int height = headFrm->frameLength(frame, 0);
+        unsigned char* data = headFrm->frameData(frame, 0);
 
         int a3;
         int v8;
-        art_frame_offset(headFrm, 0, &a3, &v8);
+        headFrm->frameOffset(0, &a3, &v8);
 
         int a4;
         int a5;
-        art_frame_hot(headFrm, frame, 0, &a4, &a5);
+        headFrm->frameHot(frame, 0, &a4, &a5);
 
         totalHotx += a4;
         a3 += totalHotx;
 
-        if (data != NULL) {
+        if (data != nullptr) {
             int destWidth = GAME_DIALOG_WINDOW_WIDTH;
             int destOffset = destWidth * (200 - height) + a3 + (388 - width) / 2;
             if (destOffset + width * v8 > 0) {
@@ -3556,10 +3556,10 @@ static void talk_to_display_frame(Art* headFrm, int frame)
 
     unsigned char* dest = win_get_buf(dialogueBackWindow);
 
-    unsigned char* data1 = art_frame_data(upper_hi_fp, 0, 0);
+    unsigned char* data1 = upper_hi_fp->frameData(0, 0);
     talk_to_translucent_trans_buf_to_buf(data1, upper_hi_wid, upper_hi_len, upper_hi_wid, dest, 426, 15, GAME_DIALOG_WINDOW_WIDTH, light_BlendTable, light_GrayTable);
 
-    unsigned char* data2 = art_frame_data(lower_hi_fp, 0, 0);
+    unsigned char* data2 = lower_hi_fp->frameData(0, 0);
     talk_to_translucent_trans_buf_to_buf(data2, lower_hi_wid, lower_hi_len, lower_hi_wid, dest, 129, 214 - lower_hi_len - 2, GAME_DIALOG_WINDOW_WIDTH, dark_BlendTable, dark_GrayTable);
 
     for (int index = 0; index < 8; ++index) {
@@ -3597,14 +3597,14 @@ static void talk_to_blend_table_init()
     // hilight1.frm - dialogue upper hilight
     int upperHighlightFid = art_id(OBJ_TYPE_INTERFACE, 115, 0, 0, 0);
     upper_hi_fp = art_ptr_lock(upperHighlightFid, &upper_hi_key);
-    upper_hi_wid = art_frame_width(upper_hi_fp, 0, 0);
-    upper_hi_len = art_frame_length(upper_hi_fp, 0, 0);
+    upper_hi_wid = upper_hi_fp->frameWidth(0, 0);
+    upper_hi_len = upper_hi_fp->frameLength(0, 0);
 
     // hilight2.frm - dialogue lower hilight
     int lowerHighlightFid = art_id(OBJ_TYPE_INTERFACE, 116, 0, 0, 0);
     lower_hi_fp = art_ptr_lock(lowerHighlightFid, &lower_hi_key);
-    lower_hi_wid = art_frame_width(lower_hi_fp, 0, 0);
-    lower_hi_len = art_frame_length(lower_hi_fp, 0, 0);
+    lower_hi_wid = lower_hi_fp->frameWidth(0, 0);
+    lower_hi_len = lower_hi_fp->frameLength(0, 0);
 }
 
 // 0x442128
@@ -3642,11 +3642,11 @@ static int about_init()
 
         fid = art_id(OBJ_TYPE_INTERFACE, 238, 0, 0, 0);
         background_frm = art_ptr_lock(fid, &background_key);
-        if (background_frm != NULL) {
-            background_data = art_frame_data(background_frm, 0, 0);
-            if (background_data != NULL) {
-                background_width = art_frame_width(background_frm, 0, 0);
-                background_height = art_frame_length(background_frm, 0, 0);
+        if (background_frm != nullptr) {
+            background_data = background_frm->frameData(0, 0);
+            if (background_data != nullptr) {
+                background_width = background_frm->frameWidth(0, 0);
+                background_height = background_frm->frameLength(0, 0);
                 about_win_width = background_width;
                 about_win = win_add((screenGetWidth() - background_width) / 2,
                     (screenGetHeight() - GAME_DIALOG_WINDOW_HEIGHT) / 2 + 356,
@@ -3656,7 +3656,7 @@ static int about_init()
                     WINDOW_MODAL | WINDOW_MOVE_ON_TOP);
                 if (about_win != -1) {
                     about_win_buf = win_get_buf(about_win);
-                    if (about_win_buf != NULL) {
+                    if (about_win_buf != nullptr) {
                         buf_to_buf(background_data,
                             background_width,
                             background_height,
@@ -3666,22 +3666,22 @@ static int about_init()
 
                         text_font(103);
 
-                        if (message_init(&msg_file) == 1 && message_load(&msg_file, "game\\misc.msg") == 1) {
+                        if (msg_file.init() == 1 && msg_file.load("game\\misc.msg") == 1) {
                             mesg.num = 6000;
-                            if (message_search(&msg_file, &mesg) == 1) {
+                            if (msg_file.search(&mesg) == 1) {
                                 width = text_width(mesg.text);
                                 text_to_buf(about_win_buf + background_width * 7 + (background_width - width) / 2,
                                     mesg.text,
                                     background_width - (background_width - width) / 2,
                                     background_width,
                                     colorTable[18979]);
-                                message_exit(&msg_file);
+                                msg_file.exit();
 
                                 text_font(103);
 
-                                if (message_init(&msg_file) == 1 && message_load(&msg_file, "game\\dbox.msg") == 1) {
+                                if (msg_file.init() == 1 && msg_file.load("game\\dbox.msg") == 1) {
                                     mesg.num = 100;
-                                    if (message_search(&msg_file, &mesg) == 1) {
+                                    if (msg_file.search(&mesg) == 1) {
                                         text_to_buf(about_win_buf + background_width * 57 + 56,
                                             mesg.text,
                                             background_width - 56,
@@ -3689,26 +3689,26 @@ static int about_init()
                                             colorTable[18979]);
 
                                         mesg.num = 103;
-                                        if (message_search(&msg_file, &mesg) == 1) {
+                                        if (msg_file.search(&mesg) == 1) {
                                             text_to_buf(about_win_buf + background_width * 57 + 181,
                                                 mesg.text,
                                                 background_width - 181,
                                                 background_width,
                                                 colorTable[18979]);
-                                            message_exit(&msg_file);
+                                            msg_file.exit();
 
                                             fid = art_id(OBJ_TYPE_INTERFACE, 8, 0, 0, 0);
                                             button_up_frm = art_ptr_lock(fid, &about_button_up_key);
-                                            if (button_up_frm != NULL) {
-                                                button_up_data = art_frame_data(button_up_frm, 0, 0);
-                                                if (button_up_data != NULL) {
+                                            if (button_up_frm != nullptr) {
+                                                button_up_data = button_up_frm->frameData(0, 0);
+                                                if (button_up_data != nullptr) {
                                                     fid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
                                                     button_down_frm = art_ptr_lock(fid, &about_button_down_key);
-                                                    if (button_down_frm != NULL) {
-                                                        button_down_data = art_frame_data(button_down_frm, 0, 0);
-                                                        if (button_down_data != NULL) {
-                                                            button_width = art_frame_width(button_down_frm, 0, 0);
-                                                            button_height = art_frame_length(button_down_frm, 0, 0);
+                                                    if (button_down_frm != nullptr) {
+                                                        button_down_data = button_down_frm->frameData(0, 0);
+                                                        if (button_down_data != nullptr) {
+                                                            button_width = button_down_frm->frameWidth(0, 0);
+                                                            button_height = button_down_frm->frameLength(0, 0);
 
                                                             btn = win_register_button(about_win,
                                                                 34,
@@ -3721,7 +3721,7 @@ static int about_init()
                                                                 KEY_RETURN,
                                                                 button_up_data,
                                                                 button_down_data,
-                                                                NULL,
+                                                                nullptr,
                                                                 BUTTON_FLAG_TRANSPARENT);
                                                             if (btn != -1) {
                                                                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -3737,13 +3737,13 @@ static int about_init()
                                                                     KEY_ESCAPE,
                                                                     button_up_data,
                                                                     button_down_data,
-                                                                    NULL,
+                                                                    nullptr,
                                                                     BUTTON_FLAG_TRANSPARENT);
                                                                 if (btn != -1) {
                                                                     win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
 
-                                                                    about_input_string = (char*)mem_malloc(128);
-                                                                    if (about_input_string != NULL) {
+                                                                    about_input_string = static_cast<char*>(mem_malloc(128));
+                                                                    if (about_input_string != nullptr) {
                                                                         strcpy(about_restore_string, dialogBlock.replyText);
                                                                         about_reset_string();
                                                                         about_last_time = get_time();
@@ -3766,7 +3766,7 @@ static int about_init()
                                     }
                                 }
                             }
-                            message_exit(&msg_file);
+                            msg_file.exit();
                         }
                     }
                     win_delete(about_win);
@@ -3787,19 +3787,19 @@ static int about_init()
 static void about_exit()
 {
     if (about_win != -1) {
-        if (about_input_string != NULL) {
+        if (about_input_string != nullptr) {
             mem_free(about_input_string);
-            about_input_string = NULL;
+            about_input_string = nullptr;
         }
 
-        if (about_button_up_key != NULL) {
+        if (about_button_up_key != nullptr) {
             art_ptr_unlock(about_button_up_key);
-            about_button_up_key = NULL;
+            about_button_up_key = nullptr;
         }
 
-        if (about_button_down_key != NULL) {
+        if (about_button_down_key != nullptr) {
             art_ptr_unlock(about_button_down_key);
-            about_button_down_key = NULL;
+            about_button_down_key = nullptr;
         }
 
         win_delete(about_win);
@@ -3860,7 +3860,7 @@ static int about_process_input(int input)
         break;
     case KEY_ESCAPE:
         if (gdialog_speech_playing == 1) {
-            if (soundPlaying(lip_info.sound)) {
+            if (lip_info.sound->isPlaying()) {
                 gdialog_free_speech();
             }
         }
@@ -3960,12 +3960,12 @@ static void about_process_string()
 
     if (about_input_string[0] != '\0') {
         tok = strtok(about_input_string, delimeters);
-        while (tok != NULL) {
+        while (tok != nullptr) {
             if (about_lookup_word(tok) || about_lookup_name(tok)) {
                 found = 1;
                 break;
             }
-            tok = strtok(NULL, delimeters);
+            tok = strtok(nullptr, delimeters);
         }
 
         if (!found) {
@@ -3973,7 +3973,7 @@ static void about_process_string()
                 count = 0;
                 for (message_id = 980; message_id < 1000; message_id++) {
                     str = scr_get_msg_str(scr->scr_script_idx + 1, message_id);
-                    if (str != NULL && compat_stricmp(str, "error") != 0) {
+                    if (str != nullptr && compat_stricmp(str, "error") != 0) {
                         count++;
                     }
                 }
@@ -3982,7 +3982,7 @@ static void about_process_string()
                     random_msg_num = roll_random(1, count);
                     for (message_id = 980; message_id < 1000; message_id++) {
                         str = scr_get_msg_str(scr->scr_script_idx + 1, message_id);
-                        if (str != NULL && compat_stricmp(str, "error") != 0) {
+                        if (str != nullptr && compat_stricmp(str, "error") != 0) {
                             random_msg_num--;
                             if (random_msg_num == 0) {
                                 strncpy(dialogBlock.replyText, scr_get_msg_str_speech(scr->scr_script_idx + 1, message_id, 1), sizeof(dialogBlock.replyText) - 1);
@@ -3995,7 +3995,7 @@ static void about_process_string()
                 } else {
                     for (message_id = 980; message_id < 1000; message_id++) {
                         str = scr_get_msg_str(1, message_id);
-                        if (str != NULL && compat_stricmp(str, "error") != 0) {
+                        if (str != nullptr && compat_stricmp(str, "error") != 0) {
                             count++;
                         }
                     }
@@ -4004,7 +4004,7 @@ static void about_process_string()
                         random_msg_num = roll_random(1, count);
                         for (message_id = 980; message_id < 1000; message_id++) {
                             str = scr_get_msg_str(1, message_id);
-                            if (str != NULL && compat_stricmp(str, "error") != 0) {
+                            if (str != nullptr && compat_stricmp(str, "error") != 0) {
                                 random_msg_num--;
                                 if (random_msg_num == 0) {
                                     strncpy(dialogBlock.replyText, scr_get_msg_str_speech(1, message_id, 1), sizeof(dialogBlock.replyText) - 1);
@@ -4037,7 +4037,7 @@ static int about_lookup_word(const char* search)
         message_list_id = scr->scr_script_idx + 1;
         for (message_id = 1000; message_id < 1100; message_id++) {
             str = scr_get_msg_str(message_list_id, message_id);
-            if (str != NULL && compat_stricmp(str, search) == 0) {
+            if (str != nullptr && compat_stricmp(str, search) == 0) {
                 found = message_id + 100;
                 break;
             }
@@ -4048,7 +4048,7 @@ static int about_lookup_word(const char* search)
         message_list_id = 1;
         for (message_id = 600 * map_data.field_34 + 1000; message_id < 600 * map_data.field_34 + 1100; message_id++) {
             str = scr_get_msg_str(message_list_id, message_id);
-            if (str != NULL && compat_stricmp(str, search) == 0) {
+            if (str != nullptr && compat_stricmp(str, search) == 0) {
                 found = message_id + 100;
                 break;
             }
@@ -4081,7 +4081,7 @@ static int about_lookup_name(const char* search)
     }
 
     name = critter_name(dialog_target);
-    if (name == NULL) {
+    if (name == nullptr) {
         return 0;
     }
 
@@ -4098,7 +4098,7 @@ static int about_lookup_name(const char* search)
     count = 0;
     for (message_id = 970; message_id < 980; message_id++) {
         str = scr_get_msg_str(scr->scr_script_idx + 1, message_id);
-        if (str != NULL && compat_stricmp(str, "error") != 0) {
+        if (str != nullptr && compat_stricmp(str, "error") != 0) {
             count++;
         }
     }
@@ -4107,7 +4107,7 @@ static int about_lookup_name(const char* search)
         random_msg_num = roll_random(1, count);
         for (message_id = 970; message_id < 980; message_id++) {
             str = scr_get_msg_str(scr->scr_script_idx + 1, message_id);
-            if (str != NULL && compat_stricmp(str, "error") != 0) {
+            if (str != nullptr && compat_stricmp(str, "error") != 0) {
                 random_msg_num--;
                 if (random_msg_num == 0) {
                     strncpy(dialogBlock.replyText, scr_get_msg_str_speech(scr->scr_script_idx + 1, message_id, 1), sizeof(dialogBlock.replyText) - 1);
@@ -4121,7 +4121,7 @@ static int about_lookup_name(const char* search)
     } else {
         for (message_id = 970; message_id < 980; message_id++) {
             str = scr_get_msg_str(1, message_id);
-            if (str != NULL && compat_stricmp(str, "error") != 0) {
+            if (str != nullptr && compat_stricmp(str, "error") != 0) {
                 count++;
             }
         }
@@ -4130,7 +4130,7 @@ static int about_lookup_name(const char* search)
             random_msg_num = roll_random(1, count);
             for (message_id = 970; message_id < 980; message_id++) {
                 str = scr_get_msg_str(1, message_id);
-                if (str != NULL && compat_stricmp(str, "error") != 0) {
+                if (str != nullptr && compat_stricmp(str, "error") != 0) {
                     random_msg_num--;
                     if (random_msg_num == 0) {
                         strncpy(dialogBlock.replyText, scr_get_msg_str_speech(1, message_id, 1), sizeof(dialogBlock.replyText) - 1);

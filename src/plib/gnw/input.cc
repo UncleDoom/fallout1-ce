@@ -1,7 +1,7 @@
 #include "plib/gnw/input.h"
 
-#include <limits.h>
-#include <stdio.h>
+#include <climits>
+#include <cstdio>
 
 #include "audio_engine.h"
 #include "platform_compat.h"
@@ -20,28 +20,28 @@
 
 namespace fallout {
 
-typedef struct GNW95RepeatStruct {
+struct GNW95RepeatStruct {
     // Time when appropriate key was pressed down or -1 if it's up.
     unsigned int time;
     unsigned short count;
-} GNW95RepeatStruct;
+};
 
-typedef struct inputdata {
+struct inputdata {
     // This is either logical key or input event id, which can be either
     // character code pressed or some other numbers used throughout the
     // game interface.
     int input;
     int mx;
     int my;
-} inputdata;
+};
 
-typedef struct funcdata {
+struct funcdata {
     unsigned int flags;
     BackgroundProcess* f;
     struct funcdata* next;
-} funcdata;
+};
 
-typedef funcdata* FuncPtr;
+using FuncPtr = funcdata*;
 
 static int get_input_buffer();
 static void pause_game();
@@ -53,10 +53,10 @@ static void GNW95_process_key(KeyboardData* data);
 static void idleImpl();
 
 // 0x539D6C
-static IdleFunc* idle_func = NULL;
+static IdleFunc* idle_func = nullptr;
 
 // 0x539D70
-static FocusFunc* focus_func = NULL;
+static FocusFunc* focus_func = nullptr;
 
 // 0x539D74
 static unsigned int GNW95_repeat_rate = 80;
@@ -154,7 +154,7 @@ int GNW_input_init(int use_msec_timer)
     pause_key = KEY_ALT_P;
     pause_win_func = default_pause_window;
     screendump_func = default_screendump;
-    bk_list = NULL;
+    bk_list = nullptr;
     screendump_key = KEY_ALT_C;
 
     set_idle_func(idleImpl);
@@ -172,7 +172,7 @@ void GNW_input_exit()
     dxinput_exit();
 
     FuncPtr curr = bk_list;
-    while (curr != NULL) {
+    while (curr != nullptr) {
         FuncPtr next = curr->next;
         mem_free(curr);
         curr = next;
@@ -321,7 +321,7 @@ void GNW_do_bk_process()
     FuncPtr curr = bk_list;
     FuncPtr* currPtr = &(bk_list);
 
-    while (curr != NULL) {
+    while (curr != nullptr) {
         FuncPtr next = curr->next;
         if (curr->flags & 1) {
             *currPtr = next;
@@ -341,7 +341,7 @@ void add_bk_process(BackgroundProcess* f)
     FuncPtr fp;
 
     fp = bk_list;
-    while (fp != NULL) {
+    while (fp != nullptr) {
         if (fp->f == f) {
             if ((fp->flags & 0x01) != 0) {
                 fp->flags &= ~0x01;
@@ -351,7 +351,7 @@ void add_bk_process(BackgroundProcess* f)
         fp = fp->next;
     }
 
-    fp = (FuncPtr)mem_malloc(sizeof(*fp));
+    fp = static_cast<FuncPtr>(mem_malloc(sizeof(*fp)));
     fp->flags = 0;
     fp->f = f;
     fp->next = bk_list;
@@ -364,7 +364,7 @@ void remove_bk_process(BackgroundProcess* f)
     FuncPtr fp;
 
     fp = bk_list;
-    while (fp != NULL) {
+    while (fp != nullptr) {
         if (fp->f == f) {
             fp->flags |= 0x01;
             return;
@@ -407,8 +407,8 @@ static int default_pause_window()
     int windowWidth = text_width("Paused") + 32;
     int windowHeight = 3 * text_height() + 16;
 
-    int win = win_add((rectGetWidth(&scr_size) - windowWidth) / 2,
-        (rectGetHeight(&scr_size) - windowHeight) / 2,
+    int win = win_add((scr_size.width() - windowWidth) / 2,
+        (scr_size.height() - windowHeight) / 2,
         windowWidth,
         windowHeight,
         256,
@@ -446,7 +446,7 @@ void register_pause(int new_pause_key, PauseWinFunc* new_pause_win_func)
 {
     pause_key = new_pause_key;
 
-    if (new_pause_win_func == NULL) {
+    if (new_pause_win_func == nullptr) {
         new_pause_win_func = default_pause_window;
     }
 
@@ -465,8 +465,8 @@ void dump_screen()
 
     width = scr_size.lrx - scr_size.ulx + 1;
     length = scr_size.lry - scr_size.uly + 1;
-    screendump_buf = (unsigned char*)mem_malloc(width * length);
-    if (screendump_buf == NULL) {
+    screendump_buf = static_cast<unsigned char*>(mem_malloc(width * length));
+    if (screendump_buf == nullptr) {
         return;
     }
 
@@ -477,7 +477,7 @@ void dump_screen()
     mouse_blit = buf_blit;
 
     old_mouse_blit_trans = mouse_blit_trans;
-    mouse_blit_trans = NULL;
+    mouse_blit_trans = nullptr;
 
     win_refresh_all(&scr_size);
 
@@ -510,7 +510,7 @@ int default_screendump(int width, int height, unsigned char* data, unsigned char
         snprintf(fileName, sizeof(fileName), "scr%.5d.bmp", index);
 
         stream = compat_fopen(fileName, "rb");
-        if (stream == NULL) {
+        if (stream == nullptr) {
             break;
         }
 
@@ -522,7 +522,7 @@ int default_screendump(int width, int height, unsigned char* data, unsigned char
     }
 
     stream = compat_fopen(fileName, "wb");
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
@@ -621,7 +621,7 @@ void register_screendump(int new_screendump_key, ScreenDumpFunc* new_screendump_
 {
     screendump_key = new_screendump_key;
 
-    if (new_screendump_func == NULL) {
+    if (new_screendump_func == nullptr) {
         new_screendump_func = default_screendump;
     }
 
@@ -1205,19 +1205,19 @@ static void GNW95_process_key(KeyboardData* data)
 // 0x4B4734
 void GNW95_lost_focus()
 {
-    if (focus_func != NULL) {
+    if (focus_func != nullptr) {
         focus_func(0);
     }
 
     while (!GNW95_isActive) {
         GNW95_process_message();
 
-        if (idle_func != NULL) {
+        if (idle_func != nullptr) {
             idle_func();
         }
     }
 
-    if (focus_func != NULL) {
+    if (focus_func != nullptr) {
         focus_func(1);
     }
 }

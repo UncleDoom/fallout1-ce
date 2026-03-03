@@ -7,7 +7,7 @@
 
 #include "plib/db/lzss.h"
 
-#include <string.h>
+#include <cstring>
 
 namespace fallout {
 

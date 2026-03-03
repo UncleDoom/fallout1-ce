@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_OPTIONS_H_
-#define FALLOUT_GAME_OPTIONS_H_
+#pragma once
+
 
 #include "plib/db/db.h"
 
@@ -14,5 +14,3 @@ void IncGamma();
 void DecGamma();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_OPTIONS_H_ */

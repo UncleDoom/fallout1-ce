@@ -1,17 +1,17 @@
-#ifndef FALLOUT_GAME_MAP_DEFS_H_
-#define FALLOUT_GAME_MAP_DEFS_H_
+#pragma once
+
 
 namespace fallout {
 
-#define ELEVATION_COUNT (3)
+constexpr int ELEVATION_COUNT = 3;
 
-#define SQUARE_GRID_WIDTH (100)
-#define SQUARE_GRID_HEIGHT (100)
-#define SQUARE_GRID_SIZE (SQUARE_GRID_WIDTH * SQUARE_GRID_HEIGHT)
+constexpr int SQUARE_GRID_WIDTH = 100;
+constexpr int SQUARE_GRID_HEIGHT = 100;
+constexpr int SQUARE_GRID_SIZE = SQUARE_GRID_WIDTH * SQUARE_GRID_HEIGHT;
 
-#define HEX_GRID_WIDTH (200)
-#define HEX_GRID_HEIGHT (200)
-#define HEX_GRID_SIZE (HEX_GRID_WIDTH * HEX_GRID_HEIGHT)
+constexpr int HEX_GRID_WIDTH = 200;
+constexpr int HEX_GRID_HEIGHT = 200;
+constexpr int HEX_GRID_SIZE = HEX_GRID_WIDTH * HEX_GRID_HEIGHT;
 
 static inline bool elevationIsValid(int elevation)
 {
@@ -29,5 +29,3 @@ static inline bool hexGridTileIsValid(int tile)
 }
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_MAP_DEFS_H_ */

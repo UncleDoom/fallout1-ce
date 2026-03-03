@@ -1,6 +1,6 @@
 #include "game/perk.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "game/game.h"
 #include "game/gconfig.h"
@@ -15,7 +15,7 @@
 
 namespace fallout {
 
-typedef struct PerkDescription {
+struct PerkDescription {
     char* name;
     char* description;
     int max_rank;
@@ -25,77 +25,77 @@ typedef struct PerkDescription {
     int required_skill;
     int required_skill_level;
     int required_stat_levels[PRIMARY_STAT_COUNT];
-} PerkDescription;
+};
 
 static bool perk_can_add(int perk);
 static void perk_defaults();
 
 // 0x506324
 static PerkDescription perk_data[PERK_COUNT] = {
-    { NULL, NULL, 1, 3, -1, 0, -1, 0, { 0, 5, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 6, 0 } },
-    { NULL, NULL, 3, 3, 11, 2, -1, 0, { 6, 0, 0, 0, 0, 6, 0 } },
-    { NULL, NULL, 3, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 5, 0 } },
-    { NULL, NULL, 2, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 6, 6 } },
-    { NULL, NULL, 1, 9, -1, 0, -1, 0, { 0, 6, 0, 0, 6, 7, 0 } },
-    { NULL, NULL, 3, 3, 13, 2, -1, 0, { 0, 6, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 3, 3, 14, 1, -1, 0, { 0, 0, 6, 0, 0, 0, 0 } },
-    { NULL, NULL, 3, 6, 15, 5, -1, 0, { 0, 0, 0, 0, 0, 0, 6 } },
-    { NULL, NULL, 3, 3, -1, 0, -1, 0, { 0, 6, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 3, 3, -1, 0, -1, 0, { 0, 0, 0, 6, 0, 0, 0 } },
-    { NULL, NULL, 3, 6, 31, 15, -1, 0, { 0, 0, 6, 0, 4, 0, 0 } },
-    { NULL, NULL, 3, 3, 24, 10, -1, 0, { 0, 0, 6, 0, 0, 0, 6 } },
-    { NULL, NULL, 3, 3, 12, 50, -1, 0, { 6, 0, 6, 0, 0, 0, 0 } },
-    { NULL, NULL, 2, 6, -1, 0, -1, 0, { 0, 7, 0, 0, 6, 0, 0 } },
-    { NULL, NULL, 1, 6, -1, 0, 8, 50, { 0, 0, 0, 0, 0, 6, 0 } },
-    { NULL, NULL, 3, 3, -1, 0, 17, 40, { 0, 0, 6, 0, 6, 0, 0 } },
-    { NULL, NULL, 1, 9, -1, 0, 15, 60, { 0, 0, 0, 7, 0, 0, 0 } },
-    { NULL, NULL, 3, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 6, 0, 0 } },
-    { NULL, NULL, 3, 3, -1, 0, 6, 40, { 0, 7, 0, 0, 5, 6, 0 } },
-    { NULL, NULL, 1, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 8 } },
-    { NULL, NULL, 1, 9, 16, 20, -1, 0, { 0, 6, 0, 0, 0, 4, 6 } },
-    { NULL, NULL, 1, 6, -1, 0, -1, 0, { 0, 7, 0, 0, 5, 0, 0 } },
-    { NULL, NULL, 1, 18, -1, 0, 3, 80, { 8, 0, 0, 0, 0, 8, 0 } },
-    { NULL, NULL, 1, 18, -1, 0, 0, 80, { 0, 8, 0, 0, 0, 8, 0 } },
-    { NULL, NULL, 1, 18, -1, 0, 8, 80, { 0, 0, 0, 0, 0, 10, 0 } },
-    { NULL, NULL, 3, 12, 8, 1, -1, 0, { 0, 0, 0, 0, 0, 5, 0 } },
-    { NULL, NULL, 1, 15, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 3, 12, -1, 0, -1, 0, { 0, 0, 4, 0, 0, 0, 0 } },
-    { NULL, NULL, 2, 9, 9, 5, -1, 0, { 0, 0, 0, 0, 0, 4, 0 } },
-    { NULL, NULL, 1, 6, 32, 25, -1, 0, { 0, 0, 3, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 3, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 6, -1, 0, -1, 0, { 0, 4, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 9, -1, 0, 8, 80, { 0, 0, 0, 0, 0, 8, 0 } },
-    { NULL, NULL, 1, 6, -1, 0, 8, 60, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 10, 0, 0, 0 } },
-    { NULL, NULL, 1, 9, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 8 } },
-    { NULL, NULL, 1, 9, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 9, -1, 0, -1, 0, { 0, 0, 5, 0, 0, 0, 0 } },
-    { NULL, NULL, 2, 6, -1, 0, 17, 40, { 0, 0, 6, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 9, -1, 0, 17, 25, { 0, 0, 0, 0, 5, 0, 0 } },
-    { NULL, NULL, 1, 3, -1, 0, -1, 0, { 0, 8, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 7 } },
-    { NULL, NULL, 3, 6, -1, 0, -1, 0, { 0, 6, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 3, 3, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 5, 0 } },
-    { NULL, NULL, 3, 3, -1, 0, -1, 0, { 0, 0, 0, 0, 4, 0, 0 } },
-    { NULL, NULL, 3, 3, -1, 0, -1, 0, { 0, 0, 0, 0, 4, 0, 0 } },
-    { NULL, NULL, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, 1, 9, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, -1, 1, -1, 0, -1, 0, { -2, 0, -2, 0, 0, -3, 0 } },
-    { NULL, NULL, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, -3, -2, 0 } },
-    { NULL, NULL, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, -2, 0, 0 } },
-    { NULL, NULL, -1, 1, 31, -20, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, -1, 1, 31, 30, -1, 0, { 3, 0, 0, 0, 0, 0, 0 } },
-    { NULL, NULL, -1, 1, 31, 20, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 3, -1, 0, -1, 0, { 0, 5, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 6, 0 } },
+    { nullptr, nullptr, 3, 3, 11, 2, -1, 0, { 6, 0, 0, 0, 0, 6, 0 } },
+    { nullptr, nullptr, 3, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 5, 0 } },
+    { nullptr, nullptr, 2, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 6, 6 } },
+    { nullptr, nullptr, 1, 9, -1, 0, -1, 0, { 0, 6, 0, 0, 6, 7, 0 } },
+    { nullptr, nullptr, 3, 3, 13, 2, -1, 0, { 0, 6, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 3, 3, 14, 1, -1, 0, { 0, 0, 6, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 3, 6, 15, 5, -1, 0, { 0, 0, 0, 0, 0, 0, 6 } },
+    { nullptr, nullptr, 3, 3, -1, 0, -1, 0, { 0, 6, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 3, 3, -1, 0, -1, 0, { 0, 0, 0, 6, 0, 0, 0 } },
+    { nullptr, nullptr, 3, 6, 31, 15, -1, 0, { 0, 0, 6, 0, 4, 0, 0 } },
+    { nullptr, nullptr, 3, 3, 24, 10, -1, 0, { 0, 0, 6, 0, 0, 0, 6 } },
+    { nullptr, nullptr, 3, 3, 12, 50, -1, 0, { 6, 0, 6, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 2, 6, -1, 0, -1, 0, { 0, 7, 0, 0, 6, 0, 0 } },
+    { nullptr, nullptr, 1, 6, -1, 0, 8, 50, { 0, 0, 0, 0, 0, 6, 0 } },
+    { nullptr, nullptr, 3, 3, -1, 0, 17, 40, { 0, 0, 6, 0, 6, 0, 0 } },
+    { nullptr, nullptr, 1, 9, -1, 0, 15, 60, { 0, 0, 0, 7, 0, 0, 0 } },
+    { nullptr, nullptr, 3, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 6, 0, 0 } },
+    { nullptr, nullptr, 3, 3, -1, 0, 6, 40, { 0, 7, 0, 0, 5, 6, 0 } },
+    { nullptr, nullptr, 1, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 8 } },
+    { nullptr, nullptr, 1, 9, 16, 20, -1, 0, { 0, 6, 0, 0, 0, 4, 6 } },
+    { nullptr, nullptr, 1, 6, -1, 0, -1, 0, { 0, 7, 0, 0, 5, 0, 0 } },
+    { nullptr, nullptr, 1, 18, -1, 0, 3, 80, { 8, 0, 0, 0, 0, 8, 0 } },
+    { nullptr, nullptr, 1, 18, -1, 0, 0, 80, { 0, 8, 0, 0, 0, 8, 0 } },
+    { nullptr, nullptr, 1, 18, -1, 0, 8, 80, { 0, 0, 0, 0, 0, 10, 0 } },
+    { nullptr, nullptr, 3, 12, 8, 1, -1, 0, { 0, 0, 0, 0, 0, 5, 0 } },
+    { nullptr, nullptr, 1, 15, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 3, 12, -1, 0, -1, 0, { 0, 0, 4, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 2, 9, 9, 5, -1, 0, { 0, 0, 0, 0, 0, 4, 0 } },
+    { nullptr, nullptr, 1, 6, 32, 25, -1, 0, { 0, 0, 3, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 3, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 6, -1, 0, -1, 0, { 0, 4, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 9, -1, 0, 8, 80, { 0, 0, 0, 0, 0, 8, 0 } },
+    { nullptr, nullptr, 1, 6, -1, 0, 8, 60, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 10, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 9, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 8 } },
+    { nullptr, nullptr, 1, 9, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 9, -1, 0, -1, 0, { 0, 0, 5, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 2, 6, -1, 0, 17, 40, { 0, 0, 6, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 9, -1, 0, 17, 25, { 0, 0, 0, 0, 5, 0, 0 } },
+    { nullptr, nullptr, 1, 3, -1, 0, -1, 0, { 0, 8, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 6, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 7 } },
+    { nullptr, nullptr, 3, 6, -1, 0, -1, 0, { 0, 6, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 3, 3, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 5, 0 } },
+    { nullptr, nullptr, 3, 3, -1, 0, -1, 0, { 0, 0, 0, 0, 4, 0, 0 } },
+    { nullptr, nullptr, 3, 3, -1, 0, -1, 0, { 0, 0, 0, 0, 4, 0, 0 } },
+    { nullptr, nullptr, 1, 12, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, 1, 9, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, -1, 1, -1, 0, -1, 0, { -2, 0, -2, 0, 0, -3, 0 } },
+    { nullptr, nullptr, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, -3, -2, 0 } },
+    { nullptr, nullptr, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, -2, 0, 0 } },
+    { nullptr, nullptr, -1, 1, 31, -20, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, -1, 1, -1, 0, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, -1, 1, 31, 30, -1, 0, { 3, 0, 0, 0, 0, 0, 0 } },
+    { nullptr, nullptr, -1, 1, 31, 20, -1, 0, { 0, 0, 0, 0, 0, 0, 0 } },
 
 };
 
@@ -116,24 +116,24 @@ int perk_init()
 
     perk_defaults();
 
-    if (!message_init(&perk_message_file)) {
+    if (!perk_message_file.init()) {
         return -1;
     }
 
     snprintf(path, sizeof(path), "%s%s", msg_path, "perk.msg");
 
-    if (!message_load(&perk_message_file, path)) {
+    if (!perk_message_file.load(path)) {
         return -1;
     }
 
     for (perk = 0; perk < PERK_COUNT; perk++) {
         messageListItem.num = 101 + perk;
-        if (message_search(&perk_message_file, &messageListItem)) {
+        if (perk_message_file.search(&messageListItem)) {
             perk_data[perk].name = messageListItem.text;
         }
 
         messageListItem.num = 201 + perk;
-        if (message_search(&perk_message_file, &messageListItem)) {
+        if (perk_message_file.search(&messageListItem)) {
             perk_data[perk].description = messageListItem.text;
         }
     }
@@ -151,7 +151,7 @@ int perk_reset()
 // 0x486658
 int perk_exit()
 {
-    message_exit(&perk_message_file);
+    perk_message_file.exit();
     return 0;
 }
 
@@ -161,7 +161,7 @@ int perk_load(DB_FILE* stream)
     int perk;
 
     for (perk = 0; perk < PERK_COUNT; perk++) {
-        if (db_freadInt(stream, &(perk_lev[perk])) == -1) {
+        if (stream->freadInt(&(perk_lev[perk])) == -1) {
             return -1;
         }
     }
@@ -175,7 +175,7 @@ int perk_save(DB_FILE* stream)
     int perk;
 
     for (perk = 0; perk < PERK_COUNT; perk++) {
-        if (db_fwriteInt(stream, perk_lev[perk]) == -1) {
+        if (stream->fwriteInt(perk_lev[perk]) == -1) {
             return -1;
         }
     }
@@ -296,13 +296,13 @@ int perk_level(int perk)
 // 0x486868
 char* perk_name(int perk)
 {
-    return perk >= 0 && perk < PERK_COUNT ? perk_data[perk].name : NULL;
+    return perk >= 0 && perk < PERK_COUNT ? perk_data[perk].name : nullptr;
 }
 
 // 0x486888
 char* perk_description(int perk)
 {
-    return perk >= 0 && perk < PERK_COUNT ? perk_data[perk].description : NULL;
+    return perk >= 0 && perk < PERK_COUNT ? perk_data[perk].description : nullptr;
 }
 
 // 0x4868A8

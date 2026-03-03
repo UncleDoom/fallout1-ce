@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_PALETTE_H_
-#define FALLOUT_GAME_PALETTE_H_
+#pragma once
+
 
 namespace fallout {
 
@@ -14,5 +14,3 @@ void palette_set_to(unsigned char* palette);
 void palette_set_entries(unsigned char* palette, int start, int end);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_PALETTE_H_ */

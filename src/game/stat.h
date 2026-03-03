@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_STAT_H_
-#define FALLOUT_GAME_STAT_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "game/proto_types.h"
@@ -23,7 +23,7 @@ int stat_set_base(Object* critter, int stat, int value);
 int inc_stat(Object* critter, int stat);
 int dec_stat(Object* critter, int stat);
 int stat_set_bonus(Object* critter, int stat, int value);
-void stat_set_defaults(CritterProtoData* data);
+
 void stat_recalc_derived(Object* critter);
 char* stat_name(int stat);
 char* stat_description(int stat);
@@ -39,5 +39,3 @@ int stat_result(Object* critter, int stat, int modifier, int* howMuch);
 int stat_pc_add_experience(int xp);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_STAT_H_ */

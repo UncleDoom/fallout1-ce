@@ -1,8 +1,8 @@
-#ifndef FALLOUT_PLATFORM_COMPAT_H_
-#define FALLOUT_PLATFORM_COMPAT_H_
+#pragma once
 
-#include <stddef.h>
-#include <stdio.h>
+
+#include <cstddef>
+#include <cstdio>
 
 namespace fallout {
 
@@ -13,12 +13,12 @@ namespace fallout {
 //
 // TODO: Remove when we migrate to use std::filesystem::path or std::string to
 // represent paths across the codebase.
-#define COMPAT_MAX_PATH 260
+inline constexpr int COMPAT_MAX_PATH = 260;
 
-#define COMPAT_MAX_DRIVE 3
-#define COMPAT_MAX_DIR 256
-#define COMPAT_MAX_FNAME 256
-#define COMPAT_MAX_EXT 256
+inline constexpr int COMPAT_MAX_DRIVE = 3;
+inline constexpr int COMPAT_MAX_DIR = 256;
+inline constexpr int COMPAT_MAX_FNAME = 256;
+inline constexpr int COMPAT_MAX_EXT = 256;
 
 int compat_stricmp(const char* string1, const char* string2);
 int compat_strnicmp(const char* string1, const char* string2, size_t size);
@@ -43,5 +43,3 @@ char* compat_strdup(const char* string);
 long getFileSize(FILE* stream);
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLATFORM_COMPAT_H_ */

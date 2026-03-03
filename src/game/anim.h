@@ -1,112 +1,193 @@
-#ifndef FALLOUT_GAME_ANIMATION_H_
-#define FALLOUT_GAME_ANIMATION_H_
+#pragma once
 
+
+#include "game/enum_utils.h"
 #include "game/object_types.h"
 
 namespace fallout {
 
-typedef enum AnimationRequestOptions {
-    ANIMATION_REQUEST_UNRESERVED = 0x01,
-    ANIMATION_REQUEST_RESERVED = 0x02,
-    ANIMATION_REQUEST_NO_STAND = 0x04,
-    ANIMATION_REQUEST_0x100 = 0x100,
-    ANIMATION_REQUEST_INSIGNIFICANT = 0x200,
-} AnimationRequestOptions;
+enum class AnimationRequestOptions : unsigned {
+    Unreserved = 0x01,
+    Reserved = 0x02,
+    NoStand = 0x04,
+    Flag0x100 = 0x100,
+    Insignificant = 0x200,
+};
+
+DEFINE_ENUM_FLAG_OPERATORS(AnimationRequestOptions)
+
+inline constexpr int ANIMATION_REQUEST_UNRESERVED = static_cast<int>(AnimationRequestOptions::Unreserved);
+inline constexpr int ANIMATION_REQUEST_RESERVED = static_cast<int>(AnimationRequestOptions::Reserved);
+inline constexpr int ANIMATION_REQUEST_NO_STAND = static_cast<int>(AnimationRequestOptions::NoStand);
+inline constexpr int ANIMATION_REQUEST_0x100 = static_cast<int>(AnimationRequestOptions::Flag0x100);
+inline constexpr int ANIMATION_REQUEST_INSIGNIFICANT = static_cast<int>(AnimationRequestOptions::Insignificant);
+
 
 // Basic animations: 0-19
 // Knockdown and death: 20-35
 // Change positions: 36-37
 // Weapon: 38-47
 // Single-frame death animations (the last frame of knockdown and death animations): 48-63
-typedef enum AnimationType {
-    ANIM_STAND = 0,
-    ANIM_WALK = 1,
-    ANIM_JUMP_BEGIN = 2,
-    ANIM_JUMP_END = 3,
-    ANIM_CLIMB_LADDER = 4,
-    ANIM_FALLING = 5,
-    ANIM_UP_STAIRS_RIGHT = 6,
-    ANIM_UP_STAIRS_LEFT = 7,
-    ANIM_DOWN_STAIRS_RIGHT = 8,
-    ANIM_DOWN_STAIRS_LEFT = 9,
-    ANIM_MAGIC_HANDS_GROUND = 10,
-    ANIM_MAGIC_HANDS_MIDDLE = 11,
-    ANIM_MAGIC_HANDS_UP = 12,
-    ANIM_DODGE_ANIM = 13,
-    ANIM_HIT_FROM_FRONT = 14,
-    ANIM_HIT_FROM_BACK = 15,
-    ANIM_THROW_PUNCH = 16,
-    ANIM_KICK_LEG = 17,
-    ANIM_THROW_ANIM = 18,
-    ANIM_RUNNING = 19,
-    ANIM_FALL_BACK = 20,
-    ANIM_FALL_FRONT = 21,
-    ANIM_BAD_LANDING = 22,
-    ANIM_BIG_HOLE = 23,
-    ANIM_CHARRED_BODY = 24,
-    ANIM_CHUNKS_OF_FLESH = 25,
-    ANIM_DANCING_AUTOFIRE = 26,
-    ANIM_ELECTRIFY = 27,
-    ANIM_SLICED_IN_HALF = 28,
-    ANIM_BURNED_TO_NOTHING = 29,
-    ANIM_ELECTRIFIED_TO_NOTHING = 30,
-    ANIM_EXPLODED_TO_NOTHING = 31,
-    ANIM_MELTED_TO_NOTHING = 32,
-    ANIM_FIRE_DANCE = 33,
-    ANIM_FALL_BACK_BLOOD = 34,
-    ANIM_FALL_FRONT_BLOOD = 35,
-    ANIM_PRONE_TO_STANDING = 36,
-    ANIM_BACK_TO_STANDING = 37,
-    ANIM_TAKE_OUT = 38,
-    ANIM_PUT_AWAY = 39,
-    ANIM_PARRY_ANIM = 40,
-    ANIM_THRUST_ANIM = 41,
-    ANIM_SWING_ANIM = 42,
-    ANIM_POINT = 43,
-    ANIM_UNPOINT = 44,
-    ANIM_FIRE_SINGLE = 45,
-    ANIM_FIRE_BURST = 46,
-    ANIM_FIRE_CONTINUOUS = 47,
-    ANIM_FALL_BACK_SF = 48,
-    ANIM_FALL_FRONT_SF = 49,
-    ANIM_BAD_LANDING_SF = 50,
-    ANIM_BIG_HOLE_SF = 51,
-    ANIM_CHARRED_BODY_SF = 52,
-    ANIM_CHUNKS_OF_FLESH_SF = 53,
-    ANIM_DANCING_AUTOFIRE_SF = 54,
-    ANIM_ELECTRIFY_SF = 55,
-    ANIM_SLICED_IN_HALF_SF = 56,
-    ANIM_BURNED_TO_NOTHING_SF = 57,
-    ANIM_ELECTRIFIED_TO_NOTHING_SF = 58,
-    ANIM_EXPLODED_TO_NOTHING_SF = 59,
-    ANIM_MELTED_TO_NOTHING_SF = 60,
-    ANIM_FIRE_DANCE_SF = 61,
-    ANIM_FALL_BACK_BLOOD_SF = 62,
-    ANIM_FALL_FRONT_BLOOD_SF = 63,
-    ANIM_CALLED_SHOT_PIC = 64,
-    ANIM_COUNT = 65,
-    FIRST_KNOCKDOWN_AND_DEATH_ANIM = ANIM_FALL_BACK,
-    LAST_KNOCKDOWN_AND_DEATH_ANIM = ANIM_FALL_FRONT_BLOOD,
-    FIRST_SF_DEATH_ANIM = ANIM_FALL_BACK_SF,
-    LAST_SF_DEATH_ANIM = ANIM_FALL_FRONT_BLOOD_SF,
-} AnimationType;
+enum class AnimationType : int {
+    Stand = 0,
+    Walk = 1,
+    JumpBegin = 2,
+    JumpEnd = 3,
+    ClimbLadder = 4,
+    Falling = 5,
+    UpStairsRight = 6,
+    UpStairsLeft = 7,
+    DownStairsRight = 8,
+    DownStairsLeft = 9,
+    MagicHandsGround = 10,
+    MagicHandsMiddle = 11,
+    MagicHandsUp = 12,
+    DodgeAnim = 13,
+    HitFromFront = 14,
+    HitFromBack = 15,
+    ThrowPunch = 16,
+    KickLeg = 17,
+    ThrowAnim = 18,
+    Running = 19,
+    FallBack = 20,
+    FallFront = 21,
+    BadLanding = 22,
+    BigHole = 23,
+    CharredBody = 24,
+    ChunksOfFlesh = 25,
+    DancingAutofire = 26,
+    Electrify = 27,
+    SlicedInHalf = 28,
+    BurnedToNothing = 29,
+    ElectrifiedToNothing = 30,
+    ExplodedToNothing = 31,
+    MeltedToNothing = 32,
+    FireDance = 33,
+    FallBackBlood = 34,
+    FallFrontBlood = 35,
+    ProneToStanding = 36,
+    BackToStanding = 37,
+    TakeOut = 38,
+    PutAway = 39,
+    ParryAnim = 40,
+    ThrustAnim = 41,
+    SwingAnim = 42,
+    Point = 43,
+    Unpoint = 44,
+    FireSingle = 45,
+    FireBurst = 46,
+    FireContinuous = 47,
+    FallBackSf = 48,
+    FallFrontSf = 49,
+    BadLandingSf = 50,
+    BigHoleSf = 51,
+    CharredBodySf = 52,
+    ChunksOfFleshSf = 53,
+    DancingAutofireSf = 54,
+    ElectrifySf = 55,
+    SlicedInHalfSf = 56,
+    BurnedToNothingSf = 57,
+    ElectrifiedToNothingSf = 58,
+    ExplodedToNothingSf = 59,
+    MeltedToNothingSf = 60,
+    FireDanceSf = 61,
+    FallBackBloodSf = 62,
+    FallFrontBloodSf = 63,
+    CalledShotPic = 64,
+    Count = 65,
+    FirstKnockdownAndDeath = FallBack,
+    LastKnockdownAndDeath = FallFrontBlood,
+    FirstSfDeath = FallBackSf,
+    LastSfDeath = FallFrontBloodSf,
+};
+
+inline constexpr int ANIM_STAND = static_cast<int>(AnimationType::Stand);
+inline constexpr int ANIM_WALK = static_cast<int>(AnimationType::Walk);
+inline constexpr int ANIM_JUMP_BEGIN = static_cast<int>(AnimationType::JumpBegin);
+inline constexpr int ANIM_JUMP_END = static_cast<int>(AnimationType::JumpEnd);
+inline constexpr int ANIM_CLIMB_LADDER = static_cast<int>(AnimationType::ClimbLadder);
+inline constexpr int ANIM_FALLING = static_cast<int>(AnimationType::Falling);
+inline constexpr int ANIM_UP_STAIRS_RIGHT = static_cast<int>(AnimationType::UpStairsRight);
+inline constexpr int ANIM_UP_STAIRS_LEFT = static_cast<int>(AnimationType::UpStairsLeft);
+inline constexpr int ANIM_DOWN_STAIRS_RIGHT = static_cast<int>(AnimationType::DownStairsRight);
+inline constexpr int ANIM_DOWN_STAIRS_LEFT = static_cast<int>(AnimationType::DownStairsLeft);
+inline constexpr int ANIM_MAGIC_HANDS_GROUND = static_cast<int>(AnimationType::MagicHandsGround);
+inline constexpr int ANIM_MAGIC_HANDS_MIDDLE = static_cast<int>(AnimationType::MagicHandsMiddle);
+inline constexpr int ANIM_MAGIC_HANDS_UP = static_cast<int>(AnimationType::MagicHandsUp);
+inline constexpr int ANIM_DODGE_ANIM = static_cast<int>(AnimationType::DodgeAnim);
+inline constexpr int ANIM_HIT_FROM_FRONT = static_cast<int>(AnimationType::HitFromFront);
+inline constexpr int ANIM_HIT_FROM_BACK = static_cast<int>(AnimationType::HitFromBack);
+inline constexpr int ANIM_THROW_PUNCH = static_cast<int>(AnimationType::ThrowPunch);
+inline constexpr int ANIM_KICK_LEG = static_cast<int>(AnimationType::KickLeg);
+inline constexpr int ANIM_THROW_ANIM = static_cast<int>(AnimationType::ThrowAnim);
+inline constexpr int ANIM_RUNNING = static_cast<int>(AnimationType::Running);
+inline constexpr int ANIM_FALL_BACK = static_cast<int>(AnimationType::FallBack);
+inline constexpr int ANIM_FALL_FRONT = static_cast<int>(AnimationType::FallFront);
+inline constexpr int ANIM_BAD_LANDING = static_cast<int>(AnimationType::BadLanding);
+inline constexpr int ANIM_BIG_HOLE = static_cast<int>(AnimationType::BigHole);
+inline constexpr int ANIM_CHARRED_BODY = static_cast<int>(AnimationType::CharredBody);
+inline constexpr int ANIM_CHUNKS_OF_FLESH = static_cast<int>(AnimationType::ChunksOfFlesh);
+inline constexpr int ANIM_DANCING_AUTOFIRE = static_cast<int>(AnimationType::DancingAutofire);
+inline constexpr int ANIM_ELECTRIFY = static_cast<int>(AnimationType::Electrify);
+inline constexpr int ANIM_SLICED_IN_HALF = static_cast<int>(AnimationType::SlicedInHalf);
+inline constexpr int ANIM_BURNED_TO_NOTHING = static_cast<int>(AnimationType::BurnedToNothing);
+inline constexpr int ANIM_ELECTRIFIED_TO_NOTHING = static_cast<int>(AnimationType::ElectrifiedToNothing);
+inline constexpr int ANIM_EXPLODED_TO_NOTHING = static_cast<int>(AnimationType::ExplodedToNothing);
+inline constexpr int ANIM_MELTED_TO_NOTHING = static_cast<int>(AnimationType::MeltedToNothing);
+inline constexpr int ANIM_FIRE_DANCE = static_cast<int>(AnimationType::FireDance);
+inline constexpr int ANIM_FALL_BACK_BLOOD = static_cast<int>(AnimationType::FallBackBlood);
+inline constexpr int ANIM_FALL_FRONT_BLOOD = static_cast<int>(AnimationType::FallFrontBlood);
+inline constexpr int ANIM_PRONE_TO_STANDING = static_cast<int>(AnimationType::ProneToStanding);
+inline constexpr int ANIM_BACK_TO_STANDING = static_cast<int>(AnimationType::BackToStanding);
+inline constexpr int ANIM_TAKE_OUT = static_cast<int>(AnimationType::TakeOut);
+inline constexpr int ANIM_PUT_AWAY = static_cast<int>(AnimationType::PutAway);
+inline constexpr int ANIM_PARRY_ANIM = static_cast<int>(AnimationType::ParryAnim);
+inline constexpr int ANIM_THRUST_ANIM = static_cast<int>(AnimationType::ThrustAnim);
+inline constexpr int ANIM_SWING_ANIM = static_cast<int>(AnimationType::SwingAnim);
+inline constexpr int ANIM_POINT = static_cast<int>(AnimationType::Point);
+inline constexpr int ANIM_UNPOINT = static_cast<int>(AnimationType::Unpoint);
+inline constexpr int ANIM_FIRE_SINGLE = static_cast<int>(AnimationType::FireSingle);
+inline constexpr int ANIM_FIRE_BURST = static_cast<int>(AnimationType::FireBurst);
+inline constexpr int ANIM_FIRE_CONTINUOUS = static_cast<int>(AnimationType::FireContinuous);
+inline constexpr int ANIM_FALL_BACK_SF = static_cast<int>(AnimationType::FallBackSf);
+inline constexpr int ANIM_FALL_FRONT_SF = static_cast<int>(AnimationType::FallFrontSf);
+inline constexpr int ANIM_BAD_LANDING_SF = static_cast<int>(AnimationType::BadLandingSf);
+inline constexpr int ANIM_BIG_HOLE_SF = static_cast<int>(AnimationType::BigHoleSf);
+inline constexpr int ANIM_CHARRED_BODY_SF = static_cast<int>(AnimationType::CharredBodySf);
+inline constexpr int ANIM_CHUNKS_OF_FLESH_SF = static_cast<int>(AnimationType::ChunksOfFleshSf);
+inline constexpr int ANIM_DANCING_AUTOFIRE_SF = static_cast<int>(AnimationType::DancingAutofireSf);
+inline constexpr int ANIM_ELECTRIFY_SF = static_cast<int>(AnimationType::ElectrifySf);
+inline constexpr int ANIM_SLICED_IN_HALF_SF = static_cast<int>(AnimationType::SlicedInHalfSf);
+inline constexpr int ANIM_BURNED_TO_NOTHING_SF = static_cast<int>(AnimationType::BurnedToNothingSf);
+inline constexpr int ANIM_ELECTRIFIED_TO_NOTHING_SF = static_cast<int>(AnimationType::ElectrifiedToNothingSf);
+inline constexpr int ANIM_EXPLODED_TO_NOTHING_SF = static_cast<int>(AnimationType::ExplodedToNothingSf);
+inline constexpr int ANIM_MELTED_TO_NOTHING_SF = static_cast<int>(AnimationType::MeltedToNothingSf);
+inline constexpr int ANIM_FIRE_DANCE_SF = static_cast<int>(AnimationType::FireDanceSf);
+inline constexpr int ANIM_FALL_BACK_BLOOD_SF = static_cast<int>(AnimationType::FallBackBloodSf);
+inline constexpr int ANIM_FALL_FRONT_BLOOD_SF = static_cast<int>(AnimationType::FallFrontBloodSf);
+inline constexpr int ANIM_CALLED_SHOT_PIC = static_cast<int>(AnimationType::CalledShotPic);
+inline constexpr int ANIM_COUNT = static_cast<int>(AnimationType::Count);
+inline constexpr int FIRST_KNOCKDOWN_AND_DEATH_ANIM = static_cast<int>(AnimationType::FirstKnockdownAndDeath);
+inline constexpr int LAST_KNOCKDOWN_AND_DEATH_ANIM = static_cast<int>(AnimationType::LastKnockdownAndDeath);
+inline constexpr int FIRST_SF_DEATH_ANIM = static_cast<int>(AnimationType::FirstSfDeath);
+inline constexpr int LAST_SF_DEATH_ANIM = static_cast<int>(AnimationType::LastSfDeath);
 
 #define FID_ANIM_TYPE(value) ((value) & 0xFF0000) >> 16
 
 // Signature of animation callback accepting 2 parameters.
-typedef int AnimationCallback(void*, void*);
+using AnimationCallback = int(void*, void*);
 
 // Signature of animation callback accepting 3 parameters.
-typedef int AnimationCallback3(void*, void*, void*);
+using AnimationCallback3 = int(void*, void*, void*);
 
-typedef Object* PathBuilderCallback(Object* object, int tile, int elevation);
+using PathBuilderCallback = Object*(Object* object, int tile, int elevation);
 
-typedef struct StraightPathNode {
+struct StraightPathNode {
     int tile;
     int elevation;
     int x;
     int y;
-} StraightPathNode;
+};
 
 void anim_init();
 void anim_reset();
@@ -167,5 +248,3 @@ void anim_stop();
 unsigned int compute_tpf(Object* object, int fid);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_ANIMATION_H_ */

@@ -1,22 +1,22 @@
-#ifndef FALLOUT_PLIB_GNW_DXINPUT_H_
-#define FALLOUT_PLIB_GNW_DXINPUT_H_
+#pragma once
+
 
 #include <SDL.h>
 
 namespace fallout {
 
-typedef struct MouseData {
+struct MouseData {
     int x;
     int y;
     unsigned char buttons[2];
     int wheelX;
     int wheelY;
-} MouseData;
+};
 
-typedef struct KeyboardData {
+struct KeyboardData {
     int key;
     unsigned char down;
-} KeyboardData;
+};
 
 bool dxinput_init();
 void dxinput_exit();
@@ -31,5 +31,3 @@ bool dxinput_read_keyboard_buffer(KeyboardData* keyboardData);
 void handleMouseEvent(SDL_Event* event);
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_DXINPUT_H_ */

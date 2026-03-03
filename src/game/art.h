@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_ART_H_
-#define FALLOUT_GAME_ART_H_
+#pragma once
+
 
 #include "game/cache.h"
 #include "game/heap.h"
@@ -8,7 +8,7 @@
 
 namespace fallout {
 
-typedef enum Head {
+enum class Head : int {
     HEAD_INVALID,
     HEAD_MARCUS,
     HEAD_MYRON,
@@ -23,24 +23,38 @@ typedef enum Head {
     HEAD_BOSS,
     HEAD_DYING_HAKUNIN,
     HEAD_COUNT,
-} Head;
+};
 
-typedef enum HeadAnimation {
-    HEAD_ANIMATION_VERY_GOOD_REACTION = 0,
-    FIDGET_GOOD = 1,
-    HEAD_ANIMATION_GOOD_TO_NEUTRAL = 2,
-    HEAD_ANIMATION_NEUTRAL_TO_GOOD = 3,
-    FIDGET_NEUTRAL = 4,
-    HEAD_ANIMATION_NEUTRAL_TO_BAD = 5,
-    HEAD_ANIMATION_BAD_TO_NEUTRAL = 6,
-    FIDGET_BAD = 7,
-    HEAD_ANIMATION_VERY_BAD_REACTION = 8,
-    HEAD_ANIMATION_GOOD_PHONEMES = 9,
-    HEAD_ANIMATION_NEUTRAL_PHONEMES = 10,
-    HEAD_ANIMATION_BAD_PHONEMES = 11,
-} HeadAnimation;
+enum class HeadAnimation : int {
+    VeryGoodReaction = 0,
+    FidgetGood = 1,
+    GoodToNeutral = 2,
+    NeutralToGood = 3,
+    FidgetNeutral = 4,
+    NeutralToBad = 5,
+    BadToNeutral = 6,
+    FidgetBad = 7,
+    VeryBadReaction = 8,
+    GoodPhonemes = 9,
+    NeutralPhonemes = 10,
+    BadPhonemes = 11,
+};
 
-typedef enum Background {
+// Legacy constants
+inline constexpr int HEAD_ANIMATION_VERY_GOOD_REACTION = static_cast<int>(HeadAnimation::VeryGoodReaction);
+inline constexpr int FIDGET_GOOD = static_cast<int>(HeadAnimation::FidgetGood);
+inline constexpr int HEAD_ANIMATION_GOOD_TO_NEUTRAL = static_cast<int>(HeadAnimation::GoodToNeutral);
+inline constexpr int HEAD_ANIMATION_NEUTRAL_TO_GOOD = static_cast<int>(HeadAnimation::NeutralToGood);
+inline constexpr int FIDGET_NEUTRAL = static_cast<int>(HeadAnimation::FidgetNeutral);
+inline constexpr int HEAD_ANIMATION_NEUTRAL_TO_BAD = static_cast<int>(HeadAnimation::NeutralToBad);
+inline constexpr int HEAD_ANIMATION_BAD_TO_NEUTRAL = static_cast<int>(HeadAnimation::BadToNeutral);
+inline constexpr int FIDGET_BAD = static_cast<int>(HeadAnimation::FidgetBad);
+inline constexpr int HEAD_ANIMATION_VERY_BAD_REACTION = static_cast<int>(HeadAnimation::VeryBadReaction);
+inline constexpr int HEAD_ANIMATION_GOOD_PHONEMES = static_cast<int>(HeadAnimation::GoodPhonemes);
+inline constexpr int HEAD_ANIMATION_NEUTRAL_PHONEMES = static_cast<int>(HeadAnimation::NeutralPhonemes);
+inline constexpr int HEAD_ANIMATION_BAD_PHONEMES = static_cast<int>(HeadAnimation::BadPhonemes);
+
+enum class Background : int {
     BACKGROUND_0,
     BACKGROUND_1,
     BACKGROUND_2,
@@ -63,9 +77,12 @@ typedef enum Background {
     BACKGROUND_TENT,
     BACKGROUND_ADOBE,
     BACKGROUND_COUNT,
-} Background;
+};
 
-typedef struct Art {
+struct ArtFrame;
+
+class Art {
+public:
     int field_0;
     short framesPerSecond;
     short actionFrame;
@@ -75,36 +92,61 @@ typedef struct Art {
     int dataOffsets[6];
     int padding[6];
     int dataSize;
-} Art;
 
-typedef struct ArtFrame {
+    int fps();
+    int actionFrameIndex();
+    int maxFrame();
+    int frameWidth(int frame, int direction);
+    int frameLength(int frame, int direction);
+    int frameWidthLength(int frame, int direction, int* out_width, int* out_height);
+    int frameHot(int frame, int direction, int* a4, int* a5);
+    int frameOffset(int rotation, int* out_offset_x, int* out_offset_y);
+    unsigned char* frameData(int frame, int direction);
+    ArtFrame* framePtr(int frame, int direction);
+};
+
+struct ArtFrame {
     short width;
     short height;
     int size;
     short x;
     short y;
-} ArtFrame;
+};
 
-typedef struct HeadDescription {
+struct HeadDescription {
     int goodFidgetCount;
     int neutralFidgetCount;
     int badFidgetCount;
-} HeadDescription;
+};
 
-typedef enum WeaponAnimation {
-    WEAPON_ANIMATION_NONE,
-    WEAPON_ANIMATION_KNIFE, // d
-    WEAPON_ANIMATION_CLUB, // e
-    WEAPON_ANIMATION_HAMMER, // f
-    WEAPON_ANIMATION_SPEAR, // g
-    WEAPON_ANIMATION_PISTOL, // h
-    WEAPON_ANIMATION_SMG, // i
-    WEAPON_ANIMATION_SHOTGUN, // j
-    WEAPON_ANIMATION_LASER_RIFLE, // k
-    WEAPON_ANIMATION_MINIGUN, // l
-    WEAPON_ANIMATION_LAUNCHER, // m
-    WEAPON_ANIMATION_COUNT,
-} WeaponAnimation;
+enum class WeaponAnimation : int {
+    None = 0,
+    Knife = 1, // d
+    Club = 2, // e
+    Hammer = 3, // f
+    Spear = 4, // g
+    Pistol = 5, // h
+    Smg = 6, // i
+    Shotgun = 7, // j
+    LaserRifle = 8, // k
+    Minigun = 9, // l
+    Launcher = 10, // m
+    Count = 11,
+};
+
+// Legacy constants
+inline constexpr int WEAPON_ANIMATION_NONE = static_cast<int>(WeaponAnimation::None);
+inline constexpr int WEAPON_ANIMATION_KNIFE = static_cast<int>(WeaponAnimation::Knife);
+inline constexpr int WEAPON_ANIMATION_CLUB = static_cast<int>(WeaponAnimation::Club);
+inline constexpr int WEAPON_ANIMATION_HAMMER = static_cast<int>(WeaponAnimation::Hammer);
+inline constexpr int WEAPON_ANIMATION_SPEAR = static_cast<int>(WeaponAnimation::Spear);
+inline constexpr int WEAPON_ANIMATION_PISTOL = static_cast<int>(WeaponAnimation::Pistol);
+inline constexpr int WEAPON_ANIMATION_SMG = static_cast<int>(WeaponAnimation::Smg);
+inline constexpr int WEAPON_ANIMATION_SHOTGUN = static_cast<int>(WeaponAnimation::Shotgun);
+inline constexpr int WEAPON_ANIMATION_LASER_RIFLE = static_cast<int>(WeaponAnimation::LaserRifle);
+inline constexpr int WEAPON_ANIMATION_MINIGUN = static_cast<int>(WeaponAnimation::Minigun);
+inline constexpr int WEAPON_ANIMATION_LAUNCHER = static_cast<int>(WeaponAnimation::Launcher);
+inline constexpr int WEAPON_ANIMATION_COUNT = static_cast<int>(WeaponAnimation::Count);
 
 extern int art_vault_guy_num;
 extern int art_vault_person_nums[GENDER_COUNT];
@@ -132,16 +174,7 @@ int art_get_base_name(int objectType, int a2, char* a3);
 int art_get_code(int a1, int a2, char* a3, char* a4);
 char* art_get_name(int a1);
 int art_read_lst(const char* path, char** artListPtr, int* artListSizePtr);
-int art_frame_fps(Art* art);
-int art_frame_action_frame(Art* art);
-int art_frame_max_frame(Art* art);
-int art_frame_width(Art* art, int frame, int direction);
-int art_frame_length(Art* art, int frame, int direction);
-int art_frame_width_length(Art* art, int frame, int direction, int* out_width, int* out_height);
-int art_frame_hot(Art* art, int frame, int direction, int* a4, int* a5);
-int art_frame_offset(Art* art, int rotation, int* out_offset_x, int* out_offset_y);
-unsigned char* art_frame_data(Art* art, int frame, int direction);
-ArtFrame* frame_ptr(Art* art, int frame, int direction);
+
 bool art_exists(int fid);
 bool art_fid_valid(int fid);
 int art_alias_num(int a1);
@@ -155,5 +188,3 @@ int load_frame_into(const char* path, unsigned char* data);
 int save_frame(const char* path, unsigned char* data);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_ART_H_ */

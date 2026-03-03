@@ -1,6 +1,6 @@
 #include "game/display.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "game/art.h"
 #include "game/combat.h"
@@ -20,21 +20,21 @@ namespace fallout {
 
 // The maximum number of lines display monitor can hold. Once this value
 // is reached earlier messages are thrown away.
-#define DISPLAY_MONITOR_LINES_CAPACITY 100
+static constexpr int DISPLAY_MONITOR_LINES_CAPACITY = 100;
 
 // The maximum length of a string in display monitor (in characters).
-#define DISPLAY_MONITOR_LINE_LENGTH 80
+static constexpr int DISPLAY_MONITOR_LINE_LENGTH = 80;
 
-#define DISPLAY_MONITOR_X 23
-#define DISPLAY_MONITOR_Y 24
-#define DISPLAY_MONITOR_WIDTH 167
-#define DISPLAY_MONITOR_HEIGHT 60
+static constexpr int DISPLAY_MONITOR_X = 23;
+static constexpr int DISPLAY_MONITOR_Y = 24;
+static constexpr int DISPLAY_MONITOR_WIDTH = 167;
+static constexpr int DISPLAY_MONITOR_HEIGHT = 60;
 
-#define DISPLAY_MONITOR_HALF_HEIGHT (DISPLAY_MONITOR_HEIGHT / 2)
+static constexpr int DISPLAY_MONITOR_HALF_HEIGHT = (DISPLAY_MONITOR_HEIGHT / 2);
 
-#define DISPLAY_MONITOR_FONT 101
+static constexpr int DISPLAY_MONITOR_FONT = 101;
 
-#define DISPLAY_MONITOR_BEEP_DELAY 500U
+static constexpr unsigned int DISPLAY_MONITOR_BEEP_DELAY = 500;
 
 // 0x504F0C
 static bool disp_init = false;
@@ -92,21 +92,21 @@ int display_init()
         disp_curr = 0;
         text_font(oldFont);
 
-        disp_buf = (unsigned char*)mem_malloc(DISPLAY_MONITOR_WIDTH * DISPLAY_MONITOR_HEIGHT);
-        if (disp_buf == NULL) {
+        disp_buf = static_cast<unsigned char*>(mem_malloc(DISPLAY_MONITOR_WIDTH * DISPLAY_MONITOR_HEIGHT));
+        if (disp_buf == nullptr) {
             return -1;
         }
 
         CacheEntry* backgroundFrmHandle;
         int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 16, 0, 0, 0);
         Art* backgroundFrm = art_ptr_lock(backgroundFid, &backgroundFrmHandle);
-        if (backgroundFrm == NULL) {
+        if (backgroundFrm == nullptr) {
             mem_free(disp_buf);
             return -1;
         }
 
-        unsigned char* backgroundFrmData = art_frame_data(backgroundFrm, 0, 0);
-        intface_full_wid = art_frame_width(backgroundFrm, 0, 0);
+        unsigned char* backgroundFrmData = backgroundFrm->frameData(0, 0);
+        intface_full_wid = backgroundFrm->frameWidth(0, 0);
         buf_to_buf(backgroundFrmData + intface_full_wid * DISPLAY_MONITOR_Y + DISPLAY_MONITOR_X,
             DISPLAY_MONITOR_WIDTH,
             DISPLAY_MONITOR_HEIGHT,
@@ -125,16 +125,16 @@ int display_init()
             -1,
             -1,
             -1,
-            NULL,
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
+            nullptr,
             0);
         if (up_bid != -1) {
             win_register_button_func(up_bid,
                 display_arrow_up,
                 display_arrow_restore,
                 display_scroll_up,
-                NULL);
+                nullptr);
         }
 
         dn_bid = win_register_button(interfaceWindow,
@@ -146,16 +146,16 @@ int display_init()
             -1,
             -1,
             -1,
-            NULL,
-            NULL,
-            NULL,
+            nullptr,
+            nullptr,
+            nullptr,
             0);
         if (dn_bid != -1) {
             win_register_button_func(dn_bid,
                 display_arrow_down,
                 display_arrow_restore,
                 display_scroll_down,
-                NULL);
+                nullptr);
         }
 
         display_enabled = true;
@@ -215,7 +215,7 @@ void display_print(char* str)
     }
 
     // TODO: Refactor these two loops.
-    char* v1 = NULL;
+    char* v1 = nullptr;
     while (true) {
         while (text_width(str) < DISPLAY_MONITOR_WIDTH - max_disp_ptr - knobWidth) {
             char* temp = disp_str[disp_start];
@@ -232,7 +232,7 @@ void display_print(char* str)
             disp_str[disp_start][DISPLAY_MONITOR_LINE_LENGTH - 1] = '\0';
             disp_start = (disp_start + 1) % max_ptr;
 
-            if (v1 == NULL) {
+            if (v1 == nullptr) {
                 text_font(oldFont);
                 disp_curr = disp_start;
                 display_redraw();
@@ -241,15 +241,15 @@ void display_print(char* str)
 
             str = v1 + 1;
             *v1 = ' ';
-            v1 = NULL;
+            v1 = nullptr;
         }
 
         char* space = strrchr(str, ' ');
-        if (space == NULL) {
+        if (space == nullptr) {
             break;
         }
 
-        if (v1 != NULL) {
+        if (v1 != nullptr) {
             *v1 = ' ';
         }
 
@@ -301,7 +301,7 @@ void display_redraw()
     }
 
     unsigned char* buf = win_get_buf(interfaceWindow);
-    if (buf == NULL) {
+    if (buf == nullptr) {
         return;
     }
 

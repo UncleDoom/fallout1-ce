@@ -1,7 +1,7 @@
-#ifndef FALLOUT_GAME_GMEMORY_H_
-#define FALLOUT_GAME_GMEMORY_H_
+#pragma once
 
-#include <stddef.h>
+
+#include <cstddef>
 
 namespace fallout {
 
@@ -11,5 +11,3 @@ void* grealloc(void* ptr, size_t newSize);
 void gfree(void* ptr);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_GMEMORY_H_ */

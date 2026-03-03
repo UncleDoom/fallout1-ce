@@ -18,7 +18,7 @@
 
 namespace fallout {
 
-#define MAX_WINDOW_COUNT 50
+static constexpr int MAX_WINDOW_COUNT = 50;
 
 static void win_free(int win);
 static void win_clip(Window* window, RectPtr* rectListNodePtr, unsigned char* a3);
@@ -49,7 +49,7 @@ int GNW_wcolor[6] = {
 };
 
 // 0x53A250
-static unsigned char* screen_buffer = NULL;
+static unsigned char* screen_buffer = nullptr;
 
 // 0x6AC120
 static int window_index[MAX_WINDOW_COUNT];
@@ -102,7 +102,7 @@ int win_init(VideoOptions* video_options, int flags)
     }
 
     if (db_total() == 0) {
-        if (db_init(NULL, NULL, "", 1) == INVALID_DATABASE_HANDLE) {
+        if (db_init(nullptr, nullptr, "", 1) == INVALID_DATABASE_HANDLE) {
             return WINDOW_MANAGER_ERR_INITIALIZING_DEFAULT_DATABASE;
         }
     }
@@ -118,8 +118,8 @@ int win_init(VideoOptions* video_options, int flags)
     }
 
     if ((flags & 1) != 0) {
-        screen_buffer = (unsigned char*)mem_malloc((scr_size.lry - scr_size.uly + 1) * (scr_size.lrx - scr_size.ulx + 1));
-        if (screen_buffer == NULL) {
+        screen_buffer = static_cast<unsigned char*>(mem_malloc((scr_size.lry - scr_size.uly + 1) * (scr_size.lrx - scr_size.ulx + 1)));
+        if (screen_buffer == nullptr) {
             svga_exit();
 
             return WINDOW_MANAGER_ERR_NO_MEMORY;
@@ -133,11 +133,11 @@ int win_init(VideoOptions* video_options, int flags)
     colorRegisterAlloc(mem_malloc, mem_realloc, mem_free);
 
     if (!initColors()) {
-        unsigned char* palette = (unsigned char*)mem_malloc(768);
-        if (palette == NULL) {
+        unsigned char* palette = static_cast<unsigned char*>(mem_malloc(768));
+        if (palette == nullptr) {
             svga_exit();
 
-            if (screen_buffer != NULL) {
+            if (screen_buffer != nullptr) {
                 mem_free(screen_buffer);
             }
 
@@ -160,11 +160,11 @@ int win_init(VideoOptions* video_options, int flags)
 
     GNW_intr_init();
 
-    Window* w = window[0] = (Window*)mem_malloc(sizeof(*w));
-    if (w == NULL) {
+    Window* w = window[0] = static_cast<Window*>(mem_malloc(sizeof(*w)));
+    if (w == nullptr) {
         svga_exit();
 
-        if (screen_buffer != NULL) {
+        if (screen_buffer != nullptr) {
             mem_free(screen_buffer);
         }
 
@@ -181,11 +181,11 @@ int win_init(VideoOptions* video_options, int flags)
     w->height = scr_size.lry - scr_size.uly + 1;
     w->tx = 0;
     w->ty = 0;
-    w->buffer = NULL;
-    w->buttonListHead = NULL;
-    w->hoveredButton = NULL;
+    w->buffer = nullptr;
+    w->buttonListHead = nullptr;
+    w->hoveredButton = nullptr;
     w->clickedButton = 0;
-    w->menuBar = NULL;
+    w->menuBar = nullptr;
 
     num_windows = 1;
     GNW_win_init_flag = 1;
@@ -222,11 +222,11 @@ void win_exit(void)
                 win_free(window[index]->id);
             }
 
-            if (GNW_texture != NULL) {
+            if (GNW_texture != nullptr) {
                 mem_free(GNW_texture);
             }
 
-            if (screen_buffer != NULL) {
+            if (screen_buffer != nullptr) {
                 mem_free(screen_buffer);
             }
 
@@ -263,27 +263,27 @@ int win_add(int x, int y, int width, int height, int color, int flags)
         return -1;
     }
 
-    if (width > rectGetWidth(&scr_size)) {
+    if (width > scr_size.width()) {
         return -1;
     }
 
-    if (height > rectGetHeight(&scr_size)) {
+    if (height > scr_size.height()) {
         return -1;
     }
 
-    Window* w = window[num_windows] = (Window*)mem_malloc(sizeof(*w));
-    if (w == NULL) {
+    Window* w = window[num_windows] = static_cast<Window*>(mem_malloc(sizeof(*w)));
+    if (w == nullptr) {
         return -1;
     }
 
-    w->buffer = (unsigned char*)mem_malloc(width * height);
-    if (w->buffer == NULL) {
+    w->buffer = static_cast<unsigned char*>(mem_malloc(width * height));
+    if (w->buffer == nullptr) {
         mem_free(w);
         return -1;
     }
 
     int index = 1;
-    while (GNW_find(index) != NULL) {
+    while (GNW_find(index) != nullptr) {
         index++;
     }
 
@@ -300,7 +300,7 @@ int win_add(int x, int y, int width, int height, int color, int flags)
     w->ty = rand() & 0xFFFE;
 
     if (color == 256) {
-        if (GNW_texture == NULL) {
+        if (GNW_texture == nullptr) {
             color = colorTable[GNW_wcolor[0]];
         }
     } else if ((color & 0xFF00) != 0) {
@@ -311,7 +311,7 @@ int win_add(int x, int y, int width, int height, int color, int flags)
     w->buttonListHead = 0;
     w->hoveredButton = 0;
     w->clickedButton = 0;
-    w->menuBar = NULL;
+    w->menuBar = nullptr;
     w->blitProc = trans_buf_to_buf;
     w->color = color;
     window_index[index] = num_windows;
@@ -359,12 +359,12 @@ void win_delete(int win)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
     Rect rect;
-    rectCopy(&rect, &(w->rect));
+    rect = w->rect;
 
     int v1 = window_index[w->id];
     win_free(win);
@@ -386,22 +386,22 @@ void win_delete(int win)
 static void win_free(int win)
 {
     Window* w = GNW_find(win);
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
-    if (w->buffer != NULL) {
+    if (w->buffer != nullptr) {
         mem_free(w->buffer);
     }
 
-    if (w->menuBar != NULL) {
+    if (w->menuBar != nullptr) {
         mem_free(w->menuBar);
     }
 
     Button* curr = w->buttonListHead;
-    while (curr != NULL) {
+    while (curr != nullptr) {
         Button* next = curr->next;
-        GNW_delete_button(curr);
+        curr->destroy();
         curr = next;
     }
 
@@ -411,7 +411,7 @@ static void win_free(int win)
 // 0x4C2614
 void win_buffering(bool state)
 {
-    if (screen_buffer != NULL) {
+    if (screen_buffer != nullptr) {
         buffering = state;
     }
 }
@@ -424,7 +424,7 @@ void win_border(int win)
     }
 
     Window* w = GNW_find(win);
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
@@ -443,9 +443,9 @@ void win_border(int win)
 void win_no_texture()
 {
     if (GNW_win_init_flag) {
-        if (GNW_texture != NULL) {
+        if (GNW_texture != nullptr) {
             mem_free(GNW_texture);
-            GNW_texture = NULL;
+            GNW_texture = nullptr;
         }
 
         GNW_wcolor[0] = 10570;
@@ -478,7 +478,7 @@ void win_print(int win, const char* str, int width, int x, int y, int color)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
@@ -505,7 +505,7 @@ void win_print(int win, const char* str, int width, int x, int y, int color)
     }
 
     if (!(color & 0x02000000)) {
-        if (w->color == 256 && GNW_texture != NULL) {
+        if (w->color == 256 && GNW_texture != nullptr) {
             buf_texture(buf, width, text_height(), w->width, GNW_texture, w->tx + x, w->ty + y);
         } else {
             buf_fill(buf, width, text_height(), w->width, w->color);
@@ -528,7 +528,7 @@ void win_print(int win, const char* str, int width, int x, int y, int color)
         rect.uly = w->rect.uly + y;
         rect.lrx = rect.ulx + width;
         rect.lry = rect.uly + text_height();
-        GNW_win_refresh(w, &rect, NULL);
+        w->winRefresh(&rect, nullptr);
     }
 }
 
@@ -541,7 +541,7 @@ void win_text(int win, char** fileNameList, int fileNameListLength, int maxWidth
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
@@ -579,7 +579,7 @@ void win_line(int win, int left, int top, int right, int bottom, int color)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
@@ -600,7 +600,7 @@ void win_box(int win, int left, int top, int right, int bottom, int color)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
@@ -633,7 +633,7 @@ void win_shaded_box(int id, int ulx, int uly, int lrx, int lry, int color1, int 
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
@@ -657,12 +657,12 @@ void win_fill(int win, int x, int y, int width, int height, int color)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
     if (color == 256) {
-        if (GNW_texture != NULL) {
+        if (GNW_texture != nullptr) {
             buf_texture(w->buffer + w->width * y + x, width, height, w->width, GNW_texture, x + w->tx, y + w->ty);
         } else {
             color = colorTable[GNW_wcolor[0]] & 0xFF;
@@ -696,7 +696,7 @@ void win_show(int win)
     if (w->flags & WINDOW_HIDDEN) {
         w->flags &= ~WINDOW_HIDDEN;
         if (v3 == num_windows - 1) {
-            GNW_win_refresh(w, &(w->rect), NULL);
+            w->winRefresh(&(w->rect), nullptr);
         }
     }
 
@@ -712,7 +712,7 @@ void win_show(int win)
 
         window[v3] = w;
         window_index[w->id] = v3;
-        GNW_win_refresh(w, &(w->rect), NULL);
+        w->winRefresh(&(w->rect), nullptr);
     }
 }
 
@@ -724,13 +724,13 @@ void win_hide(int win)
     }
 
     Window* w = GNW_find(win);
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
     if ((w->flags & WINDOW_HIDDEN) == 0) {
         w->flags |= WINDOW_HIDDEN;
-        refresh_all(&(w->rect), NULL);
+        refresh_all(&(w->rect), nullptr);
     }
 }
 
@@ -743,12 +743,12 @@ void win_move(int win, int x, int y)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
     Rect rect;
-    rectCopy(&rect, &(w->rect));
+    rect = w->rect;
 
     if (x < 0) {
         x = 0;
@@ -781,10 +781,10 @@ void win_move(int win, int x, int y)
     w->rect.lry = w->height + y - 1;
 
     if ((w->flags & WINDOW_HIDDEN) == 0) {
-        GNW_win_refresh(w, &(w->rect), NULL);
+        w->winRefresh(&(w->rect), nullptr);
 
         if (GNW_win_init_flag) {
-            refresh_all(&rect, NULL);
+            refresh_all(&rect, nullptr);
         }
     }
 }
@@ -798,11 +798,11 @@ void win_draw(int win)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
-    GNW_win_refresh(w, &(w->rect), NULL);
+    w->winRefresh(&(w->rect), nullptr);
 }
 
 // 0x4C303C
@@ -814,19 +814,19 @@ void win_draw_rect(int win, const Rect* rect)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
     Rect newRect;
-    rectCopy(&newRect, rect);
-    rectOffset(&newRect, w->rect.ulx, w->rect.uly);
+    newRect = *rect;
+    newRect.offset(w->rect.ulx, w->rect.uly);
 
-    GNW_win_refresh(w, &newRect, NULL);
+    w->winRefresh(&newRect, nullptr);
 }
 
 // 0x4C3094
-void GNW_win_refresh(Window* w, Rect* rect, unsigned char* a3)
+void Window::winRefresh(Rect* rect, unsigned char* a3)
 {
     RectPtr v26, v20, v23, v24;
     int dest_pitch;
@@ -834,77 +834,77 @@ void GNW_win_refresh(Window* w, Rect* rect, unsigned char* a3)
     // TODO: Get rid of this.
     dest_pitch = 0;
 
-    if ((w->flags & WINDOW_HIDDEN) != 0) {
+    if ((flags & WINDOW_HIDDEN) != 0) {
         return;
     }
 
-    if ((w->flags & WINDOW_TRANSPARENT) && buffering && !doing_refresh_all) {
+    if ((flags & WINDOW_TRANSPARENT) && buffering && !doing_refresh_all) {
         // TODO: Incomplete.
     } else {
         v26 = rect_malloc();
-        if (v26 == NULL) {
+        if (v26 == nullptr) {
             return;
         }
 
-        v26->next = NULL;
+        v26->next = nullptr;
 
-        v26->rect.ulx = std::max(w->rect.ulx, rect->ulx);
-        v26->rect.uly = std::max(w->rect.uly, rect->uly);
-        v26->rect.lrx = std::min(w->rect.lrx, rect->lrx);
-        v26->rect.lry = std::min(w->rect.lry, rect->lry);
+        v26->rect.ulx = std::max(this->rect.ulx, rect->ulx);
+        v26->rect.uly = std::max(this->rect.uly, rect->uly);
+        v26->rect.lrx = std::min(this->rect.lrx, rect->lrx);
+        v26->rect.lry = std::min(this->rect.lry, rect->lry);
 
         if (v26->rect.lrx >= v26->rect.ulx && v26->rect.lry >= v26->rect.uly) {
             if (a3) {
                 dest_pitch = rect->lrx - rect->ulx + 1;
             }
 
-            win_clip(w, &v26, a3);
+            win_clip(this, &v26, a3);
 
-            if (w->id) {
+            if (id) {
                 v20 = v26;
                 while (v20) {
-                    GNW_button_refresh(w, &(v20->rect));
+                    buttonRefresh(&(v20->rect));
 
                     if (a3) {
-                        if (buffering && (w->flags & WINDOW_TRANSPARENT)) {
-                            w->blitProc(w->buffer + v20->rect.ulx - w->rect.ulx + (v20->rect.uly - w->rect.uly) * w->width,
+                        if (buffering && (flags & WINDOW_TRANSPARENT)) {
+                            blitProc(buffer + v20->rect.ulx - this->rect.ulx + (v20->rect.uly - this->rect.uly) * width,
                                 v20->rect.lrx - v20->rect.ulx + 1,
                                 v20->rect.lry - v20->rect.uly + 1,
-                                w->width,
+                                width,
                                 a3 + dest_pitch * (v20->rect.uly - rect->uly) + v20->rect.ulx - rect->ulx,
                                 dest_pitch);
                         } else {
                             buf_to_buf(
-                                w->buffer + v20->rect.ulx - w->rect.ulx + (v20->rect.uly - w->rect.uly) * w->width,
+                                buffer + v20->rect.ulx - this->rect.ulx + (v20->rect.uly - this->rect.uly) * width,
                                 v20->rect.lrx - v20->rect.ulx + 1,
                                 v20->rect.lry - v20->rect.uly + 1,
-                                w->width,
+                                width,
                                 a3 + dest_pitch * (v20->rect.uly - rect->uly) + v20->rect.ulx - rect->ulx,
                                 dest_pitch);
                         }
                     } else {
                         if (buffering) {
-                            if (w->flags & WINDOW_TRANSPARENT) {
-                                w->blitProc(
-                                    w->buffer + v20->rect.ulx - w->rect.ulx + (v20->rect.uly - w->rect.uly) * w->width,
+                            if (flags & WINDOW_TRANSPARENT) {
+                                blitProc(
+                                    buffer + v20->rect.ulx - this->rect.ulx + (v20->rect.uly - this->rect.uly) * width,
                                     v20->rect.lrx - v20->rect.ulx + 1,
                                     v20->rect.lry - v20->rect.uly + 1,
-                                    w->width,
+                                    width,
                                     screen_buffer + v20->rect.uly * (scr_size.lrx - scr_size.ulx + 1) + v20->rect.ulx,
                                     scr_size.lrx - scr_size.ulx + 1);
                             } else {
                                 buf_to_buf(
-                                    w->buffer + v20->rect.ulx - w->rect.ulx + (v20->rect.uly - w->rect.uly) * w->width,
+                                    buffer + v20->rect.ulx - this->rect.ulx + (v20->rect.uly - this->rect.uly) * width,
                                     v20->rect.lrx - v20->rect.ulx + 1,
                                     v20->rect.lry - v20->rect.uly + 1,
-                                    w->width,
+                                    width,
                                     screen_buffer + v20->rect.uly * (scr_size.lrx - scr_size.ulx + 1) + v20->rect.ulx,
                                     scr_size.lrx - scr_size.ulx + 1);
                             }
                         } else {
                             scr_blit(
-                                w->buffer + v20->rect.ulx - w->rect.ulx + (v20->rect.uly - w->rect.uly) * w->width,
-                                w->width,
+                                buffer + v20->rect.ulx - this->rect.ulx + (v20->rect.uly - this->rect.uly) * width,
+                                width,
                                 v20->rect.lry - v20->rect.lry + 1,
                                 0,
                                 0,
@@ -919,11 +919,11 @@ void GNW_win_refresh(Window* w, Rect* rect, unsigned char* a3)
                 }
             } else {
                 rectdata* v16 = v26;
-                while (v16 != NULL) {
+                while (v16 != nullptr) {
                     int width = v16->rect.lrx - v16->rect.ulx + 1;
                     int height = v16->rect.lry - v16->rect.uly + 1;
-                    unsigned char* buf = (unsigned char*)mem_malloc(width * height);
-                    if (buf != NULL) {
+                    unsigned char* buf = static_cast<unsigned char*>(mem_malloc(width * height));
+                    if (buf != nullptr) {
                         buf_fill(buf, width, height, width, bk_color);
                         if (dest_pitch != 0) {
                             buf_to_buf(
@@ -974,7 +974,7 @@ void GNW_win_refresh(Window* w, Rect* rect, unsigned char* a3)
                 v23 = v24;
             }
 
-            if (!doing_refresh_all && a3 == NULL && mouse_hidden() == 0) {
+            if (!doing_refresh_all && a3 == nullptr && mouse_hidden() == 0) {
                 if (mouse_in(rect->ulx, rect->uly, rect->lrx, rect->lry)) {
                     mouse_show();
                 }
@@ -989,7 +989,7 @@ void GNW_win_refresh(Window* w, Rect* rect, unsigned char* a3)
 void win_refresh_all(Rect* rect)
 {
     if (GNW_win_init_flag) {
-        refresh_all(rect, NULL);
+        refresh_all(rect, nullptr);
     }
 }
 
@@ -999,7 +999,7 @@ static void win_clip(Window* w, RectPtr* rectListNodePtr, unsigned char* a3)
     int win;
 
     for (win = window_index[w->id] + 1; win < num_windows; win++) {
-        if (*rectListNodePtr == NULL) {
+        if (*rectListNodePtr == nullptr) {
             break;
         }
 
@@ -1010,14 +1010,14 @@ static void win_clip(Window* w, RectPtr* rectListNodePtr, unsigned char* a3)
                 rect_clip_list(rectListNodePtr, &(w->rect));
             } else {
                 if (!doing_refresh_all) {
-                    GNW_win_refresh(w, &(w->rect), NULL);
+                    w->winRefresh(&(w->rect), nullptr);
                     rect_clip_list(rectListNodePtr, &(w->rect));
                 }
             }
         }
     }
 
-    if (a3 == screen_buffer || a3 == NULL) {
+    if (a3 == screen_buffer || a3 == nullptr) {
         if (mouse_hidden() == 0) {
             Rect rect;
             mouse_get_rect(&rect);
@@ -1035,14 +1035,14 @@ void win_drag(int win)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
     win_show(win);
 
     Rect rect;
-    rectCopy(&rect, &(w->rect));
+    rect = w->rect;
 
     GNW_do_bk_process();
 
@@ -1069,12 +1069,12 @@ static void refresh_all(Rect* rect, unsigned char* a2)
     doing_refresh_all = 1;
 
     for (int index = 0; index < num_windows; index++) {
-        GNW_win_refresh(window[index], rect, a2);
+        window[index]->winRefresh(rect, a2);
     }
 
     doing_refresh_all = 0;
 
-    if (a2 == NULL) {
+    if (a2 == nullptr) {
         if (!mouse_hidden()) {
             if (mouse_in(rect->ulx, rect->uly, rect->lrx, rect->lry)) {
                 mouse_show();
@@ -1089,12 +1089,12 @@ Window* GNW_find(int win)
     int v0;
 
     if (win == -1) {
-        return NULL;
+        return nullptr;
     }
 
     v0 = window_index[win];
     if (v0 == -1) {
-        return NULL;
+        return nullptr;
     }
 
     return window[v0];
@@ -1106,11 +1106,11 @@ unsigned char* win_get_buf(int win)
     Window* w = GNW_find(win);
 
     if (!GNW_win_init_flag) {
-        return NULL;
+        return nullptr;
     }
 
-    if (w == NULL) {
-        return NULL;
+    if (w == nullptr) {
+        return nullptr;
     }
 
     return w->buffer;
@@ -1139,7 +1139,7 @@ int win_width(int win)
         return -1;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return -1;
     }
 
@@ -1155,7 +1155,7 @@ int win_height(int win)
         return -1;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return -1;
     }
 
@@ -1171,11 +1171,11 @@ int win_get_rect(int win, Rect* rect)
         return -1;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return -1;
     }
 
-    rectCopy(rect, &(w->rect));
+    *rect = w->rect;
 
     return 0;
 }
@@ -1189,7 +1189,7 @@ int win_check_all_buttons()
 
     int v1 = -1;
     for (int index = num_windows - 1; index >= 1; index--) {
-        if (GNW_check_buttons(window[index], &v1) == 0) {
+        if (window[index]->checkButtons(&v1) == 0) {
             break;
         }
 
@@ -1207,9 +1207,9 @@ Button* GNW_find_button(int btn, Window** windowPtr)
     for (int index = 0; index < num_windows; index++) {
         Window* w = window[index];
         Button* button = w->buttonListHead;
-        while (button != NULL) {
+        while (button != nullptr) {
             if (button->id == btn) {
-                if (windowPtr != NULL) {
+                if (windowPtr != nullptr) {
                     *windowPtr = w;
                 }
 
@@ -1219,7 +1219,7 @@ Button* GNW_find_button(int btn, Window** windowPtr)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x4C3AEC
@@ -1232,10 +1232,10 @@ int GNW_check_menu_bars(int a1)
     int v1 = a1;
     for (int index = num_windows - 1; index >= 1; index--) {
         Window* w = window[index];
-        if (w->menuBar != NULL) {
+        if (w->menuBar != nullptr) {
             for (int pulldownIndex = 0; pulldownIndex < w->menuBar->pulldownsLength; pulldownIndex++) {
                 if (v1 == w->menuBar->pulldowns[pulldownIndex].keyCode) {
-                    v1 = GNW_process_menu(w->menuBar, pulldownIndex);
+                    v1 = w->menuBar->GNW_process_menu(pulldownIndex);
                     break;
                 }
             }
@@ -1252,13 +1252,13 @@ int GNW_check_menu_bars(int a1)
 // 0x4C4190
 void win_set_minimized_title(const char* title)
 {
-    if (title == NULL) {
+    if (title == nullptr) {
         return;
     }
 
 #ifdef _WIN32
     if (GNW95_title_mutex == INVALID_HANDLE_VALUE) {
-        GNW95_title_mutex = CreateMutexA(NULL, TRUE, title);
+        GNW95_title_mutex = CreateMutexA(nullptr, TRUE, title);
         if (GetLastError() != ERROR_SUCCESS) {
             GNW95_already_running = true;
             return;
@@ -1283,7 +1283,7 @@ void win_set_trans_b2b(int id, WindowBlitProc* trans_b2b)
         return;
     }
 
-    if (w == NULL) {
+    if (w == nullptr) {
         return;
     }
 
@@ -1291,7 +1291,7 @@ void win_set_trans_b2b(int id, WindowBlitProc* trans_b2b)
         return;
     }
 
-    if (trans_b2b != NULL) {
+    if (trans_b2b != nullptr) {
         w->blitProc = trans_b2b;
     } else {
         w->blitProc = trans_buf_to_buf;
@@ -1307,13 +1307,13 @@ static void* colorOpen(const char* path)
 // 0x4C4298
 static int colorRead(void* handle, void* buf, size_t count)
 {
-    return db_fread(buf, 1, count, reinterpret_cast<DB_FILE*>(handle));
+    return reinterpret_cast<DB_FILE*>(handle)->fread(buf, 1, count);
 }
 
 // 0x4C42A0
 static int colorClose(void* handle)
 {
-    return db_fclose(reinterpret_cast<DB_FILE*>(handle));
+    return reinterpret_cast<DB_FILE*>(handle)->fclose();
 }
 
 // 0x4C42B8
@@ -1323,7 +1323,7 @@ bool GNWSystemError(const char* text)
     SDL_Cursor* cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
     SDL_SetCursor(cursor);
     SDL_ShowCursor(SDL_ENABLE);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, NULL, text, NULL);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, nullptr, text, nullptr);
     SDL_ShowCursor(SDL_DISABLE);
     SDL_SetCursor(prev);
     SDL_FreeCursor(cursor);

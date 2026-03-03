@@ -1,11 +1,11 @@
-#ifndef FALLOUT_GAME_SFXCACHE_H_
-#define FALLOUT_GAME_SFXCACHE_H_
+#pragma once
+
 
 namespace fallout {
 
 // The maximum number of sound effects that can be loaded and played
 // simultaneously.
-#define SOUND_EFFECTS_MAX_COUNT 4
+inline constexpr int SOUND_EFFECTS_MAX_COUNT = 4;
 
 int sfxc_init(int cache_size, const char* effectsPath);
 void sfxc_exit();
@@ -20,5 +20,3 @@ long sfxc_cached_tell(int handle);
 long sfxc_cached_file_size(int handle);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_SFXCACHE_H_ */

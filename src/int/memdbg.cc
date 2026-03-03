@@ -1,9 +1,9 @@
 #include "int/memdbg.h"
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 namespace fallout {
 
@@ -46,7 +46,7 @@ static int debug_printf(const char* format, ...)
 
     int length = 0;
 
-    if (outputFunc != NULL) {
+    if (outputFunc != nullptr) {
         va_list args;
         va_start(args, format);
         length = vsnprintf(buf, sizeof(buf), format, args);
@@ -101,7 +101,7 @@ int my_check_all()
 void* mymalloc(size_t size, const char* file, int line)
 {
     void* ptr = mallocPtr(size);
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
         error("malloc", size, file, line);
     }
 
@@ -112,7 +112,7 @@ void* mymalloc(size_t size, const char* file, int line)
 void* myrealloc(void* ptr, size_t size, const char* file, int line)
 {
     ptr = reallocPtr(ptr, size);
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
         error("realloc", size, file, line);
     }
 
@@ -122,7 +122,7 @@ void* myrealloc(void* ptr, size_t size, const char* file, int line)
 // 0x4763F8
 void myfree(void* ptr, const char* file, int line)
 {
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
         debug_printf("free: free of a null ptr, %s %d\n", file, line);
         exit(1);
     }
@@ -134,7 +134,7 @@ void myfree(void* ptr, const char* file, int line)
 void* mycalloc(int count, int size, const char* file, int line)
 {
     void* ptr = mallocPtr(count * size);
-    if (ptr == NULL) {
+    if (ptr == nullptr) {
         error("calloc", size, file, line);
     }
 
@@ -147,8 +147,8 @@ void* mycalloc(int count, int size, const char* file, int line)
 char* mystrdup(const char* string, const char* file, int line)
 {
     size_t size = strlen(string) + 1;
-    char* copy = (char*)mallocPtr(size);
-    if (copy == NULL) {
+    char* copy = static_cast<char*>(mallocPtr(size));
+    if (copy == nullptr) {
         error("strdup", size, file, line);
     }
 

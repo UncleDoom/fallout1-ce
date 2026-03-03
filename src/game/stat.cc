@@ -1,7 +1,7 @@
 #include "game/stat.h"
 
-#include <limits.h>
-#include <stdio.h>
+#include <climits>
+#include <cstdio>
 
 #include <algorithm>
 
@@ -28,67 +28,67 @@
 namespace fallout {
 
 // Provides metadata about stats.
-typedef struct StatDescription {
+struct StatDescription {
     char* name;
     char* description;
     int art_num;
     int minimumValue;
     int maximumValue;
     int defaultValue;
-} StatDescription;
+};
 
 // 0x507EC8
 static StatDescription stat_data[STAT_COUNT] = {
-    { NULL, NULL, 0, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
-    { NULL, NULL, 1, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
-    { NULL, NULL, 2, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
-    { NULL, NULL, 3, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
-    { NULL, NULL, 4, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
-    { NULL, NULL, 5, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
-    { NULL, NULL, 6, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
-    { NULL, NULL, 10, 0, INT_MAX, 0 },
-    { NULL, NULL, 75, 0, INT_MAX, 0 },
-    { NULL, NULL, 18, 0, INT_MAX, 0 },
-    { NULL, NULL, 31, 0, INT_MAX, 0 },
-    { NULL, NULL, 32, 0, INT_MAX, 0 },
-    { NULL, NULL, 20, 0, INT_MAX, 0 },
-    { NULL, NULL, 24, 0, INT_MAX, 0 },
-    { NULL, NULL, 25, 0, INT_MAX, 0 },
-    { NULL, NULL, 26, 0, 100, 0 },
+    { nullptr, nullptr, 0, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
+    { nullptr, nullptr, 1, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
+    { nullptr, nullptr, 2, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
+    { nullptr, nullptr, 3, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
+    { nullptr, nullptr, 4, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
+    { nullptr, nullptr, 5, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
+    { nullptr, nullptr, 6, PRIMARY_STAT_MIN, PRIMARY_STAT_MAX, 5 },
+    { nullptr, nullptr, 10, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 75, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 18, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 31, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 32, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 20, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 24, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 25, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 26, 0, 100, 0 },
     // CE: Fix minimal value (on par with Fallout 2). This allows "Better
     // Criticals" to be less than 0 (with Heavy Handed trait it's -30), so it
     // can affect critical effect calculation in `attack_crit_success`.
-    { NULL, NULL, 94, -60, 100, 0 },
-    { NULL, NULL, 0, 0, 100, 0 },
-    { NULL, NULL, 0, 0, 100, 0 },
-    { NULL, NULL, 0, 0, 100, 0 },
-    { NULL, NULL, 0, 0, 100, 0 },
-    { NULL, NULL, 0, 0, 100, 0 },
-    { NULL, NULL, 0, 0, 100, 0 },
-    { NULL, NULL, 0, 0, 100, 0 },
-    { NULL, NULL, 22, 0, 90, 0 },
-    { NULL, NULL, 0, 0, 90, 0 },
-    { NULL, NULL, 0, 0, 90, 0 },
-    { NULL, NULL, 0, 0, 90, 0 },
-    { NULL, NULL, 0, 0, 90, 0 },
-    { NULL, NULL, 0, 0, 100, 0 },
-    { NULL, NULL, 0, 0, 90, 0 },
-    { NULL, NULL, 83, 0, 100, 0 },
-    { NULL, NULL, 23, 0, 100, 0 },
-    { NULL, NULL, 0, 16, 35, 25 },
-    { NULL, NULL, 0, 0, 1, 0 },
-    { NULL, NULL, 10, 0, 2000, 0 },
-    { NULL, NULL, 11, 0, 2000, 0 },
-    { NULL, NULL, 12, 0, 2000, 0 },
+    { nullptr, nullptr, 94, -60, 100, 0 },
+    { nullptr, nullptr, 0, 0, 100, 0 },
+    { nullptr, nullptr, 0, 0, 100, 0 },
+    { nullptr, nullptr, 0, 0, 100, 0 },
+    { nullptr, nullptr, 0, 0, 100, 0 },
+    { nullptr, nullptr, 0, 0, 100, 0 },
+    { nullptr, nullptr, 0, 0, 100, 0 },
+    { nullptr, nullptr, 0, 0, 100, 0 },
+    { nullptr, nullptr, 22, 0, 90, 0 },
+    { nullptr, nullptr, 0, 0, 90, 0 },
+    { nullptr, nullptr, 0, 0, 90, 0 },
+    { nullptr, nullptr, 0, 0, 90, 0 },
+    { nullptr, nullptr, 0, 0, 90, 0 },
+    { nullptr, nullptr, 0, 0, 100, 0 },
+    { nullptr, nullptr, 0, 0, 90, 0 },
+    { nullptr, nullptr, 83, 0, 100, 0 },
+    { nullptr, nullptr, 23, 0, 100, 0 },
+    { nullptr, nullptr, 0, 16, 35, 25 },
+    { nullptr, nullptr, 0, 0, 1, 0 },
+    { nullptr, nullptr, 10, 0, 2000, 0 },
+    { nullptr, nullptr, 11, 0, 2000, 0 },
+    { nullptr, nullptr, 12, 0, 2000, 0 },
 };
 
 // 0x508258
 static StatDescription pc_stat_data[PC_STAT_COUNT] = {
-    { NULL, NULL, 0, 0, INT_MAX, 0 },
-    { NULL, NULL, 0, 1, INT_MAX, 1 },
-    { NULL, NULL, 0, 0, INT_MAX, 0 },
-    { NULL, NULL, 0, -20, 20, 0 },
-    { NULL, NULL, 0, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 0, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 0, 1, INT_MAX, 1 },
+    { nullptr, nullptr, 0, 0, INT_MAX, 0 },
+    { nullptr, nullptr, 0, -20, 20, 0 },
+    { nullptr, nullptr, 0, 0, INT_MAX, 0 },
 };
 
 // 0x6651CC
@@ -110,28 +110,28 @@ int stat_init()
     // NOTE: Uninline.
     stat_pc_set_defaults();
 
-    if (!message_init(&stat_message_file)) {
+    if (!stat_message_file.init()) {
         return -1;
     }
 
     snprintf(path, sizeof(path), "%s%s", msg_path, "stat.msg");
 
-    if (!message_load(&stat_message_file, path)) {
+    if (!stat_message_file.load(path)) {
         return -1;
     }
 
     for (index = 0; index < STAT_COUNT; index++) {
-        stat_data[index].name = getmsg(&stat_message_file, &messageListItem, 100 + index);
-        stat_data[index].description = getmsg(&stat_message_file, &messageListItem, 200 + index);
+        stat_data[index].name = stat_message_file.getMessage(&messageListItem, 100 + index);
+        stat_data[index].description = stat_message_file.getMessage(&messageListItem, 200 + index);
     }
 
     for (index = 0; index < PC_STAT_COUNT; index++) {
-        pc_stat_data[index].name = getmsg(&stat_message_file, &messageListItem, 400 + index);
-        pc_stat_data[index].description = getmsg(&stat_message_file, &messageListItem, 500 + index);
+        pc_stat_data[index].name = stat_message_file.getMessage(&messageListItem, 400 + index);
+        pc_stat_data[index].description = stat_message_file.getMessage(&messageListItem, 500 + index);
     }
 
     for (index = 0; index < PRIMARY_STAT_RANGE; index++) {
-        level_description[index] = getmsg(&stat_message_file, &messageListItem, 301 + index);
+        level_description[index] = stat_message_file.getMessage(&messageListItem, 301 + index);
     }
 
     return 0;
@@ -149,7 +149,7 @@ int stat_reset()
 // 0x49C464
 int stat_exit()
 {
-    message_exit(&stat_message_file);
+    stat_message_file.exit();
 
     return 0;
 }
@@ -160,7 +160,7 @@ int stat_load(DB_FILE* stream)
     int pc_stat;
 
     for (pc_stat = 0; pc_stat < PC_STAT_COUNT; pc_stat++) {
-        if (db_freadInt(stream, &(curr_pc_stat[pc_stat])) == -1) {
+        if (stream->freadInt(&(curr_pc_stat[pc_stat])) == -1) {
             return -1;
         }
     }
@@ -174,7 +174,7 @@ int stat_save(DB_FILE* stream)
     int pc_stat;
 
     for (pc_stat = 0; pc_stat < PC_STAT_COUNT; pc_stat++) {
-        if (db_fwriteInt(stream, curr_pc_stat[pc_stat]) == -1) {
+        if (stream->fwriteInt(curr_pc_stat[pc_stat]) == -1) {
             return -1;
         }
     }
@@ -384,13 +384,13 @@ int stat_set_bonus(Object* critter, int stat, int value)
 }
 
 // 0x49C8A4
-void stat_set_defaults(CritterProtoData* data)
+void CritterProtoData::setStatDefaults()
 {
     int stat;
 
     for (stat = 0; stat < SAVEABLE_STAT_COUNT; stat++) {
-        data->baseStats[stat] = stat_data[stat].defaultValue;
-        data->bonusStats[stat] = 0;
+        baseStats[stat] = stat_data[stat].defaultValue;
+        bonusStats[stat] = 0;
     }
 }
 
@@ -424,13 +424,13 @@ void stat_recalc_derived(Object* critter)
 // 0x49CA2C
 char* stat_name(int stat)
 {
-    return stat >= 0 && stat < STAT_COUNT ? stat_data[stat].name : NULL;
+    return stat >= 0 && stat < STAT_COUNT ? stat_data[stat].name : nullptr;
 }
 
 // 0x49CA70
 char* stat_description(int stat)
 {
-    return stat >= 0 && stat < STAT_COUNT ? stat_data[stat].description : NULL;
+    return stat >= 0 && stat < STAT_COUNT ? stat_data[stat].description : nullptr;
 }
 
 // 0x49CAB4
@@ -526,13 +526,13 @@ int stat_pc_min_exp()
 // 0x49CB88
 char* stat_pc_name(int pcStat)
 {
-    return pcStat >= 0 && pcStat < PC_STAT_COUNT ? pc_stat_data[pcStat].name : NULL;
+    return pcStat >= 0 && pcStat < PC_STAT_COUNT ? pc_stat_data[pcStat].name : nullptr;
 }
 
 // 0x49CBA8
 char* stat_pc_description(int pcStat)
 {
-    return pcStat >= 0 && pcStat < PC_STAT_COUNT ? pc_stat_data[pcStat].description : NULL;
+    return pcStat >= 0 && pcStat < PC_STAT_COUNT ? pc_stat_data[pcStat].description : nullptr;
 }
 
 // 0x49CBC8
@@ -552,7 +552,7 @@ int stat_picture(int stat)
 // Upon return [howMuch] will be set to difference between stat's value
 // (accounting for given [modifier]) and d10 roll, which can be positive (or
 // zero) when roll succeeds, or negative when roll fails. Set [howMuch] to
-// `NULL` if you're not interested in this value.
+// `nullptr` if you're not interested in this value.
 //
 // 0x49CC0C
 int stat_result(Object* critter, int stat, int modifier, int* howMuch)
@@ -560,7 +560,7 @@ int stat_result(Object* critter, int stat, int modifier, int* howMuch)
     int value = stat_level(critter, stat) + modifier;
     int chance = roll_random(PRIMARY_STAT_MIN, PRIMARY_STAT_MAX);
 
-    if (howMuch != NULL) {
+    if (howMuch != nullptr) {
         *howMuch = value - chance;
     }
 
@@ -594,7 +594,7 @@ int stat_pc_add_experience(int xp)
 
             // You have gone up a level.
             messageListItem.num = 600;
-            if (message_search(&stat_message_file, &messageListItem)) {
+            if (stat_message_file.search(&messageListItem)) {
                 display_print(messageListItem.text);
             }
 

@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_SKILL_H_
-#define FALLOUT_GAME_SKILL_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "game/proto_types.h"
@@ -17,7 +17,7 @@ void skill_reset();
 void skill_exit();
 int skill_load(DB_FILE* stream);
 int skill_save(DB_FILE* stream);
-void skill_set_defaults(CritterProtoData* data);
+
 void skill_set_tags(int* skills, int count);
 void skill_get_tags(int* skills, int count);
 int skill_level(Object* critter, int skill);
@@ -37,5 +37,3 @@ int skill_use_slot_save(DB_FILE* stream);
 int skill_use_slot_load(DB_FILE* stream);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_SKILL_H_ */

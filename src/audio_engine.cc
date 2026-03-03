@@ -1,6 +1,6 @@
 #include "audio_engine.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <mutex>
 
@@ -8,7 +8,7 @@
 
 namespace fallout {
 
-#define AUDIO_ENGINE_SOUND_BUFFERS 8
+static constexpr int AUDIO_ENGINE_SOUND_BUFFERS = 8;
 
 struct AudioEngineSoundBuffer {
     bool active;
@@ -68,7 +68,7 @@ static void audioEngineMixin(void* userData, Uint8* stream, int length)
                 }
 
                 // TODO: Make something better than frame-by-frame convertion.
-                SDL_AudioStreamPut(soundBuffer->stream, (unsigned char*)soundBuffer->data + soundBuffer->pos, srcFrameSize);
+                SDL_AudioStreamPut(soundBuffer->stream, reinterpret_cast<unsigned char*>(soundBuffer->data) + soundBuffer->pos, srcFrameSize);
                 soundBuffer->pos += srcFrameSize;
 
                 int bytesRead = SDL_AudioStreamGet(soundBuffer->stream, buffer, remaining);
@@ -106,7 +106,7 @@ bool audioEngineInit()
     desiredSpec.samples = 1024;
     desiredSpec.callback = audioEngineMixin;
 
-    gAudioEngineDeviceId = SDL_OpenAudioDevice(NULL, 0, &desiredSpec, &gAudioEngineSpec, SDL_AUDIO_ALLOW_ANY_CHANGE);
+    gAudioEngineDeviceId = SDL_OpenAudioDevice(nullptr, 0, &desiredSpec, &gAudioEngineSpec, SDL_AUDIO_ALLOW_ANY_CHANGE);
     if (gAudioEngineDeviceId == -1) {
         return false;
     }
@@ -191,10 +191,10 @@ bool audioEngineSoundBufferRelease(int soundBufferIndex)
     soundBuffer->active = false;
 
     free(soundBuffer->data);
-    soundBuffer->data = NULL;
+    soundBuffer->data = nullptr;
 
     SDL_FreeAudioStream(soundBuffer->stream);
-    soundBuffer->stream = NULL;
+    soundBuffer->stream = nullptr;
 
     return true;
 }
@@ -331,11 +331,11 @@ bool audioEngineSoundBufferGetCurrentPosition(int soundBufferIndex, unsigned int
         return false;
     }
 
-    if (readPosPtr != NULL) {
+    if (readPosPtr != nullptr) {
         *readPosPtr = soundBuffer->pos;
     }
 
-    if (writePosPtr != NULL) {
+    if (writePosPtr != nullptr) {
         *writePosPtr = soundBuffer->pos;
 
         if (soundBuffer->playing) {
@@ -388,12 +388,12 @@ bool audioEngineSoundBufferLock(int soundBufferIndex, unsigned int writePos, uns
         return false;
     }
 
-    if (audioBytes1 == NULL) {
+    if (audioBytes1 == nullptr) {
         return false;
     }
 
     if ((flags & AUDIO_ENGINE_SOUND_BUFFER_LOCK_FROM_WRITE_POS) != 0) {
-        if (!audioEngineSoundBufferGetCurrentPosition(soundBufferIndex, NULL, &writePos)) {
+        if (!audioEngineSoundBufferGetCurrentPosition(soundBufferIndex, nullptr, &writePos)) {
             return false;
         }
     }
@@ -403,26 +403,26 @@ bool audioEngineSoundBufferLock(int soundBufferIndex, unsigned int writePos, uns
     }
 
     if (writePos + writeBytes <= soundBuffer->size) {
-        *(unsigned char**)audioPtr1 = (unsigned char*)soundBuffer->data + writePos;
+        *reinterpret_cast<unsigned char**>(audioPtr1) = reinterpret_cast<unsigned char*>(soundBuffer->data) + writePos;
         *audioBytes1 = writeBytes;
 
-        if (audioPtr2 != NULL) {
-            *audioPtr2 = NULL;
+        if (audioPtr2 != nullptr) {
+            *audioPtr2 = nullptr;
         }
 
-        if (audioBytes2 != NULL) {
+        if (audioBytes2 != nullptr) {
             *audioBytes2 = 0;
         }
     } else {
         unsigned int remainder = writePos + writeBytes - soundBuffer->size;
-        *(unsigned char**)audioPtr1 = (unsigned char*)soundBuffer->data + writePos;
+        *reinterpret_cast<unsigned char**>(audioPtr1) = reinterpret_cast<unsigned char*>(soundBuffer->data) + writePos;
         *audioBytes1 = soundBuffer->size - writePos;
 
-        if (audioPtr2 != NULL) {
-            *(unsigned char**)audioPtr2 = (unsigned char*)soundBuffer->data;
+        if (audioPtr2 != nullptr) {
+            *reinterpret_cast<unsigned char**>(audioPtr2) = reinterpret_cast<unsigned char*>(soundBuffer->data);
         }
 
-        if (audioBytes2 != NULL) {
+        if (audioBytes2 != nullptr) {
             *audioBytes2 = writeBytes - (soundBuffer->size - writePos);
         }
     }
@@ -471,7 +471,7 @@ bool audioEngineSoundBufferGetStatus(int soundBufferIndex, unsigned int* statusP
         return false;
     }
 
-    if (statusPtr == NULL) {
+    if (statusPtr == nullptr) {
         return false;
     }
 

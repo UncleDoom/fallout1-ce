@@ -1,7 +1,7 @@
 #include "game/game.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "game/actions.h"
 #include "game/anim.h"
@@ -10,6 +10,7 @@
 #include "game/combat.h"
 #include "game/combatai.h"
 #include "game/critter.h"
+#include "game/raii.h"
 #include "game/cycle.h"
 #include "game/display.h"
 #include "game/editor.h"
@@ -57,14 +58,16 @@
 #include "plib/gnw/svga.h"
 #include "plib/gnw/text.h"
 
+#include <unistd.h>
+
 namespace fallout {
 
-#define HELP_SCREEN_WIDTH 640
-#define HELP_SCREEN_HEIGHT 480
+static constexpr int HELP_SCREEN_WIDTH = 640;
+static constexpr int HELP_SCREEN_HEIGHT = 480;
 
-#define SPLASH_WIDTH 640
-#define SPLASH_HEIGHT 480
-#define SPLASH_COUNT 10
+static constexpr int SPLASH_WIDTH = 640;
+static constexpr int SPLASH_HEIGHT = 480;
+static constexpr int SPLASH_COUNT = 10;
 
 static int game_screendump(int width, int height, unsigned char* buffer, unsigned char* palette);
 static void game_unload_info();
@@ -101,7 +104,7 @@ static int game_state_cur = GAME_STATE_0;
 static bool game_in_mapper = false;
 
 // 0x504FC8
-int* game_global_vars = NULL;
+int* game_global_vars = nullptr;
 
 // 0x504FCC
 int num_game_global_vars = 0;
@@ -150,31 +153,31 @@ int game_init(const char* windowTitle, bool isMapper, int font, int flags, int a
     video_options.scale = 1;
 
     Config resolutionConfig;
-    if (config_init(&resolutionConfig)) {
-        if (config_load(&resolutionConfig, "f1_res.ini", false)) {
+    if (resolutionConfig.init()) {
+        if (resolutionConfig.load("f1_res.ini", false)) {
             int screenWidth;
-            if (config_get_value(&resolutionConfig, "MAIN", "SCR_WIDTH", &screenWidth)) {
+            if (resolutionConfig.getValue("MAIN", "SCR_WIDTH", &screenWidth)) {
                 video_options.width = std::max(screenWidth, 640);
             }
 
             int screenHeight;
-            if (config_get_value(&resolutionConfig, "MAIN", "SCR_HEIGHT", &screenHeight)) {
+            if (resolutionConfig.getValue("MAIN", "SCR_HEIGHT", &screenHeight)) {
                 video_options.height = std::max(screenHeight, 480);
             }
 
             bool windowed;
-            if (configGetBool(&resolutionConfig, "MAIN", "WINDOWED", &windowed)) {
+            if (resolutionConfig.getBool("MAIN", "WINDOWED", &windowed)) {
                 video_options.fullscreen = !windowed;
             }
 
             int scaleValue;
-            if (config_get_value(&resolutionConfig, "MAIN", "SCALE_2X", &scaleValue)) {
+            if (resolutionConfig.getValue("MAIN", "SCALE_2X", &scaleValue)) {
                 video_options.scale = scaleValue + 1;
                 video_options.width /= video_options.scale;
                 video_options.height /= video_options.scale;
             }
         }
-        config_exit(&resolutionConfig);
+        resolutionConfig.exit();
     }
 
     initWindow(&video_options, flags);
@@ -189,7 +192,7 @@ int game_init(const char* windowTitle, bool isMapper, int font, int flags, int a
     text_font(font);
 
     register_screendump(KEY_F12, game_screendump);
-    register_pause(-1, NULL);
+    register_pause(-1, nullptr);
 
     tile_disable_refresh();
 
@@ -314,7 +317,7 @@ int game_init(const char* windowTitle, bool isMapper, int font, int flags, int a
 
     debug_printf(">automap_init\t");
 
-    if (!message_init(&misc_message_file)) {
+    if (!misc_message_file.init()) {
         debug_printf("Failed on message_init\n");
         return -1;
     }
@@ -323,7 +326,7 @@ int game_init(const char* windowTitle, bool isMapper, int font, int flags, int a
 
     snprintf(path, sizeof(path), "%s%s", msg_path, "misc.msg");
 
-    if (!message_load(&misc_message_file, path)) {
+    if (!misc_message_file.load(path)) {
         debug_printf("Failed on message_load\n");
         return -1;
     }
@@ -389,7 +392,7 @@ void game_reset()
 void game_exit()
 {
     tile_disable_refresh();
-    message_exit(&misc_message_file);
+    misc_message_file.exit();
     combat_exit();
     gdialog_exit();
     scr_game_exit();
@@ -539,7 +542,7 @@ int game_handle_input(int eventCode, bool isInCombatMode)
     case KEY_LOWERCASE_A:
         if (intface_is_enabled()) {
             if (!isInCombatMode) {
-                combat(NULL);
+                CombatSequenceParams::combat_no_params();
             }
         }
         break;
@@ -600,8 +603,8 @@ int game_handle_input(int eventCode, bool isInCombatMode)
                 // Pipboy not available in combat!
                 MessageListItem messageListItem;
                 char title[128];
-                strcpy(title, getmsg(&misc_message_file, &messageListItem, 7));
-                dialog_out(title, NULL, 0, 192, 116, colorTable[32328], NULL, colorTable[32328], 0);
+                strcpy(title, misc_message_file.getMessage(&messageListItem, 7));
+                dialog_out(title, nullptr, 0, 192, 116, colorTable[32328], nullptr, colorTable[32328], 0);
             } else {
                 gsound_play_sfx_file("ib1p1xx1");
                 pipboy(false);
@@ -668,8 +671,8 @@ int game_handle_input(int eventCode, bool isInCombatMode)
                 // Pipboy not available in combat!
                 MessageListItem messageListItem;
                 char title[128];
-                strcpy(title, getmsg(&misc_message_file, &messageListItem, 7));
-                dialog_out(title, NULL, 0, 192, 116, colorTable[32328], NULL, colorTable[32328], 0);
+                strcpy(title, misc_message_file.getMessage(&messageListItem, 7));
+                dialog_out(title, nullptr, 0, 192, 116, colorTable[32328], nullptr, colorTable[32328], 0);
             } else {
                 gsound_play_sfx_file("ib1p1xx1");
                 pipboy(true);
@@ -785,14 +788,14 @@ int game_handle_input(int eventCode, bool isInCombatMode)
             game_time_date(&month, &day, &year);
 
             MessageList messageList;
-            if (message_init(&messageList)) {
+            if (messageList.init()) {
                 char path[COMPAT_MAX_PATH];
                 snprintf(path, sizeof(path), "%s%s", msg_path, "editor.msg");
 
-                if (message_load(&messageList, path)) {
+                if (messageList.load(path)) {
                     MessageListItem messageListItem;
                     messageListItem.num = 500 + month - 1;
-                    if (message_search(&messageList, &messageListItem)) {
+                    if (messageList.search(&messageListItem)) {
                         char* time = game_time_hour_str();
 
                         char date[128];
@@ -802,7 +805,7 @@ int game_handle_input(int eventCode, bool isInCombatMode)
                     }
                 }
 
-                message_exit(&messageList);
+                messageList.exit();
             }
         }
         break;
@@ -840,7 +843,7 @@ int game_handle_input(int eventCode, bool isInCombatMode)
             } else if (rc == 1) {
                 MessageListItem messageListItem;
                 // Quick save game successfully saved.
-                char* msg = getmsg(&misc_message_file, &messageListItem, 5);
+                char* msg = misc_message_file.getMessage(&messageListItem, 5);
                 display_print(msg);
             }
         }
@@ -855,7 +858,7 @@ int game_handle_input(int eventCode, bool isInCombatMode)
             } else if (rc == 1) {
                 MessageListItem messageListItem;
                 // Quick load game successfully loaded.
-                char* msg = getmsg(&misc_message_file, &messageListItem, 4);
+                char* msg = misc_message_file.getMessage(&messageListItem, 4);
                 display_print(msg);
             }
         }
@@ -953,27 +956,27 @@ int game_load_info_vars(const char* path, const char* section, int* variablesLis
 {
     inven_reset_dude();
 
-    DB_FILE* stream = db_fopen(path, "rt");
-    if (stream == NULL) {
+    DbFileGuard stream(db_fopen(path, "rt"));
+    if (!stream) {
         return -1;
     }
 
     if (*variablesListLengthPtr != 0) {
         mem_free(*variablesListPtr);
-        *variablesListPtr = NULL;
+        *variablesListPtr = nullptr;
         *variablesListLengthPtr = 0;
     }
 
     char string[260];
-    if (section != NULL) {
-        while (db_fgets(string, 258, stream)) {
+    if (section != nullptr) {
+        while (stream.get()->fgets(string, 258)) {
             if (strncmp(string, section, 16) == 0) {
                 break;
             }
         }
     }
 
-    while (db_fgets(string, 258, stream)) {
+    while (stream.get()->fgets(string, 258)) {
         if (string[0] == '\n') {
             continue;
         }
@@ -983,26 +986,24 @@ int game_load_info_vars(const char* path, const char* section, int* variablesLis
         }
 
         char* semicolon = strchr(string, ';');
-        if (semicolon != NULL) {
+        if (semicolon != nullptr) {
             *semicolon = '\0';
         }
 
         *variablesListLengthPtr = *variablesListLengthPtr + 1;
-        *variablesListPtr = (int*)mem_realloc(*variablesListPtr, sizeof(int) * *variablesListLengthPtr);
+        *variablesListPtr = static_cast<int*>(mem_realloc(*variablesListPtr, sizeof(int) * *variablesListLengthPtr));
 
-        if (*variablesListPtr == NULL) {
+        if (*variablesListPtr == nullptr) {
             exit(1);
         }
 
         char* equals = strchr(string, '=');
-        if (equals != NULL) {
+        if (equals != nullptr) {
             sscanf(equals + 1, "%d", *variablesListPtr + *variablesListLengthPtr - 1);
         } else {
             (*variablesListPtr)[*variablesListLengthPtr - 1] = 0;
         }
     }
-
-    db_fclose(stream);
 
     return 0;
 }
@@ -1060,7 +1061,7 @@ static int game_screendump(int width, int height, unsigned char* buffer, unsigne
     if (default_screendump(width, height, buffer, palette) != 0) {
         // Error saving screenshot.
         messageListItem.num = 8;
-        if (message_search(&misc_message_file, &messageListItem)) {
+        if (misc_message_file.search(&messageListItem)) {
             display_print(messageListItem.text);
         }
 
@@ -1069,7 +1070,7 @@ static int game_screendump(int width, int height, unsigned char* buffer, unsigne
 
     // Saved screenshot.
     messageListItem.num = 3;
-    if (message_search(&misc_message_file, &messageListItem)) {
+    if (misc_message_file.search(&messageListItem)) {
         display_print(messageListItem.text);
     }
 
@@ -1080,9 +1081,9 @@ static int game_screendump(int width, int height, unsigned char* buffer, unsigne
 static void game_unload_info()
 {
     num_game_global_vars = 0;
-    if (game_global_vars != NULL) {
+    if (game_global_vars != nullptr) {
         mem_free(game_global_vars);
-        game_global_vars = NULL;
+        game_global_vars = nullptr;
     }
 }
 
@@ -1106,11 +1107,11 @@ static void game_help()
     int win = win_add(helpWindowX, helpWindowY, HELP_SCREEN_WIDTH, HELP_SCREEN_HEIGHT, 0, WINDOW_HIDDEN | WINDOW_MOVE_ON_TOP);
     if (win != -1) {
         unsigned char* windowBuffer = win_get_buf(win);
-        if (windowBuffer != NULL) {
+        if (windowBuffer != nullptr) {
             int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 297, 0, 0, 0);
             CacheEntry* backgroundHandle;
             unsigned char* backgroundData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundHandle);
-            if (backgroundData != NULL) {
+            if (backgroundData != nullptr) {
                 palette_set_to(black_palette);
                 buf_to_buf(backgroundData, HELP_SCREEN_WIDTH, HELP_SCREEN_HEIGHT, HELP_SCREEN_WIDTH, windowBuffer, HELP_SCREEN_WIDTH);
                 art_ptr_unlock(backgroundHandle);
@@ -1193,8 +1194,8 @@ int game_quit_with_confirm()
     // Are you sure you want to quit?
     MessageListItem messageListItem;
     messageListItem.num = 0;
-    if (message_search(&misc_message_file, &messageListItem)) {
-        rc = dialog_out(messageListItem.text, 0, 0, 169, 117, colorTable[32328], NULL, colorTable[32328], DIALOG_BOX_YES_NO);
+    if (misc_message_file.search(&messageListItem)) {
+        rc = dialog_out(messageListItem.text, 0, 0, 169, 117, colorTable[32328], nullptr, colorTable[32328], DIALOG_BOX_YES_NO);
         if (rc != 0) {
             game_user_wants_to_quit = 2;
         }
@@ -1227,47 +1228,55 @@ static int game_init_databases()
     char* patch_file_name;
 
     hashing = 0;
-    main_file_name = NULL;
-    patch_file_name = NULL;
+    main_file_name = nullptr;
+    patch_file_name = nullptr;
 
-    if (config_get_value(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_HASHING_KEY, &hashing)) {
+    if (game_config.getValue(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_HASHING_KEY, &hashing)) {
         db_enable_hash_table();
     }
 
-    config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_MASTER_DAT_KEY, &main_file_name);
+    game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_MASTER_DAT_KEY, &main_file_name);
     if (*main_file_name == '\0') {
-        main_file_name = NULL;
+        main_file_name = nullptr;
     }
 
-    config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_MASTER_PATCHES_KEY, &patch_file_name);
+    game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_MASTER_PATCHES_KEY, &patch_file_name);
     if (*patch_file_name == '\0') {
-        patch_file_name = NULL;
+        patch_file_name = nullptr;
     }
 
-    master_db_handle = db_init(main_file_name, NULL, patch_file_name, 1);
+    master_db_handle = db_init(main_file_name, nullptr, patch_file_name, 1);
     if (master_db_handle == INVALID_DATABASE_HANDLE) {
-        GNWSystemError("Could not find the master datafile. Please make sure the FALLOUT CD is in the drive and that you are running FALLOUT from the directory you installed it to.");
+        const size_t bufferSize = 255;
+        auto safeBuffer = std::make_unique<char[]>(bufferSize);
+        getcwd(safeBuffer.get(), bufferSize);
+        std::string fullMessage;
+        // fullMessage += "Could not find the master datafile. Please make sure the FALLOUT CD is in the drive and that you are running FALLOUT from the directory you installed it to.\n";
+        fullMessage += "Current working directory: ";
+        fullMessage += safeBuffer.get();
+        fullMessage += "\n";
+        GNWSystemError(fullMessage.c_str());
         return -1;
     }
 
-    config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_CRITTER_DAT_KEY, &main_file_name);
+    game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_CRITTER_DAT_KEY, &main_file_name);
     if (*main_file_name == '\0') {
-        main_file_name = NULL;
+        main_file_name = nullptr;
     }
 
-    config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_CRITTER_PATCHES_KEY, &patch_file_name);
+    game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_CRITTER_PATCHES_KEY, &patch_file_name);
     if (*patch_file_name == '\0') {
-        patch_file_name = NULL;
+        patch_file_name = nullptr;
     }
 
-    critter_db_handle = db_init(main_file_name, NULL, patch_file_name, 1);
+    critter_db_handle = db_init(main_file_name, nullptr, patch_file_name, 1);
     if (critter_db_handle == INVALID_DATABASE_HANDLE) {
-        db_select(master_db_handle);
+        master_db_handle->select();
         GNWSystemError("Could not find the critter datafile. Please make sure the FALLOUT CD is in the drive and that you are running FALLOUT from the directory you installed it to.");
         return -1;
     }
 
-    db_select(master_db_handle);
+    master_db_handle->select();
 
     return 0;
 }
@@ -1276,14 +1285,14 @@ static int game_init_databases()
 static void game_splash_screen()
 {
     int splash;
-    config_get_value(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_SPLASH_KEY, &splash);
+    game_config.getValue(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_SPLASH_KEY, &splash);
 
-    DB_FILE* stream;
+    DbFileGuard stream;
     for (int index = 0; index < SPLASH_COUNT; index++) {
         char filePath[64];
         snprintf(filePath, sizeof(filePath), "art\\splash\\splash%d.rix", splash);
-        stream = db_fopen(filePath, "rb");
-        if (stream != NULL) {
+        stream.reset(db_fopen(filePath, "rb"));
+        if (stream) {
             break;
         }
 
@@ -1294,38 +1303,32 @@ static void game_splash_screen()
         }
     }
 
-    if (stream == NULL) {
+    if (!stream) {
         return;
     }
 
-    unsigned char* palette = (unsigned char*)mem_malloc(768);
-    if (palette == NULL) {
-        db_fclose(stream);
+    auto palette = makeMemBuffer<unsigned char>(768);
+    if (!palette) {
         return;
     }
 
-    unsigned char* data = (unsigned char*)mem_malloc(SPLASH_WIDTH * SPLASH_HEIGHT);
-    if (data == NULL) {
-        mem_free(palette);
-        db_fclose(stream);
+    auto data = makeMemBuffer<unsigned char>(SPLASH_WIDTH * SPLASH_HEIGHT);
+    if (!data) {
         return;
     }
 
     palette_set_to(black_palette);
-    db_fseek(stream, 10, SEEK_SET);
-    db_fread(palette, 1, 768, stream);
-    db_fread(data, 1, SPLASH_WIDTH * SPLASH_HEIGHT, stream);
-    db_fclose(stream);
+    stream.get()->fseek(10, SEEK_SET);
+    stream.get()->fread(palette.get(), 1, 768);
+    stream.get()->fread(data.get(), 1, SPLASH_WIDTH * SPLASH_HEIGHT);
+    stream.reset();
 
     int splashWindowX = (screenGetWidth() - SPLASH_WIDTH) / 2;
     int splashWindowY = (screenGetHeight() - SPLASH_HEIGHT) / 2;
-    scr_blit(data, SPLASH_WIDTH, SPLASH_HEIGHT, 0, 0, SPLASH_WIDTH, SPLASH_HEIGHT, splashWindowX, splashWindowY);
-    palette_fade_to(palette);
+    scr_blit(data.get(), SPLASH_WIDTH, SPLASH_HEIGHT, 0, 0, SPLASH_WIDTH, SPLASH_HEIGHT, splashWindowX, splashWindowY);
+    palette_fade_to(palette.get());
 
-    mem_free(data);
-    mem_free(palette);
-
-    config_set_value(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_SPLASH_KEY, splash + 1);
+    game_config.setValue(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_SPLASH_KEY, splash + 1);
 }
 
 } // namespace fallout

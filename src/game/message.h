@@ -1,34 +1,43 @@
-#ifndef FALLOUT_GAME_MESSAGE_H_
-#define FALLOUT_GAME_MESSAGE_H_
+#pragma once
 
-#include <stddef.h>
+#include <cstddef>
 
 namespace fallout {
 
 // TODO: Probably should be private.
-#define MESSAGE_LIST_ITEM_FIELD_MAX_SIZE 1024
+inline constexpr int MESSAGE_LIST_ITEM_FIELD_MAX_SIZE = 1024;
 
-typedef struct MessageListItem {
+struct MessageListItem {
     int num;
     char* audio;
     char* text;
-} MessageListItem;
+};
 
-typedef struct MessageList {
-    int entries_num;
-    MessageListItem* entries;
-} MessageList;
+// A sorted collection of numbered message entries loaded from .msg files.
+class MessageList {
+public:
+    MessageList() = default;
+    ~MessageList() = default;
+
+    [[nodiscard]] bool init();
+    bool exit();
+    [[nodiscard]] bool load(const char* path);
+    [[nodiscard]] bool search(MessageListItem* entry);
+    [[nodiscard]] char* getMessage(MessageListItem* entry, int num);
+    [[nodiscard]] bool filter();
+
+    bool isEmpty() const { return entries_num_ == 0; }
+
+private:
+    int entries_num_ = 0;
+    MessageListItem* entries_ = nullptr;
+
+    bool find(int num, int* out_index);
+    bool add(MessageListItem* new_entry);
+};
 
 int init_message();
 void exit_message();
-bool message_init(MessageList* msg);
-bool message_exit(MessageList* msg);
-bool message_load(MessageList* msg, const char* path);
-bool message_search(MessageList* msg, MessageListItem* entry);
 bool message_make_path(char* dest, size_t size, const char* path);
-char* getmsg(MessageList* msg, MessageListItem* entry, int num);
-bool message_filter(MessageList* messageList);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_MESSAGE_H_ */

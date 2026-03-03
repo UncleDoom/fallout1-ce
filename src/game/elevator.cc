@@ -1,7 +1,7 @@
 #include "game/elevator.h"
 
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 
 #include "game/art.h"
 #include "game/cycle.h"
@@ -22,12 +22,12 @@
 namespace fallout {
 
 // The maximum number of elevator levels.
-#define ELEVATOR_LEVEL_MAX 4
+static constexpr int ELEVATOR_LEVEL_MAX = 4;
 
 // NOTE: There are two variables which hold background data used in the
 // elevator window - [grphbmp[ELEVATOR_FRM_BACKGROUND]] and [grphbmp[ELEVATOR_FRM_PANEL]].
 // For unknown reason they are using -1 to denote that they are not set
-// (instead of using NULL).
+// (instead of using nullptr).
 #define ELEVATOR_BACKGROUND_NULL ((unsigned char*)(-1))
 
 // NOTE: This enum is a little bit unsual. It contains two types of members:
@@ -35,7 +35,7 @@ namespace fallout {
 // operations as commonly seen in other UI setup/teardown loops. Background and
 // panel are always accessed separately without using loops, but they are a part
 // of globals holding state (buffers, cache keys, dimensions).
-typedef enum ElevatorFrm {
+enum ElevatorFrm {
     ELEVATOR_FRM_BUTTON_DOWN,
     ELEVATOR_FRM_BUTTON_UP,
     ELEVATOR_FRM_GAUGE,
@@ -43,18 +43,18 @@ typedef enum ElevatorFrm {
     ELEVATOR_FRM_PANEL,
     ELEVATOR_FRM_COUNT,
     ELEVATOR_FRM_STATIC_COUNT = 3,
-} ElevatorFrm;
+};
 
-typedef struct ElevatorBackground {
+struct ElevatorBackground {
     int backgroundFrmId;
     int panelFrmId;
-} ElevatorBackground;
+};
 
-typedef struct ElevatorDescription {
+struct ElevatorDescription {
     int map;
     int elevation;
     int tile;
-} ElevatorDescription;
+};
 
 static int elevator_start(int elevator);
 static void elevator_end();
@@ -270,9 +270,9 @@ int elevator_select(int elevator, int* mapPtr, int* elevationPtr, int* tilePtr)
     debug_printf("\n the start elev level %d\n", *elevationPtr);
 
     int v18 = (GInfo[ELEVATOR_FRM_GAUGE].width * GInfo[ELEVATOR_FRM_GAUGE].height) / 13;
-    float v42 = 12.0f / (float)(btncnt[elevator] - 1);
+    float v42 = 12.0f / static_cast<float>(btncnt[elevator] - 1);
     buf_to_buf(
-        grphbmp[ELEVATOR_FRM_GAUGE] + v18 * (int)((float)(*elevationPtr) * v42),
+        grphbmp[ELEVATOR_FRM_GAUGE] + v18 * static_cast<int>((float)(*elevationPtr) * v42),
         GInfo[ELEVATOR_FRM_GAUGE].width,
         GInfo[ELEVATOR_FRM_GAUGE].height / 13,
         GInfo[ELEVATOR_FRM_GAUGE].width,
@@ -310,9 +310,9 @@ int elevator_select(int elevator, int* mapPtr, int* elevationPtr, int* tilePtr)
         keyCode -= 500;
 
         if (*elevationPtr != keyCode) {
-            float v43 = (float)(btncnt[elevator] - 1) / 12.0f;
+            float v43 = static_cast<float>(btncnt[elevator] - 1) / 12.0f;
 
-            unsigned int delay = (unsigned int)(v43 * 276.92307);
+            unsigned int delay = static_cast<unsigned int>(v43 * 276.92307);
 
             if (keyCode < *elevationPtr) {
                 v43 = -v43;
@@ -325,15 +325,15 @@ int elevator_select(int elevator, int* mapPtr, int* elevationPtr, int* tilePtr)
 
             gsound_play_sfx_file(sfxtable[btncnt[elevator] - 2][numberOfLevelsTravelled]);
 
-            float v41 = (float)keyCode * v42;
-            float v44 = (float)(*elevationPtr) * v42;
+            float v41 = static_cast<float>(keyCode) * v42;
+            float v44 = static_cast<float>(*elevationPtr) * v42;
             do {
                 sharedFpsLimiter.mark();
 
                 unsigned int tick = get_time();
                 v44 += v43;
                 buf_to_buf(
-                    grphbmp[ELEVATOR_FRM_GAUGE] + v18 * (int)v44,
+                    grphbmp[ELEVATOR_FRM_GAUGE] + v18 * static_cast<int>(v44),
                     GInfo[ELEVATOR_FRM_GAUGE].width,
                     GInfo[ELEVATOR_FRM_GAUGE].height / 13,
                     GInfo[ELEVATOR_FRM_GAUGE].width,
@@ -384,7 +384,7 @@ static int elevator_start(int elevator)
     for (index = 0; index < ELEVATOR_FRM_STATIC_COUNT; index++) {
         int fid = art_id(OBJ_TYPE_INTERFACE, grph_id[index], 0, 0, 0);
         grphbmp[index] = art_lock(fid, &(grph_key[index]), &(GInfo[index].width), &(GInfo[index].height));
-        if (grphbmp[index] == NULL) {
+        if (grphbmp[index] == nullptr) {
             break;
         }
     }
@@ -411,11 +411,11 @@ static int elevator_start(int elevator)
 
     int backgroundFid = art_id(OBJ_TYPE_INTERFACE, elevatorBackground->backgroundFrmId, 0, 0, 0);
     grphbmp[ELEVATOR_FRM_BACKGROUND] = art_lock(backgroundFid, &grph_key[ELEVATOR_FRM_BACKGROUND], &(GInfo[ELEVATOR_FRM_BACKGROUND].width), &(GInfo[ELEVATOR_FRM_BACKGROUND].height));
-    if (grphbmp[ELEVATOR_FRM_BACKGROUND] != NULL) {
+    if (grphbmp[ELEVATOR_FRM_BACKGROUND] != nullptr) {
         if (elevatorBackground->panelFrmId != -1) {
             int panelFid = art_id(OBJ_TYPE_INTERFACE, elevatorBackground->panelFrmId, 0, 0, 0);
             grphbmp[ELEVATOR_FRM_PANEL] = art_lock(panelFid, &grph_key[ELEVATOR_FRM_PANEL], &(GInfo[ELEVATOR_FRM_PANEL].width), &(GInfo[ELEVATOR_FRM_PANEL].height));
-            if (grphbmp[ELEVATOR_FRM_PANEL] == NULL) {
+            if (grphbmp[ELEVATOR_FRM_PANEL] == nullptr) {
                 grphbmp[ELEVATOR_FRM_PANEL] = ELEVATOR_BACKGROUND_NULL;
                 backgroundsLoaded = false;
             }
@@ -479,10 +479,10 @@ static int elevator_start(int elevator)
     }
 
     win_buf = win_get_buf(elev_win);
-    memcpy(win_buf, (unsigned char*)grphbmp[ELEVATOR_FRM_BACKGROUND], GInfo[ELEVATOR_FRM_BACKGROUND].width * GInfo[ELEVATOR_FRM_BACKGROUND].height);
+    memcpy(win_buf, reinterpret_cast<unsigned char*>(grphbmp[ELEVATOR_FRM_BACKGROUND]), GInfo[ELEVATOR_FRM_BACKGROUND].width * GInfo[ELEVATOR_FRM_BACKGROUND].height);
 
     if (grphbmp[ELEVATOR_FRM_PANEL] != ELEVATOR_BACKGROUND_NULL) {
-        buf_to_buf((unsigned char*)grphbmp[ELEVATOR_FRM_PANEL],
+        buf_to_buf(reinterpret_cast<unsigned char*>(grphbmp[ELEVATOR_FRM_PANEL]),
             GInfo[ELEVATOR_FRM_PANEL].width,
             GInfo[ELEVATOR_FRM_PANEL].height,
             GInfo[ELEVATOR_FRM_PANEL].width,
@@ -503,10 +503,10 @@ static int elevator_start(int elevator)
             500 + level,
             grphbmp[ELEVATOR_FRM_BUTTON_UP],
             grphbmp[ELEVATOR_FRM_BUTTON_DOWN],
-            NULL,
+            nullptr,
             BUTTON_FLAG_TRANSPARENT);
         if (btn != -1) {
-            win_register_button_sound_func(btn, gsound_red_butt_press, NULL);
+            win_register_button_sound_func(btn, gsound_red_butt_press, nullptr);
         }
         y += 60;
     }
@@ -552,7 +552,7 @@ static int Check4Keys(int elevator, int keyCode)
             break;
         }
 
-        if (c == (char)(keyCode & 0xFF)) {
+        if (c == static_cast<char>(keyCode & 0xFF)) {
             return index + 1;
         }
     }

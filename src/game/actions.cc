@@ -1,7 +1,7 @@
 #include "game/actions.h"
 
-#include <limits.h>
-#include <string.h>
+#include <climits>
+#include <cstring>
 
 #include "game/anim.h"
 #include "game/combat.h"
@@ -93,7 +93,7 @@ void switch_dude()
     int gender;
 
     critter = pick_object(OBJ_TYPE_CRITTER, false);
-    if (critter != NULL) {
+    if (critter != nullptr) {
         gender = stat_level(critter, STAT_GENDER);
         stat_set_base(obj_dude, STAT_GENDER, gender);
 
@@ -118,7 +118,7 @@ int action_knockback(Object* obj, int* anim, int maxDistance, int rotation, int 
     int tile;
     for (distance = 1; distance <= maxDistance; distance++) {
         tile = tile_num_in_direction(obj->tile, rotation, distance);
-        if (obj_blocking_at(obj, tile, obj->elevation) != NULL) {
+        if (obj_blocking_at(obj, tile, obj->elevation) != nullptr) {
             distance--;
             break;
         }
@@ -146,7 +146,7 @@ int action_blood(Object* obj, int anim, int delay)
 {
 
     int violence_level = VIOLENCE_LEVEL_MAXIMUM_BLOOD;
-    config_get_value(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_VIOLENCE_LEVEL_KEY, &violence_level);
+    game_config.getValue(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_VIOLENCE_LEVEL_KEY, &violence_level);
     if (violence_level == VIOLENCE_LEVEL_NONE) {
         return anim;
     }
@@ -177,7 +177,7 @@ static int pick_death(Object* attacker, Object* defender, int damage, int damage
     bool has_bloody_mess = false;
     int death_anim;
 
-    config_get_value(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_VIOLENCE_LEVEL_KEY, &violence_level);
+    game_config.getValue(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_VIOLENCE_LEVEL_KEY, &violence_level);
 
     if (defender->pid == 16777239 || defender->pid == 16777266 || defender->pid == 16777265) {
         return check_death(defender, ANIM_EXPLODED_TO_NOTHING, VIOLENCE_LEVEL_NORMAL, hit_from_front);
@@ -231,7 +231,7 @@ static int check_death(Object* obj, int anim, int min_violence_level, bool hit_f
     int fid;
     int violence_level = VIOLENCE_LEVEL_MAXIMUM_BLOOD;
 
-    config_get_value(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_VIOLENCE_LEVEL_KEY, &violence_level);
+    game_config.getValue(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_VIOLENCE_LEVEL_KEY, &violence_level);
     if (violence_level >= min_violence_level) {
         fid = art_id(OBJ_TYPE_CRITTER, obj->fid & 0xFFF, anim, (obj->fid & 0xF000) >> 12, obj->rotation + 1);
         if (art_exists(fid)) {
@@ -308,9 +308,9 @@ void show_damage_to_object(Object* defender, int damage, int flags, Object* weap
 
                     while (randomDistance > 0) {
                         int tile = tile_num_in_direction(defender->tile, randomRotation, randomDistance);
-                        Object* v35 = NULL;
-                        make_straight_path(defender, defender->tile, tile, NULL, &v35, 4);
-                        if (v35 == NULL) {
+                        Object* v35 = nullptr;
+                        make_straight_path(defender, defender->tile, tile, nullptr, &v35, 4);
+                        if (v35 == nullptr) {
                             register_object_turn_towards(defender, tile);
                             register_object_move_straight_to_tile(defender, tile, defender->elevation, anim, 0);
                             break;
@@ -371,9 +371,9 @@ void show_damage_to_object(Object* defender, int damage, int flags, Object* weap
         }
     }
 
-    if (weapon != NULL) {
+    if (weapon != nullptr) {
         if ((flags & DAM_EXPLODE) != 0) {
-            register_object_must_call(defender, weapon, (AnimationCallback*)obj_drop, -1);
+            register_object_must_call(defender, weapon, reinterpret_cast<AnimationCallback*>(obj_drop), -1);
             fid = art_id(OBJ_TYPE_MISC, 10, 0, 0, 0);
             register_object_change_fid(weapon, fid, 0);
             register_object_animate_and_hide(weapon, ANIM_STAND, 0);
@@ -383,15 +383,15 @@ void show_damage_to_object(Object* defender, int damage, int flags, Object* weap
 
             register_object_must_erase(weapon);
         } else if ((flags & DAM_DESTROY) != 0) {
-            register_object_must_call(defender, weapon, (AnimationCallback*)internal_destroy, -1);
+            register_object_must_call(defender, weapon, reinterpret_cast<AnimationCallback*>(internal_destroy), -1);
         } else if ((flags & DAM_DROP) != 0) {
-            register_object_must_call(defender, weapon, (AnimationCallback*)obj_drop, -1);
+            register_object_must_call(defender, weapon, reinterpret_cast<AnimationCallback*>(obj_drop), -1);
         }
     }
 
     if ((flags & DAM_DEAD) != 0) {
         // TODO: Get rid of casts.
-        register_object_must_call(defender, (void*)anim, (AnimationCallback*)show_death, -1);
+        register_object_must_call(defender, reinterpret_cast<void*>(anim), (AnimationCallback*)show_death, -1);
     }
 }
 
@@ -406,12 +406,12 @@ static int show_death(Object* obj, int anim)
     if (obj->pid != 16777266 && obj->pid != 16777265 && obj->pid != 16777224) {
         obj->flags |= OBJECT_NO_BLOCK;
         if (obj_toggle_flat(obj, &temp_rect) == 0) {
-            rect_min_bound(&dirty_rect, &temp_rect, &dirty_rect);
+            dirty_rect.minBound(temp_rect);
         }
     }
 
     if (obj_turn_off_outline(obj, &temp_rect) == 0) {
-        rect_min_bound(&dirty_rect, &temp_rect, &dirty_rect);
+        dirty_rect.minBound(temp_rect);
     }
 
     if (anim >= ANIM_ELECTRIFIED_TO_NOTHING && anim <= ANIM_EXPLODED_TO_NOTHING) {
@@ -426,25 +426,25 @@ static int show_death(Object* obj, int anim)
 }
 
 // 0x410E74
-int show_damage_target(Attack* attack)
+int Attack::showDamageTarget()
 {
     int frontHit;
 
-    if (FID_TYPE(attack->defender->fid) == OBJ_TYPE_CRITTER) {
+    if (FID_TYPE(defender->fid) == OBJ_TYPE_CRITTER) {
         // NOTE: Uninline.
-        frontHit = is_hit_from_front(attack->attacker, attack->defender);
+        frontHit = is_hit_from_front(attacker, defender);
 
         register_begin(ANIMATION_REQUEST_RESERVED);
         register_priority(1);
-        show_damage_to_object(attack->defender,
-            attack->defenderDamage,
-            attack->defenderFlags,
-            attack->weapon,
+        show_damage_to_object(defender,
+            defenderDamage,
+            defenderFlags,
+            weapon,
             frontHit,
-            attack->defenderKnockback,
-            tile_dir(attack->attacker->tile, attack->defender->tile),
-            item_w_anim(attack->attacker, attack->hitMode),
-            attack->attacker,
+            defenderKnockback,
+            tile_dir(attacker->tile, defender->tile),
+            item_w_anim(attacker, hitMode),
+            attacker,
             0);
         register_end();
     }
@@ -453,16 +453,16 @@ int show_damage_target(Attack* attack)
 }
 
 // 0x410F18
-int show_damage_extras(Attack* attack)
+int Attack::showDamageExtras()
 {
     int v6;
     int v8;
     int v9;
 
-    for (int index = 0; index < attack->extrasLength; index++) {
-        Object* obj = attack->extras[index];
+    for (int index = 0; index < extrasLength; index++) {
+        Object* obj = extras[index];
         if (FID_TYPE(obj->fid) == OBJ_TYPE_CRITTER) {
-            int delta = attack->attacker->rotation - obj->rotation;
+            int delta = attacker->rotation - obj->rotation;
             if (delta < 0) {
                 delta = -delta;
             }
@@ -470,9 +470,9 @@ int show_damage_extras(Attack* attack)
             v6 = delta != 0 && delta != 1 && delta != 5;
             register_begin(ANIMATION_REQUEST_RESERVED);
             register_priority(1);
-            v8 = item_w_anim(attack->attacker, attack->hitMode);
-            v9 = tile_dir(attack->attacker->tile, obj->tile);
-            show_damage_to_object(obj, attack->extrasDamage[index], attack->extrasFlags[index], attack->weapon, v6, attack->extrasKnockback[index], v9, v8, attack->attacker, 0);
+            v8 = item_w_anim(attacker, hitMode);
+            v9 = tile_dir(attacker->tile, obj->tile);
+            show_damage_to_object(obj, extrasDamage[index], extrasFlags[index], weapon, v6, extrasKnockback[index], v9, v8, attacker, 0);
             register_end();
         }
     }
@@ -481,82 +481,82 @@ int show_damage_extras(Attack* attack)
 }
 
 // 0x410FD8
-void show_damage(Attack* attack, int a2, int delay)
+void Attack::showDamage(int a2, int delay)
 {
     bool hit_from_front;
 
-    for (int index = 0; index < attack->extrasLength; index++) {
-        Object* object = attack->extras[index];
+    for (int index = 0; index < extrasLength; index++) {
+        Object* object = extras[index];
         if (FID_TYPE(object->fid) == OBJ_TYPE_CRITTER) {
             register_ping(2, delay);
             delay = 0;
         }
     }
 
-    if ((attack->attackerFlags & DAM_HIT) == 0) {
-        if ((attack->attackerFlags & DAM_CRITICAL) != 0) {
-            show_damage_to_object(attack->attacker, attack->attackerDamage, attack->attackerFlags, attack->weapon, 1, 0, 0, a2, attack->attacker, -1);
-        } else if ((attack->attackerFlags & DAM_BACKWASH) != 0) {
-            show_damage_to_object(attack->attacker, attack->attackerDamage, attack->attackerFlags, attack->weapon, 1, 0, 0, a2, attack->attacker, -1);
+    if ((attackerFlags & DAM_HIT) == 0) {
+        if ((attackerFlags & DAM_CRITICAL) != 0) {
+            show_damage_to_object(attacker, attackerDamage, attackerFlags, weapon, 1, 0, 0, a2, attacker, -1);
+        } else if ((attackerFlags & DAM_BACKWASH) != 0) {
+            show_damage_to_object(attacker, attackerDamage, attackerFlags, weapon, 1, 0, 0, a2, attacker, -1);
         }
     } else {
-        if (attack->defender != NULL) {
-            hit_from_front = is_hit_from_front(attack->attacker, attack->defender);
+        if (defender != nullptr) {
+            hit_from_front = is_hit_from_front(attacker, defender);
 
-            if (FID_TYPE(attack->defender->fid) == OBJ_TYPE_CRITTER) {
-                if (attack->attacker->fid == 33554933) {
-                    show_damage_to_object(attack->defender,
-                        attack->defenderDamage,
-                        attack->defenderFlags,
-                        attack->weapon,
+            if (FID_TYPE(defender->fid) == OBJ_TYPE_CRITTER) {
+                if (attacker->fid == 33554933) {
+                    show_damage_to_object(defender,
+                        defenderDamage,
+                        defenderFlags,
+                        weapon,
                         hit_from_front,
-                        attack->defenderKnockback,
-                        tile_dir(attack->attacker->tile, attack->defender->tile),
+                        defenderKnockback,
+                        tile_dir(attacker->tile, defender->tile),
                         a2,
-                        attack->attacker, delay);
+                        attacker, delay);
                 } else {
-                    show_damage_to_object(attack->defender,
-                        attack->defenderDamage,
-                        attack->defenderFlags,
-                        attack->weapon,
+                    show_damage_to_object(defender,
+                        defenderDamage,
+                        defenderFlags,
+                        weapon,
                         hit_from_front,
-                        attack->defenderKnockback,
-                        tile_dir(attack->attacker->tile, attack->defender->tile),
-                        item_w_anim(attack->attacker, attack->hitMode),
-                        attack->attacker,
+                        defenderKnockback,
+                        tile_dir(attacker->tile, defender->tile),
+                        item_w_anim(attacker, hitMode),
+                        attacker,
                         delay);
                 }
             }
         }
 
-        if ((attack->attackerFlags & DAM_DUD) != 0) {
-            show_damage_to_object(attack->attacker, attack->attackerDamage, attack->attackerFlags, attack->weapon, 1, 0, 0, a2, attack->attacker, -1);
+        if ((attackerFlags & DAM_DUD) != 0) {
+            show_damage_to_object(attacker, attackerDamage, attackerFlags, weapon, 1, 0, 0, a2, attacker, -1);
         }
     }
 }
 
 // 0x411134
-int action_attack(Attack* attack)
+int Attack::actionAttack()
 {
-    if (register_clear(attack->attacker) == -2) {
+    if (register_clear(attacker) == -2) {
         return -1;
     }
 
-    if (register_clear(attack->defender) == -2) {
+    if (register_clear(defender) == -2) {
         return -1;
     }
 
-    for (int index = 0; index < attack->extrasLength; index++) {
-        if (register_clear(attack->extras[index]) == -2) {
+    for (int index = 0; index < extrasLength; index++) {
+        if (register_clear(extras[index]) == -2) {
             return -1;
         }
     }
 
-    int anim = item_w_anim(attack->attacker, attack->hitMode);
+    int anim = item_w_anim(attacker, hitMode);
     if (anim < ANIM_FIRE_SINGLE && anim != ANIM_THROW_ANIM) {
-        return action_melee(attack, anim);
+        return action_melee(this, anim);
     } else {
-        return action_ranged(attack, anim);
+        return action_ranged(this, anim);
     }
 }
 
@@ -578,8 +578,8 @@ static int action_melee(Attack* attack, int anim)
 
     fid = art_id(OBJ_TYPE_CRITTER, attack->attacker->fid & 0xFFF, anim, (attack->attacker->fid & 0xF000) >> 12, attack->attacker->rotation + 1);
     art = art_ptr_lock(fid, &cache_entry);
-    if (art != NULL) {
-        v17 = art_frame_action_frame(art);
+    if (art != nullptr) {
+        v17 = art->actionFrameIndex();
     } else {
         v17 = 0;
     }
@@ -602,7 +602,7 @@ static int action_melee(Attack* attack, int anim)
 
     strcpy(sfx_name_temp, sfx_name);
 
-    combatai_msg(attack->attacker, attack, AI_MESSAGE_TYPE_ATTACK, 0);
+    attack->aiMsg(attack->attacker, AI_MESSAGE_TYPE_ATTACK, 0);
 
     if (attack->attackerFlags & 0x0300) {
         register_object_play_sfx(attack->attacker, sfx_name_temp, 0);
@@ -616,7 +616,7 @@ static int action_melee(Attack* attack, int anim)
 
         register_object_animate(attack->attacker, anim, 0);
         register_object_play_sfx(attack->attacker, sfx_name_temp, v17);
-        show_damage(attack, anim, 0);
+        attack->showDamage(anim, 0);
     } else {
         if (attack->defender->data.critter.combat.results & 0x03) {
             register_object_play_sfx(attack->attacker, sfx_name_temp, -1);
@@ -624,8 +624,8 @@ static int action_melee(Attack* attack, int anim)
         } else {
             fid = art_id(OBJ_TYPE_CRITTER, attack->defender->fid & 0xFFF, ANIM_DODGE_ANIM, (attack->defender->fid & 0xF000) >> 12, attack->defender->rotation + 1);
             art = art_ptr_lock(fid, &cache_entry);
-            if (art != NULL) {
-                v18 = art_frame_action_frame(art);
+            if (art != nullptr) {
+                v18 = art->actionFrameIndex();
                 art_ptr_unlock(cache_entry);
 
                 if (v18 <= v17) {
@@ -648,17 +648,17 @@ static int action_melee(Attack* attack, int anim)
 
     if ((attack->attackerFlags & DAM_HIT) != 0) {
         if ((attack->defenderFlags & DAM_DEAD) == 0) {
-            combatai_msg(attack->attacker, attack, AI_MESSAGE_TYPE_HIT, -1);
+            attack->aiMsg(attack->attacker, AI_MESSAGE_TYPE_HIT, -1);
         }
     } else {
-        combatai_msg(attack->attacker, attack, AI_MESSAGE_TYPE_MISS, -1);
+        attack->aiMsg(attack->attacker, AI_MESSAGE_TYPE_MISS, -1);
     }
 
     if (register_end() == -1) {
         return -1;
     }
 
-    show_damage_extras(attack);
+    attack->showDamageExtras();
 
     return 0;
 }
@@ -672,8 +672,8 @@ static int action_ranged(Attack* attack, int anim)
     register_begin(ANIMATION_REQUEST_RESERVED);
     register_priority(1);
 
-    Object* projectile = NULL;
-    Object* v50 = NULL;
+    Object* projectile = nullptr;
+    Object* v50 = nullptr;
     int weaponFid = -1;
 
     Proto* weaponProto;
@@ -683,7 +683,7 @@ static int action_ranged(Attack* attack, int anim)
     int fid = art_id(OBJ_TYPE_CRITTER, attack->attacker->fid & 0xFFF, anim, (attack->attacker->fid & 0xF000) >> 12, attack->attacker->rotation + 1);
     CacheEntry* artHandle;
     Art* art = art_ptr_lock(fid, &artHandle);
-    int actionFrame = (art != NULL) ? art_frame_action_frame(art) : 0;
+    int actionFrame = (art != nullptr) ? art->actionFrameIndex() : 0;
     art_ptr_unlock(artHandle);
 
     item_w_range(attack->attacker, attack->hitMode);
@@ -703,7 +703,7 @@ static int action_ranged(Attack* attack, int anim)
         register_object_animate(attack->attacker, ANIM_POINT, -1);
     }
 
-    combatai_msg(attack->attacker, attack, AI_MESSAGE_TYPE_ATTACK, 0);
+    attack->aiMsg(attack->attacker, AI_MESSAGE_TYPE_ATTACK, 0);
 
     const char* sfx;
     if (((attack->attacker->fid & 0xF000) >> 12) != 0) {
@@ -729,26 +729,26 @@ static int action_ranged(Attack* attack, int anim)
 
                     item_remove_mult(attack->attacker, weapon, 1);
                     v50 = item_replace(attack->attacker, weapon, weaponFlags & OBJECT_IN_ANY_HAND);
-                    obj_change_fid(projectile, projectileProto->fid, NULL);
+                    obj_change_fid(projectile, projectileProto->fid, nullptr);
 
                     if (attack->attacker == obj_dude) {
                         intface_update_items(false);
                     }
 
-                    obj_connect(weapon, attack->attacker->tile, attack->attacker->elevation, NULL);
+                    obj_connect(weapon, attack->attacker->tile, attack->attacker->elevation, nullptr);
                 } else {
                     obj_new(&projectile, projectileProto->fid, -1);
                 }
 
-                obj_turn_off(projectile, NULL);
+                obj_turn_off(projectile, nullptr);
 
-                obj_set_light(projectile, 9, projectile->lightIntensity, NULL);
+                obj_set_light(projectile, 9, projectile->lightIntensity, nullptr);
 
                 int projectileOrigin = combat_bullet_start(attack->attacker, attack->defender);
-                obj_move_to_tile(projectile, projectileOrigin, attack->attacker->elevation, NULL);
+                obj_move_to_tile(projectile, projectileOrigin, attack->attacker->elevation, nullptr);
 
                 int projectileRotation = tile_dir(attack->attacker->tile, attack->defender->tile);
-                obj_set_rotation(projectile, projectileRotation, NULL);
+                obj_set_rotation(projectile, projectileRotation, nullptr);
 
                 register_object_funset(projectile, OBJECT_HIDDEN, actionFrame);
 
@@ -758,7 +758,7 @@ static int action_ranged(Attack* attack, int anim)
                 int v24;
                 if ((attack->attackerFlags & DAM_HIT) != 0) {
                     register_object_move_straight_to_tile(projectile, attack->defender->tile, attack->defender->elevation, ANIM_WALK, 0);
-                    actionFrame = make_straight_path(projectile, projectileOrigin, attack->defender->tile, NULL, NULL, 32) - 1;
+                    actionFrame = make_straight_path(projectile, projectileOrigin, attack->defender->tile, nullptr, nullptr, 32) - 1;
                     v24 = attack->defender->tile;
                 } else {
                     register_object_move_straight_to_tile(projectile, attack->tile, attack->defender->elevation, ANIM_WALK, 0);
@@ -799,10 +799,10 @@ static int action_ranged(Attack* attack, int anim)
 
                         for (int rotation = 0; rotation < ROTATION_COUNT; rotation++) {
                             if (obj_new(&(neighboors[rotation]), explosionFid, -1) != -1) {
-                                obj_turn_off(neighboors[rotation], NULL);
+                                obj_turn_off(neighboors[rotation], nullptr);
 
                                 int v31 = tile_num_in_direction(v24, rotation, 1);
-                                obj_move_to_tile(neighboors[rotation], v31, projectile->elevation, NULL);
+                                obj_move_to_tile(neighboors[rotation], v31, projectile->elevation, nullptr);
 
                                 int delay;
                                 if (rotation != ROTATION_NE) {
@@ -846,24 +846,24 @@ static int action_ranged(Attack* attack, int anim)
         }
     }
 
-    show_damage(attack, anim, actionFrame);
+    attack->showDamage(anim, actionFrame);
 
     if ((attack->attackerFlags & DAM_HIT) == 0) {
-        combatai_msg(attack->defender, attack, AI_MESSAGE_TYPE_MISS, -1);
+        attack->aiMsg(attack->defender, AI_MESSAGE_TYPE_MISS, -1);
     } else {
         if ((attack->defenderFlags & DAM_DEAD) == 0) {
-            combatai_msg(attack->defender, attack, AI_MESSAGE_TYPE_HIT, -1);
+            attack->aiMsg(attack->defender, AI_MESSAGE_TYPE_HIT, -1);
         }
     }
 
-    if (projectile != NULL && (isGrenade || damageType == DAMAGE_TYPE_EXPLOSION)) {
+    if (projectile != nullptr && (isGrenade || damageType == DAMAGE_TYPE_EXPLOSION)) {
         register_object_must_erase(projectile);
-    } else if (anim == ANIM_THROW_ANIM && projectile != NULL) {
+    } else if (anim == ANIM_THROW_ANIM && projectile != nullptr) {
         register_object_change_fid(projectile, weaponFid, -1);
     }
 
     for (int rotation = 0; rotation < ROTATION_COUNT; rotation++) {
-        if (neighboors[rotation] != NULL) {
+        if (neighboors[rotation] != nullptr) {
             register_object_must_erase(neighboors[rotation]);
         }
     }
@@ -871,7 +871,7 @@ static int action_ranged(Attack* attack, int anim)
     if ((attack->attackerFlags & (DAM_KNOCKED_OUT | DAM_KNOCKED_DOWN | DAM_DEAD)) == 0) {
         if (anim == ANIM_THROW_ANIM) {
             bool l9 = false;
-            if (v50 != NULL) {
+            if (v50 != nullptr) {
                 int v38 = item_w_anim_code(v50);
                 if (v38 != 0) {
                     register_object_take_out(attack->attacker, v38, -1);
@@ -890,20 +890,20 @@ static int action_ranged(Attack* attack, int anim)
 
     if (register_end() == -1) {
         debug_printf("Something went wrong with a ranged attack sequence!\n");
-        if (projectile != NULL && (isGrenade || damageType == DAMAGE_TYPE_EXPLOSION || anim != ANIM_THROW_ANIM)) {
-            obj_erase_object(projectile, NULL);
+        if (projectile != nullptr && (isGrenade || damageType == DAMAGE_TYPE_EXPLOSION || anim != ANIM_THROW_ANIM)) {
+            obj_erase_object(projectile, nullptr);
         }
 
         for (int rotation = 0; rotation < ROTATION_COUNT; rotation++) {
-            if (neighboors[rotation] != NULL) {
-                obj_erase_object(neighboors[rotation], NULL);
+            if (neighboors[rotation] != nullptr) {
+                obj_erase_object(neighboors[rotation], nullptr);
             }
         }
 
         return -1;
     }
 
-    show_damage_extras(attack);
+    attack->showDamageExtras();
 
     return 0;
 }
@@ -923,7 +923,7 @@ static int is_next_to(Object* a1, Object* a2)
         if (a2 == obj_dude) {
             // You cannot get there.
             messageListItem.num = 2000;
-            if (message_search(&misc_message_file, &messageListItem)) {
+            if (misc_message_file.search(&messageListItem)) {
                 display_print(messageListItem.text);
             }
         }
@@ -967,9 +967,9 @@ static int action_climb_ladder(Object* a1, Object* a2)
         register_object_run_to_tile(a1, tile, a2->elevation, actionPoints, 0);
     }
 
-    register_object_must_call(a1, a2, (AnimationCallback*)is_next_to, -1);
+    register_object_must_call(a1, a2, reinterpret_cast<AnimationCallback*>(is_next_to), -1);
     register_object_turn_towards(a1, a2->tile);
-    register_object_must_call(a1, a2, (AnimationCallback*)check_scenery_ap_cost, -1);
+    register_object_must_call(a1, a2, reinterpret_cast<AnimationCallback*>(check_scenery_ap_cost), -1);
 
     int weaponAnimationCode = (a1->fid & 0xF000) >> 12;
     if (weaponAnimationCode != 0) {
@@ -981,7 +981,7 @@ static int action_climb_ladder(Object* a1, Object* a2)
     const char* climbingSfx = gsnd_build_character_sfx_name(a1, ANIM_CLIMB_LADDER, CHARACTER_SOUND_EFFECT_UNUSED);
     register_object_play_sfx(a1, climbingSfx, -1);
     register_object_animate(a1, ANIM_CLIMB_LADDER, 0);
-    register_object_call(a1, a2, (AnimationCallback*)obj_use, -1);
+    register_object_call(a1, a2, reinterpret_cast<AnimationCallback*>(obj_use), -1);
 
     if (weaponAnimationCode != 0) {
         register_object_take_out(a1, weaponAnimationCode, -1);
@@ -1008,7 +1008,7 @@ int a_use_obj(Object* a1, Object* a2, Object* a3)
         scenery_type = scenery_proto->scenery.type;
     }
 
-    if (scenery_type == SCENERY_TYPE_LADDER_UP && a3 == NULL) {
+    if (scenery_type == SCENERY_TYPE_LADDER_UP && a3 == nullptr) {
         return action_climb_ladder(a1, a2);
     }
 
@@ -1039,8 +1039,8 @@ int a_use_obj(Object* a1, Object* a2, Object* a3)
         register_object_run_to_object(a1, a2, -1, 0);
     }
 
-    register_object_must_call(a1, a2, (AnimationCallback*)is_next_to, -1);
-    register_object_call(a1, a2, (AnimationCallback*)check_scenery_ap_cost, -1);
+    register_object_must_call(a1, a2, reinterpret_cast<AnimationCallback*>(is_next_to), -1);
+    register_object_call(a1, a2, reinterpret_cast<AnimationCallback*>(check_scenery_ap_cost), -1);
 
     weapon_anim_code = (a1->fid & 0xF000) >> 12;
     if (weapon_anim_code != 0) {
@@ -1059,11 +1059,11 @@ int a_use_obj(Object* a1, Object* a2, Object* a3)
 
     register_object_animate(a1, anim, -1);
 
-    if (a3 != NULL) {
+    if (a3 != nullptr) {
         // TODO: Get rid of cast.
-        register_object_call3(a1, a2, a3, (AnimationCallback3*)obj_use_item_on, -1);
+        register_object_call3(a1, a2, a3, reinterpret_cast<AnimationCallback3*>(obj_use_item_on), -1);
     } else {
-        register_object_call(a1, a2, (AnimationCallback*)obj_use, -1);
+        register_object_call(a1, a2, reinterpret_cast<AnimationCallback*>(obj_use), -1);
     }
 
     if (weapon_anim_code != 0) {
@@ -1082,7 +1082,7 @@ int action_use_an_item_on_object(Object* critter, Object* item, Object* target)
 // 0x411F78
 int action_use_an_object(Object* critter, Object* item)
 {
-    return a_use_obj(critter, item, NULL);
+    return a_use_obj(critter, item, nullptr);
 }
 
 // 0x411F84
@@ -1117,8 +1117,8 @@ int action_get_an_object(Object* critter, Object* item)
         }
     }
 
-    register_object_must_call(critter, item, (AnimationCallback*)is_next_to, -1);
-    register_object_call(critter, item, (AnimationCallback*)check_scenery_ap_cost, -1);
+    register_object_must_call(critter, item, reinterpret_cast<AnimationCallback*>(is_next_to), -1);
+    register_object_call(critter, item, reinterpret_cast<AnimationCallback*>(check_scenery_ap_cost), -1);
 
     Proto* itemProto;
     proto_ptr(item->pid, &itemProto);
@@ -1131,8 +1131,8 @@ int action_get_an_object(Object* critter, Object* item)
         int actionFrame;
         CacheEntry* cacheEntry;
         Art* art = art_ptr_lock(fid, &cacheEntry);
-        if (art != NULL) {
-            actionFrame = art_frame_action_frame(art);
+        if (art != nullptr) {
+            actionFrame = art->actionFrameIndex();
         } else {
             actionFrame = -1;
         }
@@ -1143,7 +1143,7 @@ int action_get_an_object(Object* critter, Object* item)
             register_object_play_sfx(item, sfx, actionFrame);
         }
 
-        register_object_call(critter, item, (AnimationCallback*)obj_pickup, actionFrame);
+        register_object_call(critter, item, reinterpret_cast<AnimationCallback*>(obj_pickup), actionFrame);
     } else {
         int weaponAnimationCode = (critter->fid & 0xF000) >> 12;
         if (weaponAnimationCode != 0) {
@@ -1163,15 +1163,15 @@ int action_get_an_object(Object* critter, Object* item)
         int actionFrame;
         CacheEntry* cacheEntry;
         Art* art = art_ptr_lock(fid, &cacheEntry);
-        if (art == NULL) {
-            actionFrame = art_frame_action_frame(art);
+        if (art == nullptr) {
+            actionFrame = art->actionFrameIndex();
             art_ptr_unlock(cacheEntry);
         } else {
             actionFrame = -1;
         }
 
         if (item->pid != 213) {
-            register_object_call(critter, item, (AnimationCallback*)obj_use_container, actionFrame);
+            register_object_call(critter, item, reinterpret_cast<AnimationCallback*>(obj_use_container), actionFrame);
         }
 
         if (weaponAnimationCode != 0) {
@@ -1179,7 +1179,7 @@ int action_get_an_object(Object* critter, Object* item)
         }
 
         if (item->frame == 0 || item->pid == 213) {
-            register_object_call(critter, item, (AnimationCallback*)scripts_request_loot_container, -1);
+            register_object_call(critter, item, reinterpret_cast<AnimationCallback*>(scripts_request_loot_container), -1);
         }
     }
 
@@ -1213,9 +1213,9 @@ int action_loot_container(Object* critter, Object* container)
         }
     }
 
-    register_object_must_call(critter, container, (AnimationCallback*)is_next_to, -1);
-    register_object_call(critter, container, (AnimationCallback*)check_scenery_ap_cost, -1);
-    register_object_call(critter, container, (AnimationCallback*)scripts_request_loot_container, -1);
+    register_object_must_call(critter, container, reinterpret_cast<AnimationCallback*>(is_next_to), -1);
+    register_object_call(critter, container, reinterpret_cast<AnimationCallback*>(check_scenery_ap_cost), -1);
+    register_object_call(critter, container, reinterpret_cast<AnimationCallback*>(scripts_request_loot_container), -1);
     return register_end();
 }
 
@@ -1238,7 +1238,7 @@ int action_use_skill_in_combat_error(Object* critter)
 
     if (critter == obj_dude) {
         messageListItem.num = 902;
-        if (message_search(&proto_main_msg_file, &messageListItem) == 1) {
+        if (proto_main_msg_file.search(&messageListItem) == 1) {
             display_print(messageListItem.text);
         }
     }
@@ -1353,7 +1353,7 @@ int action_use_skill_on(Object* a1, Object* a2, int skill)
         }
     }
 
-    register_object_must_call(a1, a2, (AnimationCallback*)is_next_to, -1);
+    register_object_must_call(a1, a2, reinterpret_cast<AnimationCallback*>(is_next_to), -1);
 
     int anim = (FID_TYPE(a2->fid) == OBJ_TYPE_CRITTER && critter_is_prone(a2))
         ? ANIM_MAGIC_HANDS_GROUND
@@ -1362,14 +1362,14 @@ int action_use_skill_on(Object* a1, Object* a2, int skill)
 
     CacheEntry* artHandle;
     Art* art = art_ptr_lock(fid, &artHandle);
-    if (art != NULL) {
-        art_frame_action_frame(art);
+    if (art != nullptr) {
+        art->actionFrameIndex();
         art_ptr_unlock(artHandle);
     }
 
     register_object_animate(a1, anim, -1);
     // TODO: Get rid of casts.
-    register_object_call3(a1, a2, (void*)skill, (AnimationCallback3*)obj_use_skill_on, -1);
+    register_object_call3(a1, a2, reinterpret_cast<void*>(skill), (AnimationCallback3*)obj_use_skill_on, -1);
     return register_end();
 }
 
@@ -1380,7 +1380,7 @@ Object* pick_object(int objectType, bool a2)
     int mouseEvent;
     int keyCode;
 
-    foundObject = NULL;
+    foundObject = nullptr;
 
     do {
         get_input();
@@ -1409,7 +1409,7 @@ Object* pick_object(int objectType, bool a2)
     gmouse_3d_on();
 
     if (keyCode == KEY_ESCAPE) {
-        return NULL;
+        return nullptr;
     }
 
     return foundObject;
@@ -1523,7 +1523,7 @@ int pick_fall(Object* obj, int anim)
         rotation = obj->rotation;
         for (i = 1; i < 3; i++) {
             tile_num = tile_num_in_direction(obj->tile, rotation, i);
-            if (obj_blocking_at(obj, tile_num, obj->elevation) != NULL) {
+            if (obj_blocking_at(obj, tile_num, obj->elevation) != nullptr) {
                 anim = ANIM_FALL_BACK;
                 break;
             }
@@ -1532,7 +1532,7 @@ int pick_fall(Object* obj, int anim)
         rotation = (obj->rotation + 3) % ROTATION_COUNT;
         for (i = 1; i < 3; i++) {
             tile_num = tile_num_in_direction(obj->tile, rotation, i);
-            if (obj_blocking_at(obj, tile_num, obj->elevation) != NULL) {
+            if (obj_blocking_at(obj, tile_num, obj->elevation) != nullptr) {
                 anim = ANIM_FALL_FRONT;
                 break;
             }
@@ -1556,8 +1556,8 @@ int action_explode(int tile, int elevation, int minDamage, int maxDamage, Object
         return -2;
     }
 
-    Attack* attack = (Attack*)mem_malloc(sizeof(*attack));
-    if (attack == NULL) {
+    Attack* attack = static_cast<Attack*>(mem_malloc(sizeof(*attack)));
+    if (attack == nullptr) {
         return -1;
     }
 
@@ -1568,53 +1568,53 @@ int action_explode(int tile, int elevation, int minDamage, int maxDamage, Object
         return -1;
     }
 
-    obj_turn_off(explosion, NULL);
+    obj_turn_off(explosion, nullptr);
     explosion->flags |= OBJECT_NO_SAVE;
 
-    obj_move_to_tile(explosion, tile, elevation, NULL);
+    obj_move_to_tile(explosion, tile, elevation, nullptr);
 
     Object* adjacentExplosions[ROTATION_COUNT];
     for (int rotation = 0; rotation < ROTATION_COUNT; rotation++) {
         int fid = art_id(OBJ_TYPE_MISC, 10, 0, 0, 0);
         if (obj_new(&(adjacentExplosions[rotation]), fid, -1) == -1) {
             while (--rotation >= 0) {
-                obj_erase_object(adjacentExplosions[rotation], NULL);
+                obj_erase_object(adjacentExplosions[rotation], nullptr);
             }
 
-            obj_erase_object(explosion, NULL);
+            obj_erase_object(explosion, nullptr);
             mem_free(attack);
             return -1;
         }
 
-        obj_turn_off(adjacentExplosions[rotation], NULL);
+        obj_turn_off(adjacentExplosions[rotation], nullptr);
         adjacentExplosions[rotation]->flags |= OBJECT_NO_SAVE;
 
         int adjacentTile = tile_num_in_direction(tile, rotation, 1);
-        obj_move_to_tile(adjacentExplosions[rotation], adjacentTile, elevation, NULL);
+        obj_move_to_tile(adjacentExplosions[rotation], adjacentTile, elevation, nullptr);
     }
 
-    Object* critter = obj_blocking_at(NULL, tile, elevation);
-    if (critter != NULL) {
+    Object* critter = obj_blocking_at(nullptr, tile, elevation);
+    if (critter != nullptr) {
         if (FID_TYPE(critter->fid) != OBJ_TYPE_CRITTER || (critter->data.critter.combat.results & DAM_DEAD) != 0) {
-            critter = NULL;
+            critter = nullptr;
         }
     }
 
-    combat_ctd_init(attack, explosion, critter, HIT_MODE_PUNCH, HIT_LOCATION_TORSO);
+    attack->init(explosion, critter, HIT_MODE_PUNCH, HIT_LOCATION_TORSO);
 
     attack->tile = tile;
     attack->attackerFlags = DAM_HIT;
 
     game_ui_disable(1);
 
-    if (critter != NULL) {
+    if (critter != nullptr) {
         if (register_clear(critter) == -2) {
             debug_printf("Cannot clear target's animation for action_explode!\n");
         }
         attack->defenderDamage = compute_explosion_damage(minDamage, maxDamage, critter, &(attack->defenderKnockback));
     }
 
-    compute_explosion_on_extras(attack, 0, 0, 1);
+    attack->computeExplosionOnExtras(0, 0, 1);
 
     for (int index = 0; index < attack->extrasLength; index++) {
         Object* critter = attack->extras[index];
@@ -1625,7 +1625,7 @@ int action_explode(int tile, int elevation, int minDamage, int maxDamage, Object
         attack->extrasDamage[index] = compute_explosion_damage(minDamage, maxDamage, critter, &(attack->extrasKnockback[index]));
     }
 
-    death_checks(attack);
+    attack->deathChecks();
 
     if (premature) {
         action_in_explode = true;
@@ -1635,29 +1635,29 @@ int action_explode(int tile, int elevation, int minDamage, int maxDamage, Object
         register_object_play_sfx(explosion, "whn1xxx1", 0);
         register_object_funset(explosion, OBJECT_HIDDEN, 0);
         register_object_animate_and_hide(explosion, ANIM_STAND, 0);
-        show_damage(attack, 0, 1);
+        attack->showDamage(0, 1);
 
         for (int rotation = 0; rotation < ROTATION_COUNT; rotation++) {
             register_object_funset(adjacentExplosions[rotation], OBJECT_HIDDEN, 0);
             register_object_animate_and_hide(adjacentExplosions[rotation], ANIM_STAND, 0);
         }
 
-        register_object_must_call(explosion, 0, (AnimationCallback*)combat_explode_scenery, -1);
+        register_object_must_call(explosion, 0, reinterpret_cast<AnimationCallback*>(combat_explode_scenery), -1);
         register_object_must_erase(explosion);
 
         for (int rotation = 0; rotation < ROTATION_COUNT; rotation++) {
             register_object_must_erase(adjacentExplosions[rotation]);
         }
 
-        register_object_must_call(attack, a5, (AnimationCallback*)report_explosion, -1);
-        register_object_must_call(NULL, NULL, (AnimationCallback*)finished_explosion, -1);
+        register_object_must_call(attack, a5, reinterpret_cast<AnimationCallback*>(report_explosion), -1);
+        register_object_must_call(nullptr, nullptr, reinterpret_cast<AnimationCallback*>(finished_explosion), -1);
         if (register_end() == -1) {
             action_in_explode = false;
 
-            obj_erase_object(explosion, NULL);
+            obj_erase_object(explosion, nullptr);
 
             for (int rotation = 0; rotation < ROTATION_COUNT; rotation++) {
-                obj_erase_object(adjacentExplosions[rotation], NULL);
+                obj_erase_object(adjacentExplosions[rotation], nullptr);
             }
 
             mem_free(attack);
@@ -1666,9 +1666,9 @@ int action_explode(int tile, int elevation, int minDamage, int maxDamage, Object
             return -1;
         }
 
-        show_damage_extras(attack);
+        attack->showDamageExtras();
     } else {
-        if (critter != NULL) {
+        if (critter != nullptr) {
             if ((attack->defenderFlags & DAM_DEAD) != 0) {
                 critter_kill(critter, -1, false);
             }
@@ -1682,12 +1682,12 @@ int action_explode(int tile, int elevation, int minDamage, int maxDamage, Object
 
         report_explosion(attack, a5);
 
-        combat_explode_scenery(explosion, NULL);
+        combat_explode_scenery(explosion, nullptr);
 
-        obj_erase_object(explosion, NULL);
+        obj_erase_object(explosion, nullptr);
 
         for (int rotation = 0; rotation < ROTATION_COUNT; rotation++) {
-            obj_erase_object(adjacentExplosions[rotation], NULL);
+            obj_erase_object(adjacentExplosions[rotation], nullptr);
         }
     }
 
@@ -1698,7 +1698,7 @@ int action_explode(int tile, int elevation, int minDamage, int maxDamage, Object
 static int report_explosion(Attack* attack, Object* a2)
 {
     bool mainTargetWasDead;
-    if (attack->defender != NULL) {
+    if (attack->defender != nullptr) {
         mainTargetWasDead = (attack->defender->data.critter.combat.results & DAM_DEAD) != 0;
     } else {
         mainTargetWasDead = false;
@@ -1709,14 +1709,14 @@ static int report_explosion(Attack* attack, Object* a2)
         extrasWasDead[index] = (attack->extras[index]->data.critter.combat.results & DAM_DEAD) != 0;
     }
 
-    death_checks(attack);
-    combat_display(attack);
-    apply_damage(attack, false);
+    attack->deathChecks();
+    attack->display();
+    attack->applyDamage(false);
 
-    Object* anyDefender = NULL;
+    Object* anyDefender = nullptr;
     int xp = 0;
-    if (a2 != NULL) {
-        if (attack->defender != NULL && attack->defender != a2) {
+    if (a2 != nullptr) {
+        if (attack->defender != nullptr && attack->defender != a2) {
             if ((attack->defender->data.critter.combat.results & DAM_DEAD) != 0) {
                 if (a2 == obj_dude && !mainTargetWasDead) {
                     xp += critter_kill_exps(attack->defender);
@@ -1737,16 +1737,16 @@ static int report_explosion(Attack* attack, Object* a2)
                 } else {
                     critter_set_who_hit_me(critter, a2);
 
-                    if (anyDefender == NULL) {
+                    if (anyDefender == nullptr) {
                         anyDefender = critter;
                     }
                 }
             }
         }
 
-        if (anyDefender != NULL) {
+        if (anyDefender != nullptr) {
             if (!isInCombat()) {
-                STRUCT_664980 combat;
+                CombatSequenceParams combat;
                 combat.attacker = anyDefender;
                 combat.defender = a2;
                 combat.actionPointsBonus = 0;
@@ -1754,8 +1754,8 @@ static int report_explosion(Attack* attack, Object* a2)
                 combat.damageBonus = 0;
                 combat.minDamage = 0;
                 combat.maxDamage = INT_MAX;
-                combat.field_1C = 0;
-                scripts_request_combat(&combat);
+                combat.hasOverrideFlags = 0;
+                combat.scripts_request_combat();
             }
         }
     }
@@ -1790,7 +1790,7 @@ static int compute_explosion_damage(int min, int max, Object* a3, int* a4)
         v7 = 0;
     }
 
-    if (a4 != NULL) {
+    if (a4 != nullptr) {
         if ((a3->flags & OBJECT_MULTIHEX) == 0) {
             *a4 = v7 / 10;
         }
@@ -1821,13 +1821,13 @@ int action_talk_to(Object* a1, Object* a2)
     } else {
         register_begin(a1 == obj_dude ? ANIMATION_REQUEST_RESERVED : ANIMATION_REQUEST_UNRESERVED);
 
-        if (obj_dist(a1, a2) >= 9 || combat_is_shot_blocked(a1, a1->tile, a2->tile, a2, NULL)) {
+        if (obj_dist(a1, a2) >= 9 || combat_is_shot_blocked(a1, a1->tile, a2->tile, a2, nullptr)) {
             register_object_run_to_object(a1, a2, -1, 0);
         }
     }
 
-    register_object_must_call(a1, a2, (AnimationCallback*)can_talk_to, -1);
-    register_object_call(a1, a2, (AnimationCallback*)talk_to, -1);
+    register_object_must_call(a1, a2, reinterpret_cast<AnimationCallback*>(can_talk_to), -1);
+    register_object_call(a1, a2, reinterpret_cast<AnimationCallback*>(talk_to), -1);
     return register_end();
 }
 
@@ -1836,11 +1836,11 @@ static int can_talk_to(Object* a1, Object* a2)
 {
     MessageListItem messageListItem;
 
-    if (combat_is_shot_blocked(a1, a1->tile, a2->tile, a2, NULL) || obj_dist(a1, a2) >= 9) {
+    if (combat_is_shot_blocked(a1, a1->tile, a2->tile, a2, nullptr) || obj_dist(a1, a2) >= 9) {
         if (a1 == obj_dude) {
             // You cannot get there. (used in actions.c)
             messageListItem.num = 2000;
-            if (message_search(&misc_message_file, &messageListItem)) {
+            if (misc_message_file.search(&messageListItem)) {
                 display_print(messageListItem.text);
             }
         }
@@ -1861,8 +1861,8 @@ static int talk_to(Object* a1, Object* a2)
 // 0x41320C
 void action_dmg(int tile, int elevation, int minDamage, int maxDamage, int damageType, bool animated, bool bypassArmor)
 {
-    Attack* attack = (Attack*)mem_malloc(sizeof(*attack));
-    if (attack == NULL) {
+    Attack* attack = static_cast<Attack*>(mem_malloc(sizeof(*attack)));
+    if (attack == nullptr) {
         return;
     }
 
@@ -1872,19 +1872,19 @@ void action_dmg(int tile, int elevation, int minDamage, int maxDamage, int damag
         return;
     }
 
-    obj_turn_off(attacker, NULL);
+    obj_turn_off(attacker, nullptr);
 
     attacker->flags |= OBJECT_NO_SAVE;
 
-    obj_move_to_tile(attacker, tile, elevation, NULL);
+    obj_move_to_tile(attacker, tile, elevation, nullptr);
 
-    Object* defender = obj_blocking_at(NULL, tile, elevation);
-    combat_ctd_init(attack, attacker, defender, HIT_MODE_PUNCH, HIT_LOCATION_TORSO);
+    Object* defender = obj_blocking_at(nullptr, tile, elevation);
+    attack->init(attacker, defender, HIT_MODE_PUNCH, HIT_LOCATION_TORSO);
     attack->tile = tile;
     attack->attackerFlags = DAM_HIT;
     game_ui_disable(1);
 
-    if (defender != NULL) {
+    if (defender != nullptr) {
         register_clear(defender);
 
         int damage;
@@ -1897,31 +1897,31 @@ void action_dmg(int tile, int elevation, int minDamage, int maxDamage, int damag
         attack->defenderDamage = damage;
     }
 
-    death_checks(attack);
+    attack->deathChecks();
 
     if (animated) {
         register_begin(ANIMATION_REQUEST_RESERVED);
         register_object_play_sfx(attacker, "whc1xxx1", 0);
-        show_damage(attack, death_3[damageType], 0);
-        register_object_must_call(attack, NULL, (AnimationCallback*)report_dmg, 0);
+        attack->showDamage(death_3[damageType], 0);
+        register_object_must_call(attack, nullptr, reinterpret_cast<AnimationCallback*>(report_dmg), 0);
         register_object_must_erase(attacker);
 
         if (register_end() == -1) {
-            obj_erase_object(attacker, NULL);
+            obj_erase_object(attacker, nullptr);
             mem_free(attack);
             return;
         }
     } else {
-        if (defender != NULL) {
+        if (defender != nullptr) {
             if ((attack->defenderFlags & DAM_DEAD) != 0) {
                 critter_kill(defender, -1, 1);
             }
         }
 
         // NOTE: Uninline.
-        report_dmg(attack, NULL);
+        report_dmg(attack, nullptr);
 
-        obj_erase_object(attacker, NULL);
+        obj_erase_object(attacker, nullptr);
     }
 
     game_ui_enable();
@@ -1930,8 +1930,8 @@ void action_dmg(int tile, int elevation, int minDamage, int maxDamage, int damag
 // 0x4133B4
 static int report_dmg(Attack* attack, Object* a2)
 {
-    combat_display(attack);
-    apply_damage(attack, false);
+    attack->display();
+    attack->applyDamage(false);
     mem_free(attack);
     game_ui_enable();
     return 0;
@@ -1953,7 +1953,7 @@ static int compute_dmg_damage(int min_damage, int max_damage, Object* obj, int* 
         damage = 0;
     }
 
-    if (knockback_distance != NULL) {
+    if (knockback_distance != nullptr) {
         if ((obj->flags & OBJECT_MULTIHEX) == 0 && damage_type != DAMAGE_TYPE_ELECTRICAL) {
             *knockback_distance = damage / 10;
         }

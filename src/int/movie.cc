@@ -1,6 +1,6 @@
 #include "int/movie.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <SDL.h>
 
@@ -23,14 +23,14 @@
 
 namespace fallout {
 
-typedef void(MovieCallback)();
-typedef int(MovieBlitFunc)(int win, unsigned char* data, int width, int height, int pitch);
+using MovieCallback = void();
+using MovieBlitFunc = int(int win, unsigned char* data, int width, int height, int pitch);
 
-typedef struct MovieSubtitleListNode {
+struct MovieSubtitleListNode {
     int num;
     char* text;
     struct MovieSubtitleListNode* next;
-} MovieSubtitleListNode;
+};
 
 static void* movieMalloc(size_t size);
 static void movieFree(void* ptr);
@@ -207,7 +207,7 @@ static DB_FILE* alphaHandle;
 // 0x637418
 static unsigned char* alphaBuf;
 
-static SDL_Surface* gMovieSdlSurface = NULL;
+static SDL_Surface* gMovieSdlSurface = nullptr;
 
 // 0x4783F0
 void movieSetPreDrawFunc(MoviePreDrawFunc* func)
@@ -243,7 +243,7 @@ static void movieFree(void* ptr)
 // 0x47843C
 static bool movieRead(void* handle, void* buf, int count)
 {
-    return db_fread(buf, 1, count, reinterpret_cast<DB_FILE*>(handle)) == count;
+    return reinterpret_cast<DB_FILE*>(handle)->fread(buf, 1, count) == count;
 }
 
 // 0x478464
@@ -299,7 +299,7 @@ static void movie_MVE_ShowFrame(SDL_Surface* surface, int srcWidth, int srcHeigh
     destRect.x += winRect.ulx;
     destRect.y += winRect.uly;
 
-    if (movieCaptureFrameFunc != NULL) {
+    if (movieCaptureFrameFunc != nullptr) {
         if (SDL_LockSurface(surface) == 0) {
             movieCaptureFrameFunc(static_cast<unsigned char*>(surface->pixels),
                 srcWidth,
@@ -315,7 +315,7 @@ static void movie_MVE_ShowFrame(SDL_Surface* surface, int srcWidth, int srcHeigh
 
     SDL_SetSurfacePalette(surface, gSdlSurface->format->palette);
     SDL_BlitSurface(surface, &srcRect, gSdlSurface, &destRect);
-    SDL_BlitSurface(gSdlSurface, NULL, gSdlTextureSurface, NULL);
+    SDL_BlitSurface(gSdlSurface, nullptr, gSdlTextureSurface, nullptr);
     renderPresent();
 }
 
@@ -340,16 +340,16 @@ static void movieShowFrame(SDL_Surface* a1, int a2, int a3, int a4, int a5, int 
         return;
     }
 
-    if (movieCaptureFrameFunc != NULL) {
+    if (movieCaptureFrameFunc != nullptr) {
         movieCaptureFrameFunc(static_cast<unsigned char*>(a1->pixels), a2, a3, a1->pitch, movieRect.ulx, movieRect.uly, a6, a7);
     }
 
-    if (movieFrameGrabFunc != NULL) {
+    if (movieFrameGrabFunc != nullptr) {
         movieFrameGrabFunc(static_cast<unsigned char*>(a1->pixels), a2, a3, a1->pitch);
     } else {
         MovieBlitFunc* func = showFrameFuncs[movieAlphaFlag][movieScaleFlag][movieSubRectFlag];
         if (func(GNWWin, static_cast<unsigned char*>(a1->pixels), a2, a3, a1->pitch) != 0) {
-            if (preDrawFunc != NULL) {
+            if (preDrawFunc != nullptr) {
                 preDrawFunc(GNWWin, &movieRect);
             }
 
@@ -391,7 +391,7 @@ static int movieScaleSubRect(int win, unsigned char* data, int width, int height
             value |= data[2] << 16;
             value |= data[2] << 24;
 
-            *(unsigned int*)windowBuffer = value;
+            *reinterpret_cast<unsigned int*>(windowBuffer) = value;
 
             windowBuffer += 4;
             data += 3;
@@ -449,7 +449,7 @@ static int movieScaleWindow(int win, unsigned char* data, int width, int height,
             value |= data[2] << 16;
             value |= data[3] << 24;
 
-            *(unsigned int*)windowBuffer = value;
+            *reinterpret_cast<unsigned int*>(windowBuffer) = value;
 
             windowBuffer += 4;
             data += 3;
@@ -499,7 +499,7 @@ static void cleanupMovie(int a1)
         return;
     }
 
-    if (endMovieFunc != NULL) {
+    if (endMovieFunc != nullptr) {
         endMovieFunc(GNWWin, movieX, movieY, movieW, movieH);
     }
 
@@ -508,21 +508,21 @@ static void cleanupMovie(int a1)
     _MVE_rmFrameCounts(&frame, &dropped);
     debug_printf("Frames %d, dropped %d\n", frame, dropped);
 
-    if (lastMovieBuffer != NULL) {
+    if (lastMovieBuffer != nullptr) {
         myfree(lastMovieBuffer, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 787
-        lastMovieBuffer = NULL;
+        lastMovieBuffer = nullptr;
     }
 
-    if (gMovieSdlSurface != NULL) {
+    if (gMovieSdlSurface != nullptr) {
         if (SDL_LockSurface(gMovieSdlSurface) == 0) {
-            lastMovieBuffer = (unsigned char*)mymalloc(lastMovieBH * lastMovieBW, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 802
-            buf_to_buf((unsigned char*)gMovieSdlSurface->pixels + gMovieSdlSurface->pitch * lastMovieSX + lastMovieSY, lastMovieBW, lastMovieBH, gMovieSdlSurface->pitch, lastMovieBuffer, lastMovieBW);
+            lastMovieBuffer = static_cast<unsigned char*>(mymalloc(lastMovieBH * lastMovieBW, __FILE__, __LINE__)); // "..\\int\\MOVIE.C", 802
+            buf_to_buf(reinterpret_cast<unsigned char*>(gMovieSdlSurface->pixels) + gMovieSdlSurface->pitch * lastMovieSX + lastMovieSY, lastMovieBW, lastMovieBH, gMovieSdlSurface->pitch, lastMovieBuffer, lastMovieBW);
             SDL_UnlockSurface(gMovieSdlSurface);
         } else {
             debug_printf("Couldn't lock movie surface\n");
         }
 
-        gMovieSdlSurface = NULL;
+        gMovieSdlSurface = nullptr;
     }
 
     if (a1) {
@@ -531,29 +531,29 @@ static void cleanupMovie(int a1)
 
     _MVE_ReleaseMem();
 
-    db_fclose(handle);
+    handle->fclose();
 
-    if (alphaWindowBuf != NULL) {
+    if (alphaWindowBuf != nullptr) {
         buf_to_buf(alphaWindowBuf, movieW, movieH, movieW, win_get_buf(GNWWin) + movieY * win_width(GNWWin) + movieX, win_width(GNWWin));
         win_draw_rect(GNWWin, &movieRect);
     }
 
-    if (alphaHandle != NULL) {
-        db_fclose(alphaHandle);
-        alphaHandle = NULL;
+    if (alphaHandle != nullptr) {
+        alphaHandle->fclose();
+        alphaHandle = nullptr;
     }
 
-    if (alphaBuf != NULL) {
+    if (alphaBuf != nullptr) {
         myfree(alphaBuf, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 840
-        alphaBuf = NULL;
+        alphaBuf = nullptr;
     }
 
-    if (alphaWindowBuf != NULL) {
+    if (alphaWindowBuf != nullptr) {
         myfree(alphaWindowBuf, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 845
-        alphaWindowBuf = NULL;
+        alphaWindowBuf = nullptr;
     }
 
-    while (subtitleList != NULL) {
+    while (subtitleList != nullptr) {
         MovieSubtitleListNode* next = subtitleList->next;
         myfree(subtitleList->text, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 851
         myfree(subtitleList, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 852
@@ -575,7 +575,7 @@ void movieClose()
 
     if (lastMovieBuffer) {
         myfree(lastMovieBuffer, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 869
-        lastMovieBuffer = NULL;
+        lastMovieBuffer = nullptr;
     }
 }
 
@@ -635,15 +635,15 @@ void movieSetSubtitleFont(int font)
 // 0x479024
 void movieSetSubtitleColor(float r, float g, float b)
 {
-    subtitleR = (int)(r * 31.0f);
-    subtitleG = (int)(g * 31.0f);
-    subtitleB = (int)(b * 31.0f);
+    subtitleR = static_cast<int>(r * 31.0f);
+    subtitleG = static_cast<int>(g * 31.0f);
+    subtitleB = static_cast<int>(b * 31.0f);
 }
 
 // 0x479060
 void movieSetPaletteFunc(MoviePaletteFunc* func)
 {
-    paletteFunc = func != NULL ? func : setSystemPaletteEntries;
+    paletteFunc = func != nullptr ? func : setSystemPaletteEntries;
 }
 
 // 0x479078
@@ -655,25 +655,25 @@ void movieSetCallback(MovieUpdateCallbackProc* func)
 // 0x4790EC
 static void cleanupLast()
 {
-    if (lastMovieBuffer != NULL) {
+    if (lastMovieBuffer != nullptr) {
         myfree(lastMovieBuffer, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 981
-        lastMovieBuffer = NULL;
+        lastMovieBuffer = nullptr;
     }
 
-    gMovieSdlSurface = NULL;
+    gMovieSdlSurface = nullptr;
 }
 
 // 0x479120
 static DB_FILE* openFile(char* filePath)
 {
     handle = db_fopen(filePath, "rb");
-    if (handle == NULL) {
-        if (failedOpenFunc == NULL) {
+    if (handle == nullptr) {
+        if (failedOpenFunc == nullptr) {
             debug_printf("Couldn't find movie file %s\n", filePath);
             return 0;
         }
 
-        while (handle == NULL && failedOpenFunc(filePath) != 0) {
+        while (handle == nullptr && failedOpenFunc(filePath) != 0) {
             handle = db_fopen(filePath, "rb");
         }
     }
@@ -686,7 +686,7 @@ static void openSubtitle(char* filePath)
     subtitleW = win_width(GNWWin);
     subtitleH = text_height() + 4;
 
-    if (subtitleFilenameFunc != NULL) {
+    if (subtitleFilenameFunc != nullptr) {
         filePath = subtitleFilenameFunc(filePath);
     }
 
@@ -695,46 +695,46 @@ static void openSubtitle(char* filePath)
 
     debug_printf("Opening subtitle file %s\n", path);
     DB_FILE* stream = db_fopen(path, "r");
-    if (stream == NULL) {
+    if (stream == nullptr) {
         debug_printf("Couldn't open subtitle file %s\n", path);
         movieFlags &= ~MOVIE_EXTENDED_FLAG_0x10;
         return;
     }
 
-    MovieSubtitleListNode* prev = NULL;
+    MovieSubtitleListNode* prev = nullptr;
     int subtitleCount = 0;
-    while (!db_feof(stream)) {
+    while (!stream->feof()) {
         char string[260];
         string[0] = '\0';
-        db_fgets(string, 259, stream);
+        stream->fgets(string, 259);
         if (*string == '\0') {
             break;
         }
 
-        MovieSubtitleListNode* subtitle = (MovieSubtitleListNode*)mymalloc(sizeof(*subtitle), __FILE__, __LINE__); // "..\\int\\MOVIE.C", 1050
-        subtitle->next = NULL;
+        MovieSubtitleListNode* subtitle = static_cast<MovieSubtitleListNode*>(mymalloc(sizeof(*subtitle), __FILE__, __LINE__)); // "..\\int\\MOVIE.C", 1050
+        subtitle->next = nullptr;
 
         subtitleCount++;
 
         char* pch;
 
         pch = strchr(string, '\n');
-        if (pch != NULL) {
+        if (pch != nullptr) {
             *pch = '\0';
         }
 
         pch = strchr(string, '\r');
-        if (pch != NULL) {
+        if (pch != nullptr) {
             *pch = '\0';
         }
 
         pch = strchr(string, ':');
-        if (pch != NULL) {
+        if (pch != nullptr) {
             *pch = '\0';
             subtitle->num = atoi(string);
             subtitle->text = mystrdup(pch + 1, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 1058
 
-            if (prev != NULL) {
+            if (prev != nullptr) {
                 prev->next = subtitle;
             } else {
                 subtitleList = subtitle;
@@ -746,7 +746,7 @@ static void openSubtitle(char* filePath)
         }
     }
 
-    db_fclose(stream);
+    stream->fclose();
 
     debug_printf("Read %d subtitles\n", subtitleCount);
 }
@@ -754,7 +754,7 @@ static void openSubtitle(char* filePath)
 // 0x479360
 static void doSubtitle()
 {
-    if (subtitleList == NULL) {
+    if (subtitleList == nullptr) {
         return;
     }
 
@@ -773,7 +773,7 @@ static void doSubtitle()
     int dropped;
     _MVE_rmFrameCounts(&frame, &dropped);
 
-    while (subtitleList != NULL) {
+    while (subtitleList != nullptr) {
         if (frame < subtitleList->num) {
             break;
         }
@@ -823,7 +823,7 @@ static int movieStart(int win, char* filePath, int (*a3)())
     cleanupLast();
 
     handle = openFile(filePath);
-    if (handle == NULL) {
+    if (handle == nullptr) {
         return 1;
     }
 
@@ -862,20 +862,20 @@ static int movieStart(int win, char* filePath, int (*a3)())
         debug_printf("not scaled\n");
     }
 
-    if (startMovieFunc != NULL) {
+    if (startMovieFunc != nullptr) {
         startMovieFunc(GNWWin);
     }
 
-    if (alphaHandle != NULL) {
+    if (alphaHandle != nullptr) {
         unsigned long size;
-        db_freadLong(alphaHandle, &size);
+        alphaHandle->freadLong(&size);
 
         short tmp;
-        db_freadInt16(alphaHandle, &tmp);
-        db_freadInt16(alphaHandle, &tmp);
+        alphaHandle->freadInt16(&tmp);
+        alphaHandle->freadInt16(&tmp);
 
-        alphaBuf = (unsigned char*)mymalloc(size, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 1178
-        alphaWindowBuf = (unsigned char*)mymalloc(movieH * movieW, __FILE__, __LINE__); // "..\\int\\MOVIE.C", 1179
+        alphaBuf = static_cast<unsigned char*>(mymalloc(size, __FILE__, __LINE__)); // "..\\int\\MOVIE.C", 1178
+        alphaWindowBuf = static_cast<unsigned char*>(mymalloc(movieH * movieW, __FILE__, __LINE__)); // "..\\int\\MOVIE.C", 1179
 
         unsigned char* windowBuffer = win_get_buf(GNWWin);
         buf_to_buf(windowBuffer + win_width(GNWWin) * movieY + movieX,
@@ -899,7 +899,7 @@ static bool localMovieCallback()
 {
     doSubtitle();
 
-    if (movieCallback != NULL) {
+    if (movieCallback != nullptr) {
         movieCallback();
     }
 
@@ -944,10 +944,10 @@ static int stepMovie()
 {
     int rc;
 
-    if (alphaHandle != NULL) {
+    if (alphaHandle != nullptr) {
         unsigned long size;
-        db_freadLong(alphaHandle, &size);
-        db_fread(alphaBuf, 1, size, alphaHandle);
+        alphaHandle->freadLong(&size);
+        alphaHandle->fread(alphaBuf, 1, size);
     }
 
     rc = _MVE_rmStepMovie();
@@ -995,7 +995,7 @@ void movieUpdate()
         return;
     }
 
-    if (updateCallbackFunc != NULL) {
+    if (updateCallbackFunc != nullptr) {
         int frame;
         int dropped;
         _MVE_rmFrameCounts(&frame, &dropped);

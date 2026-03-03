@@ -1,49 +1,68 @@
-#ifndef FALLOUT_PLIB_GNW_VCR_H_
-#define FALLOUT_PLIB_GNW_VCR_H_
+#pragma once
+
 
 #include "plib/db/db.h"
 
 namespace fallout {
 
-#define VCR_BUFFER_CAPACITY 4096
+inline constexpr int VCR_BUFFER_CAPACITY = 4096;
 
-typedef enum VcrState {
-    VCR_STATE_RECORDING,
-    VCR_STATE_PLAYING,
-    VCR_STATE_TURNED_OFF,
-} VcrState;
+enum class VcrState : int {
+    Recording = 0,
+    Playing = 1,
+    TurnedOff = 2,
+};
 
-#define VCR_STATE_STOP_REQUESTED 0x80000000
+inline constexpr int VCR_STATE_RECORDING = static_cast<int>(VcrState::Recording);
+inline constexpr int VCR_STATE_PLAYING = static_cast<int>(VcrState::Playing);
+inline constexpr int VCR_STATE_TURNED_OFF = static_cast<int>(VcrState::TurnedOff);
 
-typedef enum VcrTerminationFlags {
+inline constexpr unsigned int VCR_STATE_STOP_REQUESTED = 0x80000000;
+
+enum class VcrTerminationFlags : unsigned {
     // Specifies that VCR playback should stop if any key is pressed.
-    VCR_TERMINATE_ON_KEY_PRESS = 0x01,
+    OnKeyPress = 0x01,
 
-    // Specifies that VCR playback should stop if mouse is mouved.
-    VCR_TERMINATE_ON_MOUSE_MOVE = 0x02,
+    // Specifies that VCR playback should stop if mouse is moved.
+    OnMouseMove = 0x02,
 
     // Specifies that VCR playback should stop if any mouse button is pressed.
-    VCR_TERMINATE_ON_MOUSE_PRESS = 0x04,
-} VcrTerminationFlags;
+    OnMousePress = 0x04,
+};
 
-typedef enum VcrPlaybackCompletionReason {
-    VCR_PLAYBACK_COMPLETION_REASON_NONE = 0,
+inline constexpr int VCR_TERMINATE_ON_KEY_PRESS = static_cast<int>(VcrTerminationFlags::OnKeyPress);
+inline constexpr int VCR_TERMINATE_ON_MOUSE_MOVE = static_cast<int>(VcrTerminationFlags::OnMouseMove);
+inline constexpr int VCR_TERMINATE_ON_MOUSE_PRESS = static_cast<int>(VcrTerminationFlags::OnMousePress);
+
+
+enum class VcrPlaybackCompletionReason : int {
+    None = 0,
 
     // Indicates that VCR playback completed normally.
-    VCR_PLAYBACK_COMPLETION_REASON_COMPLETED = 1,
+    Completed = 1,
 
     // Indicates that VCR playback terminated according to termination flags.
-    VCR_PLAYBACK_COMPLETION_REASON_TERMINATED = 2,
-} VcrPlaybackCompletionReason;
+    Terminated = 2,
+};
 
-typedef enum VcrEntryType {
-    VCR_ENTRY_TYPE_NONE = 0,
-    VCR_ENTRY_TYPE_INITIAL_STATE = 1,
-    VCR_ENTRY_TYPE_KEYBOARD_EVENT = 2,
-    VCR_ENTRY_TYPE_MOUSE_EVENT = 3,
-} VcrEntryType;
+inline constexpr int VCR_PLAYBACK_COMPLETION_REASON_NONE = static_cast<int>(VcrPlaybackCompletionReason::None);
+inline constexpr int VCR_PLAYBACK_COMPLETION_REASON_COMPLETED = static_cast<int>(VcrPlaybackCompletionReason::Completed);
+inline constexpr int VCR_PLAYBACK_COMPLETION_REASON_TERMINATED = static_cast<int>(VcrPlaybackCompletionReason::Terminated);
 
-typedef struct VcrEntry {
+enum class VcrEntryType : int {
+    None = 0,
+    InitialState = 1,
+    KeyboardEvent = 2,
+    MouseEvent = 3,
+};
+
+inline constexpr int VCR_ENTRY_TYPE_NONE = static_cast<int>(VcrEntryType::None);
+inline constexpr int VCR_ENTRY_TYPE_INITIAL_STATE = static_cast<int>(VcrEntryType::InitialState);
+inline constexpr int VCR_ENTRY_TYPE_KEYBOARD_EVENT = static_cast<int>(VcrEntryType::KeyboardEvent);
+inline constexpr int VCR_ENTRY_TYPE_MOUSE_EVENT = static_cast<int>(VcrEntryType::MouseEvent);
+
+class VcrEntry {
+public:
     unsigned int type;
     unsigned int time;
     unsigned int counter;
@@ -62,9 +81,12 @@ typedef struct VcrEntry {
             int buttons;
         } mouseEvent;
     };
-} VcrEntry;
 
-typedef void(VcrPlaybackCompletionCallback)(int reason);
+    bool save(DB_FILE* stream);
+    bool load(DB_FILE* stream);
+};
+
+using VcrPlaybackCompletionCallback = void(int reason);
 
 extern VcrEntry* vcr_buffer;
 extern int vcr_buffer_index;
@@ -80,9 +102,5 @@ void vcr_stop();
 int vcr_status();
 int vcr_update();
 bool vcr_dump_buffer();
-bool vcr_save_record(VcrEntry* ptr, DB_FILE* stream);
-bool vcr_load_record(VcrEntry* ptr, DB_FILE* stream);
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_VCR_H_ */

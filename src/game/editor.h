@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_EDITOR_H_
-#define FALLOUT_GAME_EDITOR_H_
+#pragma once
+
 
 #include "plib/db/db.h"
 
@@ -21,5 +21,3 @@ void editor_reset();
 void RedrwDMPrk();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_EDITOR_H_ */

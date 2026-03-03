@@ -1,14 +1,14 @@
-#ifndef FALLOUT_INT_MEMDBG_H_
-#define FALLOUT_INT_MEMDBG_H_
+#pragma once
 
-#include <stddef.h>
+
+#include <cstddef>
 
 namespace fallout {
 
-typedef void*(MemDbgMallocFunc)(size_t size);
-typedef void*(MemDbgReallocFunc)(void* ptr, size_t size);
-typedef void(MemDbgFreeFunc)(void* ptr);
-typedef void(MemDbgDebugFunc)(const char* string);
+using MemDbgMallocFunc = void*(size_t size);
+using MemDbgReallocFunc = void*(void* ptr, size_t size);
+using MemDbgFreeFunc = void(void* ptr);
+using MemDbgDebugFunc = void(const char* string);
 
 void memoryRegisterDebug(MemDbgDebugFunc* func);
 void memoryRegisterAlloc(MemDbgMallocFunc* mallocProc, MemDbgReallocFunc* reallocProc, MemDbgFreeFunc* freeProc);
@@ -19,5 +19,3 @@ void* mycalloc(int count, int size, const char* file, int line);
 char* mystrdup(const char* string, const char* file, int line);
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_MEMDBG_H_ */

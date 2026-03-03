@@ -1,6 +1,6 @@
 #include "game/textobj.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "game/gconfig.h"
 #include "game/object.h"
@@ -15,14 +15,14 @@
 namespace fallout {
 
 // The maximum number of text objects that can exist at the same time.
-#define TEXT_OBJECTS_MAX_COUNT 20
+static constexpr int TEXT_OBJECTS_MAX_COUNT = 20;
 
-typedef enum TextObjectFlags {
+enum TextObjectFlags {
     TEXT_OBJECT_MARKED_FOR_REMOVAL = 0x01,
     TEXT_OBJECT_UNBOUNDED = 0x02,
-} TextObjectFlags;
+};
 
-typedef struct TextObject {
+struct TextObject {
     int flags;
     Object* owner;
     unsigned int time;
@@ -35,7 +35,7 @@ typedef struct TextObject {
     int width;
     int height;
     unsigned char* data;
-} TextObject;
+};
 
 static void text_object_bk();
 static void text_object_get_offset(TextObject* textObject);
@@ -84,16 +84,16 @@ int text_object_init(unsigned char* windowBuffer, int width, int height)
 
     add_bk_process(text_object_bk);
 
-    if (!config_get_double(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_TEXT_BASE_DELAY_KEY, &textBaseDelay)) {
+    if (!game_config.getDouble(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_TEXT_BASE_DELAY_KEY, &textBaseDelay)) {
         textBaseDelay = 3.5;
     }
 
-    if (!config_get_double(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_TEXT_LINE_DELAY_KEY, &textLineDelay)) {
+    if (!game_config.getDouble(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_TEXT_LINE_DELAY_KEY, &textLineDelay)) {
         textLineDelay = 1.399993896484375;
     }
 
-    text_object_base_delay = (unsigned int)(textBaseDelay * 1000.0);
-    text_object_line_delay = (unsigned int)(textLineDelay * 1000.0);
+    text_object_base_delay = static_cast<unsigned int>(textBaseDelay * 1000.0);
+    text_object_line_delay = static_cast<unsigned int>(textLineDelay * 1000.0);
 
     text_object_enabled = true;
     text_object_initialized = true;
@@ -158,7 +158,7 @@ void text_object_set_base_delay(double value)
         value = 1.0;
     }
 
-    text_object_base_delay = (int)(value * 1000.0);
+    text_object_base_delay = static_cast<int>(value * 1000.0);
 }
 
 // 0x49CF50
@@ -174,7 +174,7 @@ void text_object_set_line_delay(double value)
         value = 0.0;
     }
 
-    text_object_line_delay = (int)(value * 1000.0);
+    text_object_line_delay = static_cast<int>(value * 1000.0);
 }
 
 // 0x49CFA0
@@ -194,7 +194,7 @@ int text_object_create(Object* object, char* string, int font, int color, int a5
         return -1;
     }
 
-    if (string == NULL) {
+    if (string == nullptr) {
         return -1;
     }
 
@@ -202,8 +202,8 @@ int text_object_create(Object* object, char* string, int font, int color, int a5
         return -1;
     }
 
-    TextObject* textObject = (TextObject*)mem_malloc(sizeof(*textObject));
-    if (textObject == NULL) {
+    TextObject* textObject = static_cast<TextObject*>(mem_malloc(sizeof(*textObject)));
+    if (textObject == nullptr) {
         return -1;
     }
 
@@ -253,8 +253,8 @@ int text_object_create(Object* object, char* string, int font, int color, int a5
     }
 
     int size = textObject->width * textObject->height;
-    textObject->data = (unsigned char*)mem_malloc(size);
-    if (textObject->data == NULL) {
+    textObject->data = static_cast<unsigned char*>(mem_malloc(size));
+    if (textObject->data == nullptr) {
         text_font(oldFont);
         return -1;
     }
@@ -290,7 +290,7 @@ int text_object_create(Object* object, char* string, int font, int color, int a5
         buf_outline(textObject->data, textObject->width, textObject->height, textObject->width, a5);
     }
 
-    if (object != NULL) {
+    if (object != nullptr) {
         textObject->tile = object->tile;
     } else {
         textObject->flags |= TEXT_OBJECT_UNBOUNDED;
@@ -299,7 +299,7 @@ int text_object_create(Object* object, char* string, int font, int color, int a5
 
     text_object_get_offset(textObject);
 
-    if (rect != NULL) {
+    if (rect != nullptr) {
         rect->ulx = textObject->x;
         rect->uly = textObject->y;
         rect->lrx = textObject->x + textObject->width - 1;
@@ -340,7 +340,7 @@ void text_object_render(Rect* rect)
         textObjectRect.uly = textObject->y;
         textObjectRect.lrx = textObject->width + textObject->x - 1;
         textObjectRect.lry = textObject->height + textObject->y - 1;
-        if (rect_inside_bound(&textObjectRect, rect, &textObjectRect) == 0) {
+        if (textObjectRect.insideBound(*rect, textObjectRect) == 0) {
             trans_buf_to_buf(textObject->data + textObject->width * (textObjectRect.uly - textObject->y) + (textObjectRect.ulx - textObject->x),
                 textObjectRect.lrx - textObjectRect.ulx + 1,
                 textObjectRect.lry - textObjectRect.uly + 1,
@@ -383,9 +383,9 @@ static void text_object_bk()
             textObjectRect.lry = textObject->height + textObject->y - 1;
 
             if (textObjectsRemoved) {
-                rect_min_bound(&dirtyRect, &textObjectRect, &dirtyRect);
+                dirtyRect.minBound(textObjectRect);
             } else {
-                rectCopy(&dirtyRect, &textObjectRect);
+                dirtyRect = textObjectRect;
                 textObjectsRemoved = true;
             }
 

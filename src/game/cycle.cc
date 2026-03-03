@@ -7,10 +7,10 @@
 
 namespace fallout {
 
-#define COLOR_CYCLE_PERIOD_SLOW 200U
-#define COLOR_CYCLE_PERIOD_MEDIUM 142U
-#define COLOR_CYCLE_PERIOD_FAST 100U
-#define COLOR_CYCLE_PERIOD_VERY_FAST 33U
+static constexpr unsigned int COLOR_CYCLE_PERIOD_SLOW = 200;
+static constexpr unsigned int COLOR_CYCLE_PERIOD_MEDIUM = 142;
+static constexpr unsigned int COLOR_CYCLE_PERIOD_FAST = 100;
+static constexpr unsigned int COLOR_CYCLE_PERIOD_VERY_FAST = 33;
 
 static void cycle_colors();
 
@@ -101,7 +101,7 @@ void cycle_init()
         return;
     }
 
-    if (!configGetBool(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_COLOR_CYCLING_KEY, &colorCycling)) {
+    if (!game_config.getBool(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_COLOR_CYCLING_KEY, &colorCycling)) {
         colorCycling = true;
     }
 
@@ -134,7 +134,7 @@ void cycle_init()
     cycle_initialized = true;
     cycle_enabled = true;
 
-    if (!config_get_value(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_CYCLE_SPEED_FACTOR_KEY, &cycleSpeedFactor)) {
+    if (!game_config.getValue(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_CYCLE_SPEED_FACTOR_KEY, &cycleSpeedFactor)) {
         cycleSpeedFactor = 1;
     }
 
@@ -331,7 +331,7 @@ static void cycle_colors()
 void change_cycle_speed(int value)
 {
     cycle_speed_factor = value;
-    config_set_value(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_CYCLE_SPEED_FACTOR_KEY, value);
+    game_config.setValue(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_CYCLE_SPEED_FACTOR_KEY, value);
 }
 
 // 0x428F54

@@ -1,15 +1,15 @@
-#ifndef FALLOUT_AUDIO_ENGINE_H_
-#define FALLOUT_AUDIO_ENGINE_H_
+#pragma once
+
 
 namespace fallout {
 
-#define AUDIO_ENGINE_SOUND_BUFFER_LOCK_FROM_WRITE_POS 0x00000001
-#define AUDIO_ENGINE_SOUND_BUFFER_LOCK_ENTIRE_BUFFER 0x00000002
+inline constexpr int AUDIO_ENGINE_SOUND_BUFFER_LOCK_FROM_WRITE_POS = 0x00000001;
+inline constexpr int AUDIO_ENGINE_SOUND_BUFFER_LOCK_ENTIRE_BUFFER = 0x00000002;
 
-#define AUDIO_ENGINE_SOUND_BUFFER_PLAY_LOOPING 0x00000001
+inline constexpr int AUDIO_ENGINE_SOUND_BUFFER_PLAY_LOOPING = 0x00000001;
 
-#define AUDIO_ENGINE_SOUND_BUFFER_STATUS_PLAYING 0x00000001
-#define AUDIO_ENGINE_SOUND_BUFFER_STATUS_LOOPING 0x00000004
+inline constexpr int AUDIO_ENGINE_SOUND_BUFFER_STATUS_PLAYING = 0x00000001;
+inline constexpr int AUDIO_ENGINE_SOUND_BUFFER_STATUS_LOOPING = 0x00000004;
 
 bool audioEngineInit();
 void audioEngineExit();
@@ -29,5 +29,3 @@ bool audioEngineSoundBufferUnlock(int soundBufferIndex, void* audioPtr1, unsigne
 bool audioEngineSoundBufferGetStatus(int soundBufferIndex, unsigned int* status);
 
 } // namespace fallout
-
-#endif /* FALLOUT_AUDIO_ENGINE_H_ */

@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_PERK_H_
-#define FALLOUT_GAME_PERK_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "game/perk_defs.h"
@@ -23,5 +23,3 @@ void perk_remove_effect(Object* critter, int perk);
 int perk_adjust_skill(int skill);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_PERK_H_ */

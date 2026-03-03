@@ -1,7 +1,7 @@
 #include "game/party.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "game/anim.h"
 #include "game/combatai.h"
@@ -33,12 +33,12 @@ namespace fallout {
 
 // TODO: Not sure if the same struct is used in `itemSaveListHead` and
 // `partyMemberList`.
-typedef struct PartyMember {
+struct PartyMember {
     Object* object;
     Script* script;
     int* vars;
     struct PartyMember* next;
-} PartyMember;
+};
 
 static Object* partyMemberFindID(int id);
 static int partyMemberNewObjID();
@@ -52,7 +52,7 @@ static int partyMemberClearItemList();
 static int partyFixMultipleMembers();
 
 // 0x50630C
-PartyMember* itemSaveListHead = NULL;
+PartyMember* itemSaveListHead = nullptr;
 
 // 0x662824
 static PartyMember partyMemberList[20];
@@ -93,8 +93,8 @@ int partyMemberAdd(Object* object)
 
     partyMember = &(partyMemberList[partyMemberCount]);
     partyMember->object = object;
-    partyMember->script = NULL;
-    partyMember->vars = NULL;
+    partyMember->script = nullptr;
+    partyMember->vars = nullptr;
 
     object->id = (object->pid & 0xFFFFFF) + 18000;
     object->flags |= (OBJECT_NO_REMOVE | OBJECT_NO_SAVE);
@@ -124,7 +124,7 @@ int partyMemberRemove(Object* object)
         return -1;
     }
 
-    if (object == NULL) {
+    if (object == nullptr) {
         return -1;
     }
 
@@ -213,12 +213,12 @@ int partyMemberSave(DB_FILE* stream)
     int index;
     PartyMember* partyMember;
 
-    if (db_fwriteInt(stream, partyMemberCount) == -1) return -1;
-    if (db_fwriteInt(stream, partyMemberItemCount) == -1) return -1;
+    if (stream->fwriteInt(partyMemberCount) == -1) return -1;
+    if (stream->fwriteInt(partyMemberItemCount) == -1) return -1;
 
     for (index = 1; index < partyMemberCount; index++) {
         partyMember = &(partyMemberList[index]);
-        if (db_fwriteInt(stream, partyMember->object->id) == -1) return -1;
+        if (stream->fwriteInt(partyMember->object->id) == -1) return -1;
     }
 
     return 0;
@@ -230,7 +230,7 @@ static Object* partyMemberFindID(int id)
     Object* object;
 
     object = obj_find_first();
-    while (object != NULL) {
+    while (object != nullptr) {
         if (object->id == id) {
             break;
         }
@@ -257,8 +257,8 @@ int partyMemberPrepLoad()
         partyMember = &(partyMemberList[index]);
 
         if (scr_ptr(partyMember->object->sid, &script) != -1) {
-            partyMember->script = (Script*)mem_malloc(sizeof(*script));
-            if (partyMember->script == NULL) {
+            partyMember->script = static_cast<Script*>(mem_malloc(sizeof(*script)));
+            if (partyMember->script == nullptr) {
                 GNWSystemError("\n  Error!: partyMemberPrepLoad: Out of memory!");
                 exit(1);
             }
@@ -266,8 +266,8 @@ int partyMemberPrepLoad()
             memcpy(partyMember->script, script, sizeof(*script));
 
             if (script->scr_num_local_vars != 0 && script->scr_local_var_offset != -1) {
-                partyMember->vars = (int*)mem_malloc(sizeof(*partyMember->vars) * script->scr_num_local_vars);
-                if (partyMember->vars == NULL) {
+                partyMember->vars = static_cast<int*>(mem_malloc(sizeof(*partyMember->vars) * script->scr_num_local_vars));
+                if (partyMember->vars == nullptr) {
                     GNWSystemError("\n  Error!: partyMemberPrepLoad: Out of memory!");
                     exit(1);
                 }
@@ -309,7 +309,7 @@ int partyMemberRecoverLoad()
 
     for (index = 0; index < partyMemberCount; index++) {
         partyMember = &(partyMemberList[index]);
-        if (partyMember->script != NULL) {
+        if (partyMember->script != nullptr) {
             if (scr_new(&sid, SCRIPT_TYPE_CRITTER) == -1) {
                 GNWSystemError("\n  Error!: partyMemberRecoverLoad: Can't create script!");
                 exit(1);
@@ -325,15 +325,15 @@ int partyMemberRecoverLoad()
             partyMember->object->sid = ((partyMember->object->pid & 0xFFFFFF) + 18000) | (SCRIPT_TYPE_CRITTER << 24);
             script->scr_id = partyMember->object->sid;
 
-            script->program = NULL;
+            script->program = nullptr;
             script->scr_flags &= ~(SCRIPT_FLAG_0x01 | SCRIPT_FLAG_0x04);
 
             mem_free(partyMember->script);
-            partyMember->script = NULL;
+            partyMember->script = nullptr;
 
             script->scr_flags |= (SCRIPT_FLAG_0x08 | SCRIPT_FLAG_0x10);
 
-            if (partyMember->vars != NULL) {
+            if (partyMember->vars != nullptr) {
                 script->scr_local_var_offset = map_malloc_local_var(script->scr_num_local_vars);
                 memcpy(map_local_vars + script->scr_local_var_offset, partyMember->vars, sizeof(int) * script->scr_num_local_vars);
             }
@@ -364,20 +364,20 @@ int partyMemberLoad(DB_FILE* stream)
     int index;
     Object* object;
 
-    if (db_freadInt(stream, &partyMemberCount) == -1) return -1;
-    if (db_freadInt(stream, &partyMemberItemCount) == -1) return -1;
+    if (stream->freadInt(&partyMemberCount) == -1) return -1;
+    if (stream->freadInt(&partyMemberItemCount) == -1) return -1;
 
     partyMemberList[0].object = obj_dude;
 
     if (partyMemberCount != 0) {
         for (index = 1; index < partyMemberCount; index++) {
-            if (db_freadInt(stream, &(objectIds[index])) == -1) return -1;
+            if (stream->freadInt(&(objectIds[index])) == -1) return -1;
         }
 
         for (index = 1; index < partyMemberCount; index++) {
             object = partyMemberFindID(objectIds[index]);
 
-            if (object == NULL) {
+            if (object == nullptr) {
                 debug_printf("\n  Error: partyMemberLoad: Can't match ID!");
                 return -1;
             }
@@ -471,7 +471,7 @@ Object* partyMemberFindObjFromPid(int pid)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // Returns `true` if specified object is a party member.
@@ -525,7 +525,7 @@ static int partyMemberNewObjID()
         curID++;
 
         object = obj_find_first();
-        while (object != NULL) {
+        while (object != nullptr) {
             if (object->id == curID) {
                 break;
             }
@@ -551,7 +551,7 @@ static int partyMemberNewObjID()
 
             object = obj_find_next();
         }
-    } while (object != NULL);
+    } while (object != nullptr);
 
     curID++;
 
@@ -654,16 +654,16 @@ static int partyMemberItemSave(Object* object)
             object->id = script->scr_oid;
         }
 
-        node = (PartyMember*)mem_malloc(sizeof(*node));
-        if (node == NULL) {
+        node = static_cast<PartyMember*>(mem_malloc(sizeof(*node)));
+        if (node == nullptr) {
             GNWSystemError("\n  Error!: partyMemberItemSave: Out of memory!");
             exit(1);
         }
 
         node->object = object;
 
-        node->script = (Script*)mem_malloc(sizeof(*script));
-        if (node->script == NULL) {
+        node->script = static_cast<Script*>(mem_malloc(sizeof(*script)));
+        if (node->script == nullptr) {
             GNWSystemError("\n  Error!: partyMemberItemSave: Out of memory!");
             exit(1);
         }
@@ -671,15 +671,15 @@ static int partyMemberItemSave(Object* object)
         memcpy(node->script, script, sizeof(*script));
 
         if (script->scr_num_local_vars != 0 && script->scr_local_var_offset != -1) {
-            node->vars = (int*)mem_malloc(sizeof(*node->vars) * script->scr_num_local_vars);
-            if (node->vars == NULL) {
+            node->vars = static_cast<int*>(mem_malloc(sizeof(*node->vars) * script->scr_num_local_vars));
+            if (node->vars == nullptr) {
                 GNWSystemError("\n  Error!: partyMemberItemSave: Out of memory!");
                 exit(1);
             }
 
             memcpy(node->vars, map_local_vars + script->scr_local_var_offset, sizeof(int) * script->scr_num_local_vars);
         } else {
-            node->vars = NULL;
+            node->vars = nullptr;
         }
 
         temp = itemSaveListHead;
@@ -716,15 +716,15 @@ static int partyMemberItemRecover(PartyMember* partyMember)
     partyMember->object->sid = partyMemberItemCount | (SCRIPT_TYPE_ITEM << 24);
     script->scr_id = partyMemberItemCount | (SCRIPT_TYPE_ITEM << 24);
 
-    script->program = NULL;
+    script->program = nullptr;
     script->scr_flags &= ~(SCRIPT_FLAG_0x01 | SCRIPT_FLAG_0x04 | SCRIPT_FLAG_0x08 | SCRIPT_FLAG_0x10);
 
     partyMemberItemCount++;
 
     mem_free(partyMember->script);
-    partyMember->script = NULL;
+    partyMember->script = nullptr;
 
-    if (partyMember->vars != NULL) {
+    if (partyMember->vars != nullptr) {
         script->scr_local_var_offset = map_malloc_local_var(script->scr_num_local_vars);
         memcpy(map_local_vars + script->scr_local_var_offset, partyMember->vars, sizeof(int) * script->scr_num_local_vars);
     }
@@ -737,7 +737,7 @@ static int partyMemberItemRecoverAll()
 {
     PartyMember* partyMember;
 
-    while (itemSaveListHead != NULL) {
+    while (itemSaveListHead != nullptr) {
         partyMember = itemSaveListHead;
         itemSaveListHead = itemSaveListHead->next;
         partyMemberItemRecover(partyMember);
@@ -752,15 +752,15 @@ static int partyMemberClearItemList()
 {
     PartyMember* node;
 
-    while (itemSaveListHead != NULL) {
+    while (itemSaveListHead != nullptr) {
         node = itemSaveListHead;
         itemSaveListHead = itemSaveListHead->next;
 
-        if (node->script != NULL) {
+        if (node->script != nullptr) {
             mem_free(node->script);
         }
 
-        if (node->vars != NULL) {
+        if (node->vars != nullptr) {
             mem_free(node->vars);
         }
 
@@ -790,7 +790,7 @@ static int partyFixMultipleMembers()
     // TODO: This loop is wrong. Looks like it can restart itself from the
     // beginning. Probably was implemented with two nested loops.
     object = obj_find_first();
-    while (object != NULL) {
+    while (object != nullptr) {
         v1 = false;
 
         if (PID_TYPE(object->pid) == OBJ_TYPE_CRITTER) {
@@ -813,7 +813,7 @@ static int partyFixMultipleMembers()
             v2 = false;
             if (object->sid != -1) {
                 candidate = partyMemberFindObjFromPid(object->pid);
-                if (candidate != NULL && candidate != object) {
+                if (candidate != nullptr && candidate != object) {
                     if (candidate->sid != object->sid) {
                         object->sid = -1;
                     }
@@ -837,7 +837,7 @@ static int partyFixMultipleMembers()
                         }
                     }
 
-                    obj_erase_object(object, NULL);
+                    obj_erase_object(object, nullptr);
                 } else {
                     debug_printf("\nError: Attempting to destroy evil critter doppleganger FAILED!");
                 }

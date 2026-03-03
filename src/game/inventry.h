@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_INVENTRY_H_
-#define FALLOUT_GAME_INVENTRY_H_
+#pragma once
+
 
 #include "game/art.h"
 #include "game/object_types.h"
@@ -7,42 +7,57 @@
 namespace fallout {
 
 // TODO: Convert to enum.
-#define OFF_59E7BC_COUNT 12
+inline constexpr int OFF_59E7BC_COUNT = 12;
 
-typedef enum InventoryWindowCursor {
-    INVENTORY_WINDOW_CURSOR_HAND,
-    INVENTORY_WINDOW_CURSOR_ARROW,
-    INVENTORY_WINDOW_CURSOR_PICK,
-    INVENTORY_WINDOW_CURSOR_MENU,
-    INVENTORY_WINDOW_CURSOR_BLANK,
-    INVENTORY_WINDOW_CURSOR_COUNT,
-} InventoryWindowCursor;
+enum class InventoryWindowCursor : int {
+    Hand = 0,
+    Arrow = 1,
+    Pick = 2,
+    Menu = 3,
+    Blank = 4,
+    Count = 5,
+};
 
-typedef enum InventoryWindowType {
+inline constexpr int INVENTORY_WINDOW_CURSOR_HAND = static_cast<int>(InventoryWindowCursor::Hand);
+inline constexpr int INVENTORY_WINDOW_CURSOR_ARROW = static_cast<int>(InventoryWindowCursor::Arrow);
+inline constexpr int INVENTORY_WINDOW_CURSOR_PICK = static_cast<int>(InventoryWindowCursor::Pick);
+inline constexpr int INVENTORY_WINDOW_CURSOR_MENU = static_cast<int>(InventoryWindowCursor::Menu);
+inline constexpr int INVENTORY_WINDOW_CURSOR_BLANK = static_cast<int>(InventoryWindowCursor::Blank);
+inline constexpr int INVENTORY_WINDOW_CURSOR_COUNT = static_cast<int>(InventoryWindowCursor::Count);
+
+enum class InventoryWindowType : int {
     // Normal inventory window with quick character sheet.
-    INVENTORY_WINDOW_TYPE_NORMAL,
+    Normal = 0,
 
     // Narrow inventory window with just an item scroller that's shown when
     // a "Use item on" is selected from context menu.
-    INVENTORY_WINDOW_TYPE_USE_ITEM_ON,
+    UseItemOn = 1,
 
-    // Looting/strealing interface.
-    INVENTORY_WINDOW_TYPE_LOOT,
+    // Looting/stealing interface.
+    Loot = 2,
 
     // Barter interface.
-    INVENTORY_WINDOW_TYPE_TRADE,
+    Trade = 3,
 
     // Supplementary "Move items" window. Used to set quantity of items when
     // moving items between inventories.
-    INVENTORY_WINDOW_TYPE_MOVE_ITEMS,
+    MoveItems = 4,
 
     // Supplementary "Set timer" window. Internally it's implemented as "Move
     // items" window but with timer overlay and slightly different adjustment
     // mechanics.
-    INVENTORY_WINDOW_TYPE_SET_TIMER,
+    SetTimer = 5,
 
-    INVENTORY_WINDOW_TYPE_COUNT,
-} InventoryWindowType;
+    Count = 6,
+};
+
+inline constexpr int INVENTORY_WINDOW_TYPE_NORMAL = static_cast<int>(InventoryWindowType::Normal);
+inline constexpr int INVENTORY_WINDOW_TYPE_USE_ITEM_ON = static_cast<int>(InventoryWindowType::UseItemOn);
+inline constexpr int INVENTORY_WINDOW_TYPE_LOOT = static_cast<int>(InventoryWindowType::Loot);
+inline constexpr int INVENTORY_WINDOW_TYPE_TRADE = static_cast<int>(InventoryWindowType::Trade);
+inline constexpr int INVENTORY_WINDOW_TYPE_MOVE_ITEMS = static_cast<int>(InventoryWindowType::MoveItems);
+inline constexpr int INVENTORY_WINDOW_TYPE_SET_TIMER = static_cast<int>(InventoryWindowType::SetTimer);
+inline constexpr int INVENTORY_WINDOW_TYPE_COUNT = static_cast<int>(InventoryWindowType::Count);
 
 extern CacheEntry* ikey[OFF_59E7BC_COUNT];
 
@@ -52,7 +67,6 @@ void handle_inventory();
 bool setup_inventory(int inventoryWindowType);
 void exit_inventory(bool a1);
 void display_inventory(int a1, int a2, int inventoryWindowType);
-void display_target_inventory(int a1, int a2, Inventory* a3, int a4);
 void display_body(int fid, int inventoryWindowType);
 int inven_init();
 void inven_exit();
@@ -92,5 +106,3 @@ void draw_amount(int value, int inventoryWindowType);
 int inven_set_timer(Object* a1);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_INVENTRY_H_ */

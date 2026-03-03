@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_CRITTER_H_
-#define FALLOUT_GAME_CRITTER_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "game/proto_types.h"
@@ -8,46 +8,59 @@
 namespace fallout {
 
 // Maximum length of dude's name length.
-#define DUDE_NAME_MAX_LENGTH 32
+inline constexpr int DUDE_NAME_MAX_LENGTH = 32;
 
 // The number of effects caused by radiation.
 //
 // A radiation effect is an identifier and does not have it's own name. It's
 // stat is specified in `rad_stat`, and it's amount is specified
 // in `rad_bonus` for every `RadiationLevel`.
-#define RADIATION_EFFECT_COUNT 8
+inline constexpr int RADIATION_EFFECT_COUNT = 8;
 
 // Radiation levels.
 //
 // The names of levels are taken from Fallout 3, comments from Fallout 2.
-typedef enum RadiationLevel {
+enum class RadiationLevel : int {
     // Very nauseous.
-    RADIATION_LEVEL_NONE,
+    None = 0,
 
     // Slightly fatigued.
-    RADIATION_LEVEL_MINOR,
+    Minor = 1,
 
     // Vomiting does not stop.
-    RADIATION_LEVEL_ADVANCED,
+    Advanced = 2,
 
     // Hair is falling out.
-    RADIATION_LEVEL_CRITICAL,
+    Critical = 3,
 
     // Skin is falling off.
-    RADIATION_LEVEL_DEADLY,
+    Deadly = 4,
 
     // Intense agony.
-    RADIATION_LEVEL_FATAL,
+    Fatal = 5,
 
     // The number of radiation levels.
-    RADIATION_LEVEL_COUNT,
-} RadiationLevel;
+    Count = 6,
+};
 
-typedef enum PcFlags {
-    PC_FLAG_SNEAKING = 0,
-    PC_FLAG_LEVEL_UP_AVAILABLE = 3,
-    PC_FLAG_ADDICTED = 4,
-} PcFlags;
+inline constexpr int RADIATION_LEVEL_NONE = static_cast<int>(RadiationLevel::None);
+inline constexpr int RADIATION_LEVEL_MINOR = static_cast<int>(RadiationLevel::Minor);
+inline constexpr int RADIATION_LEVEL_ADVANCED = static_cast<int>(RadiationLevel::Advanced);
+inline constexpr int RADIATION_LEVEL_CRITICAL = static_cast<int>(RadiationLevel::Critical);
+inline constexpr int RADIATION_LEVEL_DEADLY = static_cast<int>(RadiationLevel::Deadly);
+inline constexpr int RADIATION_LEVEL_FATAL = static_cast<int>(RadiationLevel::Fatal);
+inline constexpr int RADIATION_LEVEL_COUNT = static_cast<int>(RadiationLevel::Count);
+
+enum class PcFlags : int {
+    Sneaking = 0,
+    LevelUpAvailable = 3,
+    Addicted = 4,
+};
+
+inline constexpr int PC_FLAG_SNEAKING = static_cast<int>(PcFlags::Sneaking);
+inline constexpr int PC_FLAG_LEVEL_UP_AVAILABLE = static_cast<int>(PcFlags::LevelUpAvailable);
+inline constexpr int PC_FLAG_ADDICTED = static_cast<int>(PcFlags::Addicted);
+
 
 extern int rad_stat[RADIATION_EFFECT_COUNT];
 extern int rad_bonus[RADIATION_LEVEL_COUNT][RADIATION_EFFECT_COUNT];
@@ -58,7 +71,7 @@ void critter_exit();
 int critter_load(DB_FILE* stream);
 int critter_save(DB_FILE* stream);
 char* critter_name(Object* critter);
-void critter_copy(CritterProtoData* dest, CritterProtoData* src);
+
 int critter_pc_set_name(const char* name);
 void critter_pc_reset_name();
 int critter_get_hits(Object* critter);
@@ -87,12 +100,8 @@ bool critter_is_dead(Object* critter);
 bool critter_is_crippled(Object* critter);
 bool critter_is_prone(Object* critter);
 int critter_body_type(Object* critter);
-int critter_load_data(CritterProtoData* critter_data, const char* path);
 int pc_load_data(const char* path);
-int critter_read_data(DB_FILE* stream, CritterProtoData* critter_data);
-int critter_save_data(CritterProtoData* critter_data, const char* path);
 int pc_save_data(const char* path);
-int critter_write_data(DB_FILE* stream, CritterProtoData* critter_data);
 void pc_flag_off(int pc_flag);
 void pc_flag_on(int pc_flag);
 void pc_flag_toggle(int pc_flag);
@@ -107,5 +116,3 @@ bool critter_can_obj_dude_rest();
 int critter_compute_ap_from_distance(Object* critter, int distance);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_CRITTER_H_ */

@@ -1,11 +1,11 @@
-#ifndef FALLOUT_INT_WIDGET_H_
-#define FALLOUT_INT_WIDGET_H_
+#pragma once
+
 
 namespace fallout {
 
-typedef void(UpdateRegionShowFunc)(void* value);
-typedef void(UpdateRegionDrawFunc)(void* value);
-typedef void(TextInputRegionDeleteFunc)(char* text, void* userData);
+using UpdateRegionShowFunc = void(void* value);
+using UpdateRegionDrawFunc = void(void* value);
+using TextInputRegionDeleteFunc = void(char* text, void* userData);
 
 int win_add_text_input_region(int textRegionId, char* text, int a3, int a4);
 void windowSelectTextInputRegion(int textInputRegionId);
@@ -37,5 +37,3 @@ void real_win_get_status_info(int a1, int* a2, int* a3, int* a4);
 void real_win_modify_status_info(int a1, int a2, int a3, int a4);
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_WIDGET_H_ */

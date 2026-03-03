@@ -1,6 +1,6 @@
 #include "game/version.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace fallout {
 

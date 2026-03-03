@@ -6,24 +6,24 @@
 
 namespace fallout {
 
-typedef struct key_ansi_t {
+struct key_ansi_t {
     short keys;
     short normal;
     short shift;
     short left_alt;
     short right_alt;
     short ctrl;
-} key_ansi_t;
+};
 
-typedef struct key_data_t {
+struct key_data_t {
     // NOTE: `mapper2.exe` says it's type is `char`. However when it is too
     // many casts to `unsigned char` is needed to make sure it can be used as
     // offset (otherwise chars above 0x7F will be treated as negative values).
     unsigned char scan_code;
     unsigned short modifiers;
-} key_data_t;
+};
 
-typedef int(AsciiConvert)();
+using AsciiConvert = int();
 
 static int kb_next_ascii_English_US();
 static int kb_next_ascii_French();
@@ -536,7 +536,7 @@ static int kb_next_ascii()
     case SDL_SCANCODE_KP_ENTER:
         if (kb_numpad_disabled) {
             // NOTE: Uninline.
-            kb_buffer_get(NULL);
+            kb_buffer_get(nullptr);
             return -1;
         }
         break;
@@ -552,7 +552,7 @@ static int kb_next_ascii()
     case SDL_SCANCODE_KP_9:
         if (kb_numpad_disabled) {
             // NOTE: Uninline.
-            kb_buffer_get(NULL);
+            kb_buffer_get(nullptr);
             return -1;
         }
 
@@ -583,7 +583,7 @@ static int kb_next_ascii()
     }
 
     // NOTE: Uninline.
-    kb_buffer_get(NULL);
+    kb_buffer_get(nullptr);
 
     return logicalKey;
 }
@@ -2145,7 +2145,7 @@ static int kb_buffer_get(key_data_t* key_data)
     int rc = -1;
 
     if (kb_get != kb_put) {
-        if (key_data != NULL) {
+        if (key_data != nullptr) {
             *key_data = kb_buffer[kb_get];
         }
 

@@ -1,11 +1,12 @@
 #include "game/message.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "game/gconfig.h"
+#include "game/raii.h"
 #include "game/roll.h"
 #include "platform_compat.h"
 #include "plib/db/db.h"
@@ -14,21 +15,19 @@
 
 namespace fallout {
 
-#define BADWORD_LENGTH_MAX 80
+static constexpr int BADWORD_LENGTH_MAX = 80;
 
-static bool message_find(MessageList* msg, int num, int* out_index);
-static bool message_add(MessageList* msg, MessageListItem* new_entry);
 static bool message_parse_number(int* out_num, const char* str);
 static int message_load_field(DB_FILE* file, char* str);
 
 // 0x505B10
-static char** bad_word = NULL;
+static char** bad_word = nullptr;
 
 // 0x505B14
 static int bad_total = 0;
 
 // 0x505B18
-static int* bad_len = NULL;
+static int* bad_len = nullptr;
 
 // Temporary message list item text used during filtering badwords.
 //
@@ -38,36 +37,34 @@ static char bad_copy[MESSAGE_LIST_ITEM_FIELD_MAX_SIZE];
 // 0x4764E0
 int init_message()
 {
-    DB_FILE* stream = db_fopen("data\\badwords.txt", "rt");
-    if (stream == NULL) {
+    DbFileGuard stream(db_fopen("data\\badwords.txt", "rt"));
+    if (!stream) {
         return -1;
     }
 
     char word[BADWORD_LENGTH_MAX];
 
     bad_total = 0;
-    while (db_fgets(word, BADWORD_LENGTH_MAX - 1, stream)) {
+    while (stream.get()->fgets(word, BADWORD_LENGTH_MAX - 1)) {
         bad_total++;
     }
 
-    bad_word = (char**)mem_malloc(sizeof(*bad_word) * bad_total);
-    if (bad_word == NULL) {
-        db_fclose(stream);
+    // Use local RAII guards; release to globals on success.
+    MemBuffer<char*> wordGuard(static_cast<char**>(mem_malloc(sizeof(char*) * bad_total)));
+    if (!wordGuard) {
         return -1;
     }
 
-    bad_len = (int*)mem_malloc(sizeof(*bad_len) * bad_total);
-    if (bad_len == NULL) {
-        mem_free(bad_word);
-        db_fclose(stream);
+    MemBuffer<int> lenGuard(static_cast<int*>(mem_malloc(sizeof(int) * bad_total)));
+    if (!lenGuard) {
         return -1;
     }
 
-    db_fseek(stream, 0, SEEK_SET);
+    stream.get()->fseek(0, SEEK_SET);
 
     int index = 0;
     for (; index < bad_total; index++) {
-        if (!db_fgets(word, BADWORD_LENGTH_MAX - 1, stream)) {
+        if (!stream.get()->fgets(word, BADWORD_LENGTH_MAX - 1)) {
             break;
         }
 
@@ -77,28 +74,26 @@ int init_message()
             word[len] = '\0';
         }
 
-        bad_word[index] = mem_strdup(word);
-        if (bad_word[index] == NULL) {
+        wordGuard[index] = mem_strdup(word);
+        if (wordGuard[index] == nullptr) {
             break;
         }
 
-        compat_strupr(bad_word[index]);
+        compat_strupr(wordGuard[index]);
 
-        bad_len[index] = len;
+        lenGuard[index] = len;
     }
-
-    db_fclose(stream);
 
     if (index != bad_total) {
         for (; index > 0; index--) {
-            mem_free(bad_word[index - 1]);
+            mem_free(wordGuard[index - 1]);
         }
-
-        mem_free(bad_word);
-        mem_free(bad_len);
-
         return -1;
     }
+
+    // Success — transfer ownership to module globals.
+    bad_word = wordGuard.release();
+    bad_len = lenGuard.release();
 
     return 0;
 }
@@ -119,78 +114,62 @@ void exit_message()
 }
 
 // 0x4766BC
-bool message_init(MessageList* messageList)
+bool MessageList::init()
 {
-    if (messageList != NULL) {
-        messageList->entries_num = 0;
-        messageList->entries = NULL;
-    }
+    entries_num_ = 0;
+    entries_ = nullptr;
     return true;
 }
 
 // 0x4766D4
-bool message_exit(MessageList* messageList)
+bool MessageList::exit()
 {
-    int i;
-    MessageListItem* entry;
+    for (int i = 0; i < entries_num_; i++) {
+        MessageListItem* entry = &(entries_[i]);
 
-    if (messageList == NULL) {
-        return false;
-    }
-
-    for (i = 0; i < messageList->entries_num; i++) {
-        entry = &(messageList->entries[i]);
-
-        if (entry->audio != NULL) {
+        if (entry->audio != nullptr) {
             mem_free(entry->audio);
         }
 
-        if (entry->text != NULL) {
+        if (entry->text != nullptr) {
             mem_free(entry->text);
         }
     }
 
-    messageList->entries_num = 0;
+    entries_num_ = 0;
 
-    if (messageList->entries != NULL) {
-        mem_free(messageList->entries);
-        messageList->entries = NULL;
+    if (entries_ != nullptr) {
+        mem_free(entries_);
+        entries_ = nullptr;
     }
 
     return true;
 }
 
 // 0x476814
-bool message_load(MessageList* messageList, const char* path)
+bool MessageList::load(const char* path)
 {
     char* language;
     char localized_path[COMPAT_MAX_PATH];
-    DB_FILE* file_ptr;
     char num[MESSAGE_LIST_ITEM_FIELD_MAX_SIZE];
     char audio[MESSAGE_LIST_ITEM_FIELD_MAX_SIZE];
     char text[MESSAGE_LIST_ITEM_FIELD_MAX_SIZE];
     int rc;
-    bool success;
+    bool success = false;
     MessageListItem entry;
 
-    success = false;
-
-    if (messageList == NULL) {
+    if (path == nullptr) {
         return false;
     }
 
-    if (path == NULL) {
-        return false;
-    }
-
-    if (!config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_LANGUAGE_KEY, &language)) {
+    if (!game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_LANGUAGE_KEY, &language)) {
         return false;
     }
 
     snprintf(localized_path, sizeof(localized_path), "%s\\%s\\%s", "text", language, path);
 
-    file_ptr = db_fopen(localized_path, "rt");
-    if (file_ptr == NULL) {
+    DbFileGuard file_ptr(db_fopen(localized_path, "rt"));
+    if (!file_ptr) {
         return false;
     }
 
@@ -199,29 +178,33 @@ bool message_load(MessageList* messageList, const char* path)
     entry.text = text;
 
     while (1) {
-        rc = message_load_field(file_ptr, num);
+        rc = message_load_field(file_ptr.get(), num);
         if (rc != 0) {
             break;
         }
 
-        if (message_load_field(file_ptr, audio) != 0) {
+        if (message_load_field(file_ptr.get(), audio) != 0) {
             debug_printf("\nError loading audio field.\n", localized_path);
-            goto err;
+            rc = -1;
+            break;
         }
 
-        if (message_load_field(file_ptr, text) != 0) {
+        if (message_load_field(file_ptr.get(), text) != 0) {
             debug_printf("\nError loading text field.\n", localized_path);
-            goto err;
+            rc = -1;
+            break;
         }
 
         if (!message_parse_number(&(entry.num), num)) {
             debug_printf("\nError parsing number.\n", localized_path);
-            goto err;
+            rc = -1;
+            break;
         }
 
-        if (!message_add(messageList, &entry)) {
+        if (!add(&entry)) {
             debug_printf("\nError adding message.\n", localized_path);
-            goto err;
+            rc = -1;
+            break;
         }
     }
 
@@ -229,40 +212,30 @@ bool message_load(MessageList* messageList, const char* path)
         success = true;
     }
 
-err:
-
     if (!success) {
-        debug_printf("Error loading message file %s at offset %x.", localized_path, db_ftell(file_ptr));
+        debug_printf("Error loading message file %s at offset %x.", localized_path, file_ptr.get()->ftell());
     }
-
-    db_fclose(file_ptr);
 
     return success;
 }
 
 // 0x476998
-bool message_search(MessageList* msg, MessageListItem* entry)
+bool MessageList::search(MessageListItem* entry)
 {
+    if (entry == nullptr) {
+        return false;
+    }
+
+    if (entries_num_ == 0) {
+        return false;
+    }
+
     int index;
-    MessageListItem* ptr;
-
-    if (msg == NULL) {
+    if (!find(entry->num, &index)) {
         return false;
     }
 
-    if (entry == NULL) {
-        return false;
-    }
-
-    if (msg->entries_num == 0) {
-        return false;
-    }
-
-    if (!message_find(msg, entry->num, &index)) {
-        return false;
-    }
-
-    ptr = &(msg->entries[index]);
+    MessageListItem* ptr = &(entries_[index]);
     entry->audio = ptr->audio;
     entry->text = ptr->text;
 
@@ -276,15 +249,15 @@ bool message_make_path(char* dest, size_t size, const char* path)
 {
     char* language;
 
-    if (dest == NULL) {
+    if (dest == nullptr) {
         return false;
     }
 
-    if (path == NULL) {
+    if (path == nullptr) {
         return false;
     }
 
-    if (!config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_LANGUAGE_KEY, &language)) {
+    if (!game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_LANGUAGE_KEY, &language)) {
         return false;
     }
 
@@ -294,22 +267,20 @@ bool message_make_path(char* dest, size_t size, const char* path)
 }
 
 // 0x476A78
-bool message_find(MessageList* msg, int num, int* out_index)
+bool MessageList::find(int num, int* out_index)
 {
-    int r, l, mid;
-    int cmp;
-
-    if (msg->entries_num == 0) {
+    if (entries_num_ == 0) {
         *out_index = 0;
         return false;
     }
 
-    r = msg->entries_num - 1;
-    l = 0;
+    int r = entries_num_ - 1;
+    int l = 0;
+    int cmp;
 
     do {
-        mid = (l + r) / 2;
-        cmp = num - msg->entries[mid].num;
+        int mid = (l + r) / 2;
+        cmp = num - entries_[mid].num;
         if (cmp == 0) {
             *out_index = mid;
             return true;
@@ -322,6 +293,7 @@ bool message_find(MessageList* msg, int num, int* out_index)
         }
     } while (r >= l);
 
+    int mid = (l + r) / 2;
     if (cmp < 0) {
         *out_index = mid;
     } else {
@@ -332,57 +304,56 @@ bool message_find(MessageList* msg, int num, int* out_index)
 }
 
 // 0x476AD0
-bool message_add(MessageList* msg, MessageListItem* new_entry)
+bool MessageList::add(MessageListItem* new_entry)
 {
     int index;
-    MessageListItem* entries;
     MessageListItem* existing_entry;
 
-    if (message_find(msg, new_entry->num, &index)) {
-        existing_entry = &(msg->entries[index]);
+    if (find(new_entry->num, &index)) {
+        existing_entry = &(entries_[index]);
 
-        if (existing_entry->audio != NULL) {
+        if (existing_entry->audio != nullptr) {
             mem_free(existing_entry->audio);
         }
 
-        if (existing_entry->text != NULL) {
+        if (existing_entry->text != nullptr) {
             mem_free(existing_entry->text);
         }
     } else {
-        if (msg->entries != NULL) {
-            entries = (MessageListItem*)mem_realloc(msg->entries, sizeof(MessageListItem) * (msg->entries_num + 1));
-            if (entries == NULL) {
+        if (entries_ != nullptr) {
+            MessageListItem* entries = static_cast<MessageListItem*>(mem_realloc(entries_, sizeof(MessageListItem) * (entries_num_ + 1)));
+            if (entries == nullptr) {
                 return false;
             }
 
-            msg->entries = entries;
+            entries_ = entries;
 
-            if (index != msg->entries_num) {
+            if (index != entries_num_) {
                 // Move all items below insertion point
-                memmove(&(msg->entries[index + 1]), &(msg->entries[index]), sizeof(MessageListItem) * (msg->entries_num - index));
+                memmove(&(entries_[index + 1]), &(entries_[index]), sizeof(MessageListItem) * (entries_num_ - index));
             }
         } else {
-            msg->entries = (MessageListItem*)mem_malloc(sizeof(MessageListItem));
-            if (msg->entries == NULL) {
+            entries_ = static_cast<MessageListItem*>(mem_malloc(sizeof(MessageListItem)));
+            if (entries_ == nullptr) {
                 return false;
             }
-            msg->entries_num = 0;
+            entries_num_ = 0;
             index = 0;
         }
 
-        existing_entry = &(msg->entries[index]);
+        existing_entry = &(entries_[index]);
         existing_entry->audio = 0;
         existing_entry->text = 0;
-        msg->entries_num++;
+        entries_num_++;
     }
 
     existing_entry->audio = mem_strdup(new_entry->audio);
-    if (existing_entry->audio == NULL) {
+    if (existing_entry->audio == nullptr) {
         return false;
     }
 
     existing_entry->text = mem_strdup(new_entry->text);
-    if (existing_entry->text == NULL) {
+    if (existing_entry->text == nullptr) {
         return false;
     }
 
@@ -392,7 +363,7 @@ bool message_add(MessageList* msg, MessageListItem* new_entry)
 }
 
 // 0x476D80
-bool message_parse_number(int* out_num, const char* str)
+static bool message_parse_number(int* out_num, const char* str)
 {
     const char* ch;
     bool success;
@@ -430,7 +401,7 @@ bool message_parse_number(int* out_num, const char* str)
 // 4 - limit exceeded (> `MESSAGE_LIST_ITEM_FIELD_MAX_SIZE`)
 //
 // 0x476DD4
-int message_load_field(DB_FILE* file, char* str)
+static int message_load_field(DB_FILE* file, char* str)
 {
     int ch;
     int len;
@@ -438,7 +409,7 @@ int message_load_field(DB_FILE* file, char* str)
     len = 0;
 
     while (1) {
-        ch = db_fgetc(file);
+        ch = file->fgetc();
         if (ch == -1) {
             return 1;
         }
@@ -454,7 +425,7 @@ int message_load_field(DB_FILE* file, char* str)
     }
 
     while (1) {
-        ch = db_fgetc(file);
+        ch = file->fgetc();
 
         if (ch == -1) {
             debug_printf("\nError reading message file - EOF reached.\n");
@@ -481,33 +452,25 @@ int message_load_field(DB_FILE* file, char* str)
 }
 
 // 0x476E6C
-char* getmsg(MessageList* msg, MessageListItem* entry, int num)
+char* MessageList::getMessage(MessageListItem* entry, int num)
 {
     // 0x505B1C
     static char message_error_str[] = "Error";
 
     entry->num = num;
 
-    if (!message_search(msg, entry)) {
+    if (!search(entry)) {
         entry->text = message_error_str;
-        debug_printf("\n ** String not found @ getmsg(), MESSAGE.C **\n");
+        debug_printf("\n ** String not found @ getMessage(), MESSAGE.C **\n");
     }
 
     return entry->text;
 }
 
 // 0x476E98
-bool message_filter(MessageList* messageList)
+bool MessageList::filter()
 {
-    // TODO: Check.
-    // 0x50B960
-    static const char* replacements = "!@#$%&*@#*!&$%#&%#*%!$&%@*$@&";
-
-    if (messageList == NULL) {
-        return false;
-    }
-
-    if (messageList->entries_num == 0) {
+    if (entries_num_ == 0) {
         return true;
     }
 
@@ -516,16 +479,17 @@ bool message_filter(MessageList* messageList)
     }
 
     int languageFilter = 0;
-    config_get_value(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_LANGUAGE_FILTER_KEY, &languageFilter);
+    game_config.getValue(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_LANGUAGE_FILTER_KEY, &languageFilter);
     if (languageFilter != 1) {
         return true;
     }
 
-    int replacementsCount = strlen(replacements);
+    int replacementsCount = strlen("!@#$%&*@#*!&$%#&%#*%!$&%@*$@&");
     int replacementsIndex = roll_random(1, replacementsCount) - 1;
+    static const char* replacements = "!@#$%&*@#*!&$%#&%#*%!$&%@*$@&";
 
-    for (int index = 0; index < messageList->entries_num; index++) {
-        MessageListItem* item = &(messageList->entries[index]);
+    for (int index = 0; index < entries_num_; index++) {
+        MessageListItem* item = &(entries_[index]);
         strcpy(bad_copy, item->text);
         compat_strupr(bad_copy);
 
@@ -535,7 +499,7 @@ bool message_filter(MessageList* messageList)
             // already masked words on every iteration.
             for (char* p = bad_copy;; p++) {
                 const char* substr = strstr(p, bad_word[badwordIndex]);
-                if (substr == NULL) {
+                if (substr == nullptr) {
                     break;
                 }
 

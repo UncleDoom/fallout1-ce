@@ -1,6 +1,6 @@
 #include "int/datafile.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "int/memdbg.h"
 #include "int/pcx.h"
@@ -13,7 +13,7 @@ namespace fallout {
 static char* defaultMangleName(char* path);
 
 // 0x504EAC
-static DatafileLoader* loadFunc = NULL;
+static DatafileLoader* loadFunc = nullptr;
 
 // 0x504EB0
 static DatafileNameMangler* mangleName = defaultMangleName;
@@ -86,24 +86,24 @@ unsigned char* loadRawDataFile(char* path, int* widthPtr, int* heightPtr)
 {
     char* mangledPath = mangleName(path);
     char* dot = strrchr(mangledPath, '.');
-    if (dot != NULL) {
+    if (dot != nullptr) {
         if (compat_stricmp(dot + 1, "pcx") == 0) {
             return loadPCX(mangledPath, widthPtr, heightPtr, pal);
         }
     }
 
-    if (loadFunc != NULL) {
+    if (loadFunc != nullptr) {
         return loadFunc(mangledPath, pal, widthPtr, heightPtr);
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x4295AC
 unsigned char* loadDataFile(char* path, int* widthPtr, int* heightPtr)
 {
     unsigned char* v1 = loadRawDataFile(path, widthPtr, heightPtr);
-    if (v1 != NULL) {
+    if (v1 != nullptr) {
         datafileConvertData(v1, pal, *widthPtr, *heightPtr);
     }
     return v1;
@@ -115,12 +115,12 @@ unsigned char* load256Palette(char* path)
     int width;
     int height;
     unsigned char* v3 = loadRawDataFile(path, &width, &height);
-    if (v3 != NULL) {
+    if (v3 != nullptr) {
         myfree(v3, __FILE__, __LINE__); // "..\\int\\DATAFILE.C", 148
         return pal;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x429604
@@ -128,7 +128,7 @@ void trimBuffer(unsigned char* data, int* widthPtr, int* heightPtr)
 {
     int width = *widthPtr;
     int height = *heightPtr;
-    unsigned char* temp = (unsigned char*)mymalloc(width * height, __FILE__, __LINE__); // "..\\int\\DATAFILE.C", 157
+    unsigned char* temp = static_cast<unsigned char*>(mymalloc(width * height, __FILE__, __LINE__)); // "..\\int\\DATAFILE.C", 157
 
     // NOTE: Original code does not initialize `x`.
     int y = 0;
@@ -167,21 +167,21 @@ unsigned char* datafileLoadBlock(char* path, int* sizePtr)
 {
     const char* mangledPath = mangleName(path);
     DB_FILE* stream = db_fopen(mangledPath, "rb");
-    if (stream == NULL) {
-        return NULL;
+    if (stream == nullptr) {
+        return nullptr;
     }
 
-    int size = db_filelength(stream);
-    unsigned char* data = (unsigned char*)mymalloc(size, __FILE__, __LINE__); // "..\\int\\DATAFILE.C", 185
-    if (data == NULL) {
+    int size = stream->filelength();
+    unsigned char* data = static_cast<unsigned char*>(mymalloc(size, __FILE__, __LINE__)); // "..\\int\\DATAFILE.C", 185
+    if (data == nullptr) {
         // NOTE: This code is unreachable, mymalloc never fails.
         // Otherwise it leaks stream.
         *sizePtr = 0;
-        return NULL;
+        return nullptr;
     }
 
-    db_fread(data, 1, size, stream);
-    db_fclose(stream);
+    stream->fread(data, 1, size);
+    stream->fclose();
     *sizePtr = size;
     return data;
 }

@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_OBJECT_H_
-#define FALLOUT_GAME_OBJECT_H_
+#pragma once
+
 
 #include "game/inventry.h"
 #include "game/map_defs.h"
@@ -9,10 +9,10 @@
 
 namespace fallout {
 
-typedef struct ObjectWithFlags {
+struct ObjectWithFlags {
     int flags;
     Object* object;
-} ObjectWithFlags;
+};
 
 extern unsigned char* wallBlendTable;
 extern unsigned char* glassBlendTable;
@@ -59,7 +59,6 @@ int obj_turn_on_outline(Object* obj, Rect* rect);
 int obj_turn_off_outline(Object* obj, Rect* rect);
 int obj_toggle_flat(Object* obj, Rect* rect);
 int obj_erase_object(Object* a1, Rect* a2);
-int obj_inven_free(Inventory* inventory);
 bool obj_action_can_talk_to(Object* obj);
 Object* obj_top_environment(Object* obj);
 void obj_remove_all();
@@ -96,5 +95,3 @@ int obj_load_dude(DB_FILE* stream);
 void obj_fix_violence_settings(int* fid);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_OBJECT_H_ */

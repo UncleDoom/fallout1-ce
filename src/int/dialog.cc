@@ -1,6 +1,6 @@
 #include "int/dialog.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "int/memdbg.h"
 #include "int/movie.h"
@@ -12,7 +12,7 @@
 
 namespace fallout {
 
-typedef struct STRUCT_56DAE0_FIELD_4_FIELD_C {
+struct STRUCT_56DAE0_FIELD_4_FIELD_C {
     char* field_0;
     union {
         int proc;
@@ -24,9 +24,9 @@ typedef struct STRUCT_56DAE0_FIELD_4_FIELD_C {
     int field_14;
     short field_18;
     short field_1A;
-} STRUCT_56DAE0_FIELD_4_FIELD_C;
+};
 
-typedef struct STRUCT_56DAE0_FIELD_4 {
+struct STRUCT_56DAE0_FIELD_4 {
     void* field_0;
     char* field_4;
     void* field_8;
@@ -34,9 +34,9 @@ typedef struct STRUCT_56DAE0_FIELD_4 {
     int field_10;
     int field_14;
     int field_18; // probably font number
-} STRUCT_56DAE0_FIELD_4;
+};
 
-typedef struct STRUCT_56DAE0 {
+struct STRUCT_56DAE0 {
     Program* field_0;
     STRUCT_56DAE0_FIELD_4* field_4;
     int field_8;
@@ -44,23 +44,23 @@ typedef struct STRUCT_56DAE0 {
     int field_10;
     int field_14;
     int field_18;
-} STRUCT_56DAE0;
+};
 
-typedef struct DialogWindowData {
+struct DialogWindowData {
     short flags;
     int width;
     int height;
     int x;
     int y;
     char* backgroundFileName;
-} DialogWindowData;
+};
 
 // NOTE: There are |upButton| and |downButton| variables which are definitely
 // instances of some struct. The values are set only via scripting functions,
 // however they are never read back. It's impossible to understand the meaning
 // of the fields and give them names. I've commented my guesses based on
 // intuition.
-typedef struct DialogScrollButtonData {
+struct DialogScrollButtonData {
     int field_0; // x
     int field_4; // y
     int field_8; // flags
@@ -68,7 +68,7 @@ typedef struct DialogScrollButtonData {
     char* field_10; // pressed image file name
     char* field_14; // hover image file name
     char* field_18; // mask or disabled image file name
-} DialogScrollButtonData;
+};
 
 static STRUCT_56DAE0_FIELD_4* getReply();
 static void replyAddOption(const char* a1, const char* a2, int a3);
@@ -92,10 +92,10 @@ static int topDialogLine = 0;
 static int topDialogReply = 0;
 
 // 0x5184E4
-DialogWinDrawCallback* replyWinDrawCallback = NULL;
+DialogWinDrawCallback* replyWinDrawCallback = nullptr;
 
 // 0x5184E8
-DialogWinDrawCallback* optionsWinDrawCallback = NULL;
+DialogWinDrawCallback* optionsWinDrawCallback = nullptr;
 
 // 0x5184EC
 static int defaultBorderX = 7;
@@ -170,12 +170,12 @@ static STRUCT_56DAE0_FIELD_4* getReply()
     STRUCT_56DAE0_FIELD_4_FIELD_C* v1;
 
     v0 = &(dialog[tods].field_4[dialog[tods].field_C]);
-    if (v0->field_C == NULL) {
+    if (v0->field_C == nullptr) {
         v0->field_14 = 1;
-        v1 = (STRUCT_56DAE0_FIELD_4_FIELD_C*)mymalloc(sizeof(STRUCT_56DAE0_FIELD_4_FIELD_C), __FILE__, __LINE__); // "..\\int\\DIALOG.C", 789
+        v1 = static_cast<STRUCT_56DAE0_FIELD_4_FIELD_C*>(mymalloc(sizeof(STRUCT_56DAE0_FIELD_4_FIELD_C), __FILE__, __LINE__)); // "..\\int\\DIALOG.C", 789
     } else {
         v0->field_14++;
-        v1 = (STRUCT_56DAE0_FIELD_4_FIELD_C*)myrealloc(v0->field_C, sizeof(STRUCT_56DAE0_FIELD_4_FIELD_C) * v0->field_14, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 793
+        v1 = static_cast<STRUCT_56DAE0_FIELD_4_FIELD_C*>(myrealloc(v0->field_C, sizeof(STRUCT_56DAE0_FIELD_4_FIELD_C) * v0->field_14, __FILE__, __LINE__)); // "..\\int\\DIALOG.C", 793
     }
     v0->field_C = v1;
 
@@ -194,20 +194,20 @@ static void replyAddOption(const char* a1, const char* a2, int a3)
     v17 = v18->field_14 - 1;
     v18->field_C[v17].kind = 2;
 
-    if (a1 != NULL) {
-        v14 = (char*)mymalloc(strlen(a1) + 1, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 805
+    if (a1 != nullptr) {
+        v14 = static_cast<char*>(mymalloc(strlen(a1) + 1, __FILE__, __LINE__)); // "..\\int\\DIALOG.C", 805
         strcpy(v14, a1);
         v18->field_C[v17].field_0 = v14;
     } else {
-        v18->field_C[v17].field_0 = NULL;
+        v18->field_C[v17].field_0 = nullptr;
     }
 
-    if (a2 != NULL) {
-        v15 = (char*)mymalloc(strlen(a2) + 1, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 810
+    if (a2 != nullptr) {
+        v15 = static_cast<char*>(mymalloc(strlen(a2) + 1, __FILE__, __LINE__)); // "..\\int\\DIALOG.C", 810
         strcpy(v15, a2);
         v18->field_C[v17].string = v15;
     } else {
-        v18->field_C[v17].string = NULL;
+        v18->field_C[v17].string = nullptr;
     }
 
     v18->field_C[v17].field_18 = windowGetFont();
@@ -227,12 +227,12 @@ static void replyAddOptionProc(const char* a1, int a2, int a3)
 
     v5->field_C[v13].kind = 1;
 
-    if (a1 != NULL) {
-        v11 = (char*)mymalloc(strlen(a1) + 1, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 830
+    if (a1 != nullptr) {
+        v11 = static_cast<char*>(mymalloc(strlen(a1) + 1, __FILE__, __LINE__)); // "..\\int\\DIALOG.C", 830
         strcpy(v11, a1);
         v5->field_C[v13].field_0 = v11;
     } else {
-        v5->field_C[v13].field_0 = NULL;
+        v5->field_C[v13].field_0 = nullptr;
     }
 
     v5->field_C[v13].proc = a2;
@@ -245,12 +245,12 @@ static void replyAddOptionProc(const char* a1, int a2, int a3)
 // 0x42F714
 static void optionFree(STRUCT_56DAE0_FIELD_4_FIELD_C* a1)
 {
-    if (a1->field_0 != NULL) {
+    if (a1->field_0 != nullptr) {
         myfree(a1->field_0, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 844
     }
 
     if (a1->kind == 2) {
-        if (a1->string != NULL) {
+        if (a1->string != nullptr) {
             myfree(a1->string, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 846
         }
     }
@@ -268,7 +268,7 @@ static void replyFree()
     for (i = 0; i < ptr->field_8; i++) {
         v6 = &(dialog[tods].field_4[i]);
 
-        if (v6->field_C != NULL) {
+        if (v6->field_C != nullptr) {
             for (j = 0; j < v6->field_14; j++) {
                 optionFree(&(v6->field_C[j]));
             }
@@ -276,20 +276,20 @@ static void replyFree()
             myfree(v6->field_C, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 857
         }
 
-        if (v6->field_8 != NULL) {
+        if (v6->field_8 != nullptr) {
             myfree(v6->field_8, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 860
         }
 
-        if (v6->field_4 != NULL) {
+        if (v6->field_4 != nullptr) {
             myfree(v6->field_4, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 862
         }
 
-        if (v6->field_0 != NULL) {
+        if (v6->field_0 != nullptr) {
             myfree(v6->field_0, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 864
         }
     }
 
-    if (ptr->field_4 != NULL) {
+    if (ptr->field_4 != nullptr) {
         myfree(ptr->field_4, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 867
     }
 }
@@ -304,9 +304,9 @@ static int endDialog()
     topDialogReply = dialog[tods].field_10;
     replyFree();
 
-    if (replyTitleDefault != NULL) {
+    if (replyTitleDefault != nullptr) {
         myfree(replyTitleDefault, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 986
-        replyTitleDefault = NULL;
+        replyTitleDefault = nullptr;
     }
 
     --tods;
@@ -448,11 +448,11 @@ int dialogGotoReply(const char* a1)
         return 1;
     }
 
-    if (a1 != NULL) {
+    if (a1 != nullptr) {
         ptr = &(dialog[tods]);
         for (i = 0; i < ptr->field_8; i++) {
             v5 = &(ptr->field_4[i]);
-            if (v5->field_4 != NULL && compat_stricmp(v5->field_4, a1) == 0) {
+            if (v5->field_4 != nullptr && compat_stricmp(v5->field_4, a1) == 0) {
                 ptr->field_10 = i;
                 return 0;
             }
@@ -469,15 +469,15 @@ int dialogGotoReply(const char* a1)
 // 0x430E84
 int dialogTitle(const char* a1)
 {
-    if (replyTitleDefault != NULL) {
+    if (replyTitleDefault != nullptr) {
         myfree(replyTitleDefault, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2561
     }
 
-    if (a1 != NULL) {
-        replyTitleDefault = (char*)mymalloc(strlen(a1) + 1, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2564
+    if (a1 != nullptr) {
+        replyTitleDefault = static_cast<char*>(mymalloc(strlen(a1) + 1, __FILE__, __LINE__)); // "..\\int\\DIALOG.C", 2564
         strcpy(replyTitleDefault, a1);
     } else {
-        replyTitleDefault = NULL;
+        replyTitleDefault = nullptr;
     }
 
     return 0;
@@ -586,22 +586,22 @@ int dialogSetScrollUp(int a1, int a2, char* a3, char* a4, char* a5, char* a6, in
     upButton.field_0 = a1;
     upButton.field_4 = a2;
 
-    if (upButton.field_C != NULL) {
+    if (upButton.field_C != nullptr) {
         myfree(upButton.field_C, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2750
     }
     upButton.field_C = a3;
 
-    if (upButton.field_10 != NULL) {
+    if (upButton.field_10 != nullptr) {
         myfree(upButton.field_10, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2752
     }
     upButton.field_10 = a4;
 
-    if (upButton.field_14 != NULL) {
+    if (upButton.field_14 != nullptr) {
         myfree(upButton.field_14, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2754
     }
     upButton.field_14 = a5;
 
-    if (upButton.field_18 != NULL) {
+    if (upButton.field_18 != nullptr) {
         myfree(upButton.field_18, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2756
     }
     upButton.field_18 = a6;
@@ -617,22 +617,22 @@ int dialogSetScrollDown(int a1, int a2, char* a3, char* a4, char* a5, char* a6, 
     downButton.field_0 = a1;
     downButton.field_4 = a2;
 
-    if (downButton.field_C != NULL) {
+    if (downButton.field_C != nullptr) {
         myfree(downButton.field_C, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2765
     }
     downButton.field_C = a3;
 
-    if (downButton.field_10 != NULL) {
+    if (downButton.field_10 != nullptr) {
         myfree(downButton.field_10, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2767
     }
     downButton.field_10 = a4;
 
-    if (downButton.field_14 != NULL) {
+    if (downButton.field_14 != nullptr) {
         myfree(downButton.field_14, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2769
     }
     downButton.field_14 = a5;
 
-    if (downButton.field_18 != NULL) {
+    if (downButton.field_18 != nullptr) {
         myfree(downButton.field_18, __FILE__, __LINE__); // "..\\int\\DIALOG.C", 2771
     }
     downButton.field_18 = a6;
@@ -653,9 +653,9 @@ int dialogSetSpacing(int value)
 // 0x431370
 int dialogSetOptionColor(float a1, float a2, float a3)
 {
-    optionR = (int)(a1 * 31.0);
-    optionG = (int)(a2 * 31.0);
-    optionB = (int)(a3 * 31.0);
+    optionR = static_cast<int>(a1 * 31.0);
+    optionG = static_cast<int>(a2 * 31.0);
+    optionB = static_cast<int>(a3 * 31.0);
 
     optionRGBset = 1;
 
@@ -665,9 +665,9 @@ int dialogSetOptionColor(float a1, float a2, float a3)
 // 0x4313C8
 int dialogSetReplyColor(float a1, float a2, float a3)
 {
-    replyR = (int)(a1 * 31.0);
-    replyG = (int)(a2 * 31.0);
-    replyB = (int)(a3 * 31.0);
+    replyR = static_cast<int>(a1 * 31.0);
+    replyG = static_cast<int>(a2 * 31.0);
+    replyB = static_cast<int>(a3 * 31.0);
 
     replyRGBset = 1;
 

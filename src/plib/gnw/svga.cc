@@ -16,11 +16,11 @@ Rect scr_size;
 // 0x6ACA18
 ScreenBlitFunc* scr_blit = GNW95_ShowRect;
 
-SDL_Window* gSdlWindow = NULL;
-SDL_Surface* gSdlSurface = NULL;
-SDL_Renderer* gSdlRenderer = NULL;
-SDL_Texture* gSdlTexture = NULL;
-SDL_Surface* gSdlTextureSurface = NULL;
+SDL_Window* gSdlWindow = nullptr;
+SDL_Surface* gSdlSurface = nullptr;
+SDL_Renderer* gSdlRenderer = nullptr;
+SDL_Texture* gSdlTexture = nullptr;
+SDL_Surface* gSdlTextureSurface = nullptr;
 
 // TODO: Remove once migration to update-render cycle is completed.
 FpsLimiter sharedFpsLimiter;
@@ -28,7 +28,7 @@ FpsLimiter sharedFpsLimiter;
 // 0x4CB310
 void GNW95_SetPaletteEntries(unsigned char* palette, int start, int count)
 {
-    if (gSdlSurface != NULL && gSdlSurface->format->palette != NULL) {
+    if (gSdlSurface != nullptr && gSdlSurface->format->palette != nullptr) {
         SDL_Color colors[256];
 
         if (count != 0) {
@@ -41,14 +41,14 @@ void GNW95_SetPaletteEntries(unsigned char* palette, int start, int count)
         }
 
         SDL_SetPaletteColors(gSdlSurface->format->palette, colors, start, count);
-        SDL_BlitSurface(gSdlSurface, NULL, gSdlTextureSurface, NULL);
+        SDL_BlitSurface(gSdlSurface, nullptr, gSdlTextureSurface, nullptr);
     }
 }
 
 // 0x4CB568
 void GNW95_SetPalette(unsigned char* palette)
 {
-    if (gSdlSurface != NULL && gSdlSurface->format->palette != NULL) {
+    if (gSdlSurface != nullptr && gSdlSurface->format->palette != nullptr) {
         SDL_Color colors[256];
 
         for (int index = 0; index < 256; index++) {
@@ -59,14 +59,14 @@ void GNW95_SetPalette(unsigned char* palette)
         }
 
         SDL_SetPaletteColors(gSdlSurface->format->palette, colors, 0, 256);
-        SDL_BlitSurface(gSdlSurface, NULL, gSdlTextureSurface, NULL);
+        SDL_BlitSurface(gSdlSurface, nullptr, gSdlTextureSurface, nullptr);
     }
 }
 
 // 0x4CB850
 void GNW95_ShowRect(unsigned char* src, unsigned int srcPitch, unsigned int a3, unsigned int srcX, unsigned int srcY, unsigned int srcWidth, unsigned int srcHeight, unsigned int destX, unsigned int destY)
 {
-    buf_to_buf(src + srcPitch * srcY + srcX, srcWidth, srcHeight, srcPitch, (unsigned char*)gSdlSurface->pixels + gSdlSurface->pitch * destY + destX, gSdlSurface->pitch);
+    buf_to_buf(src + srcPitch * srcY + srcX, srcWidth, srcHeight, srcPitch, reinterpret_cast<unsigned char*>(gSdlSurface->pixels) + gSdlSurface->pitch * destY + destX, gSdlSurface->pitch);
 
     SDL_Rect srcRect;
     srcRect.x = destX;
@@ -98,7 +98,7 @@ bool svga_init(VideoOptions* video_options)
         video_options->width * video_options->scale,
         video_options->height * video_options->scale,
         windowFlags);
-    if (gSdlWindow == NULL) {
+    if (gSdlWindow == nullptr) {
         return false;
     }
 
@@ -106,7 +106,7 @@ bool svga_init(VideoOptions* video_options)
         destroyRenderer();
 
         SDL_DestroyWindow(gSdlWindow);
-        gSdlWindow = NULL;
+        gSdlWindow = nullptr;
 
         return false;
     }
@@ -119,11 +119,11 @@ bool svga_init(VideoOptions* video_options)
         0,
         0,
         0);
-    if (gSdlSurface == NULL) {
+    if (gSdlSurface == nullptr) {
         destroyRenderer();
 
         SDL_DestroyWindow(gSdlWindow);
-        gSdlWindow = NULL;
+        gSdlWindow = nullptr;
     }
 
     SDL_Color colors[256];
@@ -141,7 +141,7 @@ bool svga_init(VideoOptions* video_options)
     scr_size.lrx = video_options->width - 1;
     scr_size.lry = video_options->height - 1;
 
-    mouse_blit_trans = NULL;
+    mouse_blit_trans = nullptr;
     scr_blit = GNW95_ShowRect;
     mouse_blit = GNW95_ShowRect;
 
@@ -152,9 +152,9 @@ void svga_exit()
 {
     destroyRenderer();
 
-    if (gSdlWindow != NULL) {
+    if (gSdlWindow != nullptr) {
         SDL_DestroyWindow(gSdlWindow);
-        gSdlWindow = NULL;
+        gSdlWindow = nullptr;
     }
 
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -163,19 +163,19 @@ void svga_exit()
 int screenGetWidth()
 {
     // TODO: Make it on par with _xres;
-    return rectGetWidth(&scr_size);
+    return scr_size.width();
 }
 
 int screenGetHeight()
 {
     // TODO: Make it on par with _yres.
-    return rectGetHeight(&scr_size);
+    return scr_size.height();
 }
 
 static bool createRenderer(int width, int height)
 {
     gSdlRenderer = SDL_CreateRenderer(gSdlWindow, -1, 0);
-    if (gSdlRenderer == NULL) {
+    if (gSdlRenderer == nullptr) {
         return false;
     }
 
@@ -184,17 +184,17 @@ static bool createRenderer(int width, int height)
     }
 
     gSdlTexture = SDL_CreateTexture(gSdlRenderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, width, height);
-    if (gSdlTexture == NULL) {
+    if (gSdlTexture == nullptr) {
         return false;
     }
 
     Uint32 format;
-    if (SDL_QueryTexture(gSdlTexture, &format, NULL, NULL, NULL) != 0) {
+    if (SDL_QueryTexture(gSdlTexture, &format, nullptr, nullptr, nullptr) != 0) {
         return false;
     }
 
     gSdlTextureSurface = SDL_CreateRGBSurfaceWithFormat(0, width, height, SDL_BITSPERPIXEL(format), format);
-    if (gSdlTextureSurface == NULL) {
+    if (gSdlTextureSurface == nullptr) {
         return false;
     }
 
@@ -203,19 +203,19 @@ static bool createRenderer(int width, int height)
 
 static void destroyRenderer()
 {
-    if (gSdlTextureSurface != NULL) {
+    if (gSdlTextureSurface != nullptr) {
         SDL_FreeSurface(gSdlTextureSurface);
-        gSdlTextureSurface = NULL;
+        gSdlTextureSurface = nullptr;
     }
 
-    if (gSdlTexture != NULL) {
+    if (gSdlTexture != nullptr) {
         SDL_DestroyTexture(gSdlTexture);
-        gSdlTexture = NULL;
+        gSdlTexture = nullptr;
     }
 
-    if (gSdlRenderer != NULL) {
+    if (gSdlRenderer != nullptr) {
         SDL_DestroyRenderer(gSdlRenderer);
-        gSdlRenderer = NULL;
+        gSdlRenderer = nullptr;
     }
 }
 
@@ -227,9 +227,9 @@ void handleWindowSizeChanged()
 
 void renderPresent()
 {
-    SDL_UpdateTexture(gSdlTexture, NULL, gSdlTextureSurface->pixels, gSdlTextureSurface->pitch);
+    SDL_UpdateTexture(gSdlTexture, nullptr, gSdlTextureSurface->pixels, gSdlTextureSurface->pitch);
     SDL_RenderClear(gSdlRenderer);
-    SDL_RenderCopy(gSdlRenderer, gSdlTexture, NULL, NULL);
+    SDL_RenderCopy(gSdlRenderer, gSdlTexture, nullptr, nullptr);
     SDL_RenderPresent(gSdlRenderer);
 }
 

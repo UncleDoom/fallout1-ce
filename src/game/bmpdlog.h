@@ -1,39 +1,67 @@
-#ifndef FALLOUT_GAME_BMPDLOG_H_
-#define FALLOUT_GAME_BMPDLOG_H_
+#pragma once
+
+
+#include "game/enum_utils.h"
 
 namespace fallout {
 
-typedef enum DialogBoxOptions {
-    DIALOG_BOX_LARGE = 0x01,
-    DIALOG_BOX_MEDIUM = 0x02,
-    DIALOG_BOX_NO_HORIZONTAL_CENTERING = 0x04,
-    DIALOG_BOX_NO_VERTICAL_CENTERING = 0x08,
-    DIALOG_BOX_YES_NO = 0x10,
-    DIALOG_BOX_0x20 = 0x20,
-} DialogBoxOptions;
+enum class DialogBoxOptions : unsigned {
+    Large = 0x01,
+    Medium = 0x02,
+    NoHorizontalCentering = 0x04,
+    NoVerticalCentering = 0x08,
+    YesNo = 0x10,
+    Flag_0x20 = 0x20,
+};
+DEFINE_ENUM_FLAG_OPERATORS(DialogBoxOptions)
 
-typedef enum DialogType {
-    DIALOG_TYPE_MEDIUM,
-    DIALOG_TYPE_LARGE,
-    DIALOG_TYPE_COUNT,
-} DialogType;
+inline constexpr int DIALOG_BOX_LARGE = static_cast<int>(DialogBoxOptions::Large);
+inline constexpr int DIALOG_BOX_MEDIUM = static_cast<int>(DialogBoxOptions::Medium);
+inline constexpr int DIALOG_BOX_NO_HORIZONTAL_CENTERING = static_cast<int>(DialogBoxOptions::NoHorizontalCentering);
+inline constexpr int DIALOG_BOX_NO_VERTICAL_CENTERING = static_cast<int>(DialogBoxOptions::NoVerticalCentering);
+inline constexpr int DIALOG_BOX_YES_NO = static_cast<int>(DialogBoxOptions::YesNo);
+inline constexpr int DIALOG_BOX_0x20 = static_cast<int>(DialogBoxOptions::Flag_0x20);
 
-typedef enum FileDialogFrm {
-    FILE_DIALOG_FRM_BACKGROUND,
-    FILE_DIALOG_FRM_LITTLE_RED_BUTTON_NORMAL,
-    FILE_DIALOG_FRM_LITTLE_RED_BUTTON_PRESSED,
-    FILE_DIALOG_FRM_SCROLL_DOWN_ARROW_NORMAL,
-    FILE_DIALOG_FRM_SCROLL_DOWN_ARROW_PRESSED,
-    FILE_DIALOG_FRM_SCROLL_UP_ARROW_NORMAL,
-    FILE_DIALOG_FRM_SCROLL_UP_ARROW_PRESSED,
-    FILE_DIALOG_FRM_COUNT,
-} FileDialogFrm;
 
-typedef enum FileDialogScrollDirection {
-    FILE_DIALOG_SCROLL_DIRECTION_NONE,
-    FILE_DIALOG_SCROLL_DIRECTION_UP,
-    FILE_DIALOG_SCROLL_DIRECTION_DOWN,
-} FileDialogScrollDirection;
+enum class DialogType : int {
+    Medium = 0,
+    Large = 1,
+    Count = 2,
+};
+
+inline constexpr int DIALOG_TYPE_MEDIUM = static_cast<int>(DialogType::Medium);
+inline constexpr int DIALOG_TYPE_LARGE = static_cast<int>(DialogType::Large);
+inline constexpr int DIALOG_TYPE_COUNT = static_cast<int>(DialogType::Count);
+
+enum class FileDialogFrm : int {
+    Background = 0,
+    LittleRedButtonNormal = 1,
+    LittleRedButtonPressed = 2,
+    ScrollDownArrowNormal = 3,
+    ScrollDownArrowPressed = 4,
+    ScrollUpArrowNormal = 5,
+    ScrollUpArrowPressed = 6,
+    Count = 7,
+};
+
+inline constexpr int FILE_DIALOG_FRM_BACKGROUND = static_cast<int>(FileDialogFrm::Background);
+inline constexpr int FILE_DIALOG_FRM_LITTLE_RED_BUTTON_NORMAL = static_cast<int>(FileDialogFrm::LittleRedButtonNormal);
+inline constexpr int FILE_DIALOG_FRM_LITTLE_RED_BUTTON_PRESSED = static_cast<int>(FileDialogFrm::LittleRedButtonPressed);
+inline constexpr int FILE_DIALOG_FRM_SCROLL_DOWN_ARROW_NORMAL = static_cast<int>(FileDialogFrm::ScrollDownArrowNormal);
+inline constexpr int FILE_DIALOG_FRM_SCROLL_DOWN_ARROW_PRESSED = static_cast<int>(FileDialogFrm::ScrollDownArrowPressed);
+inline constexpr int FILE_DIALOG_FRM_SCROLL_UP_ARROW_NORMAL = static_cast<int>(FileDialogFrm::ScrollUpArrowNormal);
+inline constexpr int FILE_DIALOG_FRM_SCROLL_UP_ARROW_PRESSED = static_cast<int>(FileDialogFrm::ScrollUpArrowPressed);
+inline constexpr int FILE_DIALOG_FRM_COUNT = static_cast<int>(FileDialogFrm::Count);
+
+enum class FileDialogScrollDirection : int {
+    None = 0,
+    Up = 1,
+    Down = 2,
+};
+
+inline constexpr int FILE_DIALOG_SCROLL_DIRECTION_NONE = static_cast<int>(FileDialogScrollDirection::None);
+inline constexpr int FILE_DIALOG_SCROLL_DIRECTION_UP = static_cast<int>(FileDialogScrollDirection::Up);
+inline constexpr int FILE_DIALOG_SCROLL_DIRECTION_DOWN = static_cast<int>(FileDialogScrollDirection::Down);
 
 extern int dbox[DIALOG_TYPE_COUNT];
 extern int ytable[DIALOG_TYPE_COUNT];
@@ -49,5 +77,3 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
 int save_file_dialog(char* title, char** fileList, char* dest, int fileListLength, int x, int y, int flags);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_BMPDLOG_H_ */

@@ -1,8 +1,8 @@
 #include "game/worldmap.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 
 #include "game/anim.h"
 #include "game/art.h"
@@ -30,6 +30,7 @@
 #include "game/perk.h"
 #include "game/protinst.h"
 #include "game/queue.h"
+#include "game/raii.h"
 #include "game/roll.h"
 #include "game/scripts.h"
 #include "game/skill.h"
@@ -50,46 +51,46 @@
 
 namespace fallout {
 
-#define WM_WINDOW_WIDTH 640
-#define WM_WINDOW_HEIGHT 480
+static constexpr int WM_WINDOW_WIDTH = 640;
+static constexpr int WM_WINDOW_HEIGHT = 480;
 
-#define WM_WORLDMAP_WIDTH 1400
+static constexpr int WM_WORLDMAP_WIDTH = 1400;
 
-#define LOCATION_MARKER_WIDTH 5
-#define LOCATION_MARKER_HEIGHT 5
+static constexpr int LOCATION_MARKER_WIDTH = 5;
+static constexpr int LOCATION_MARKER_HEIGHT = 5;
 
-#define DESTINATION_MARKER_WIDTH 11
-#define DESTINATION_MARKER_HEIGHT 11
+static constexpr int DESTINATION_MARKER_WIDTH = 11;
+static constexpr int DESTINATION_MARKER_HEIGHT = 11;
 
-#define RANDOM_ENCOUNTER_ICON_WIDTH 7
-#define RANDOM_ENCOUNTER_ICON_HEIGHT 11
+static constexpr int RANDOM_ENCOUNTER_ICON_WIDTH = 7;
+static constexpr int RANDOM_ENCOUNTER_ICON_HEIGHT = 11;
 
-#define HOTSPOT_WIDTH 25
-#define HOTSPOT_HEIGHT 13
+static constexpr int HOTSPOT_WIDTH = 25;
+static constexpr int HOTSPOT_HEIGHT = 13;
 
-#define DAY_X 487
-#define DAY_Y 12
-#define MONTH_X 513
-#define MONTH_Y 12
-#define YEAR_X 548
-#define YEAR_Y 12
-#define TIME_X 593
-#define TIME_Y 12
+static constexpr int DAY_X = 487;
+static constexpr int DAY_Y = 12;
+static constexpr int MONTH_X = 513;
+static constexpr int MONTH_Y = 12;
+static constexpr int YEAR_X = 548;
+static constexpr int YEAR_Y = 12;
+static constexpr int TIME_X = 593;
+static constexpr int TIME_Y = 12;
 
-#define VIEWPORT_MAX_X 950
-#define VIEWPORT_MAX_Y 1058
+static constexpr int VIEWPORT_MAX_X = 950;
+static constexpr int VIEWPORT_MAX_Y = 1058;
 
-typedef struct CityLocationEntry {
+struct CityLocationEntry {
     int column;
     int row;
-} CityLocationEntry;
+};
 
-typedef struct TownHotSpotEntry {
+struct TownHotSpotEntry {
     short x;
     short y;
     short map_idx;
     char name[16];
-} TownHotSpotEntry;
+};
 
 static void UpdVisualArea();
 static int CheckEvents();
@@ -503,17 +504,17 @@ static const char* RandEnctNames[4][3] = {
     {
         "MOUNTN1.MAP",
         "MOUNTN2.MAP",
-        NULL,
+        nullptr,
     },
     {
         "CITY1.MAP",
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
     },
     {
         "COAST1.MAP",
         "COAST2.MAP",
-        NULL,
+        nullptr,
     }
 };
 
@@ -905,14 +906,14 @@ int init_world_map()
 // 0x4AA1C0
 int save_world_map(DB_FILE* stream)
 {
-    if (db_fwrite(WorldGrid, sizeof(WorldGrid), 1, stream) != 1) return -1;
-    if (db_fwrite(TwnSelKnwFlag, sizeof(TwnSelKnwFlag), 1, stream) != 1) return -1;
-    if (db_fwriteInt32(stream, first_visit_flag) == -1) return -1;
-    if (db_fwriteInt32(stream, encounter_specials) == -1) return -1;
-    if (db_fwriteInt32(stream, our_town) == -1) return -1;
-    if (db_fwriteInt32(stream, our_section) == -1) return -1;
-    if (db_fwriteInt32(stream, world_xpos) == -1) return -1;
-    if (db_fwriteInt32(stream, world_ypos) == -1) return -1;
+    if (stream->fwrite(WorldGrid, sizeof(WorldGrid), 1) != 1) return -1;
+    if (stream->fwrite(TwnSelKnwFlag, sizeof(TwnSelKnwFlag), 1) != 1) return -1;
+    if (stream->fwriteInt32(first_visit_flag) == -1) return -1;
+    if (stream->fwriteInt32(encounter_specials) == -1) return -1;
+    if (stream->fwriteInt32(our_town) == -1) return -1;
+    if (stream->fwriteInt32(our_section) == -1) return -1;
+    if (stream->fwriteInt32(world_xpos) == -1) return -1;
+    if (stream->fwriteInt32(world_ypos) == -1) return -1;
 
     return 0;
 }
@@ -920,14 +921,14 @@ int save_world_map(DB_FILE* stream)
 // 0x4AA280
 int load_world_map(DB_FILE* stream)
 {
-    if (db_fread(WorldGrid, sizeof(WorldGrid), 1, stream) != 1) return -1;
-    if (db_fread(TwnSelKnwFlag, sizeof(TwnSelKnwFlag), 1, stream) != 1) return -1;
-    if (db_freadInt32(stream, &first_visit_flag) == -1) return -1;
-    if (db_freadInt32(stream, &encounter_specials) == -1) return -1;
-    if (db_freadInt32(stream, &our_town) == -1) return -1;
-    if (db_freadInt32(stream, &our_section) == -1) return -1;
-    if (db_freadInt32(stream, &world_xpos) == -1) return -1;
-    if (db_freadInt32(stream, &world_ypos) == -1) return -1;
+    if (stream->fread(WorldGrid, sizeof(WorldGrid), 1) != 1) return -1;
+    if (stream->fread(TwnSelKnwFlag, sizeof(TwnSelKnwFlag), 1) != 1) return -1;
+    if (stream->freadInt32(&first_visit_flag) == -1) return -1;
+    if (stream->freadInt32(&encounter_specials) == -1) return -1;
+    if (stream->freadInt32(&our_town) == -1) return -1;
+    if (stream->freadInt32(&our_section) == -1) return -1;
+    if (stream->freadInt32(&world_xpos) == -1) return -1;
+    if (stream->freadInt32(&world_ypos) == -1) return -1;
 
     return 0;
 }
@@ -993,7 +994,7 @@ int world_map(WorldMapContext ctx)
     int hover_text_width;
 
     title = "";
-    text = getmsg(&map_msg_file, &mesg, 1000);
+    text = map_msg_file.getMessage(&mesg, 1000);
     body[0] = text;
 
     if (map_save_in_game(true) == -1) {
@@ -1001,7 +1002,7 @@ int world_map(WorldMapContext ctx)
         gmouse_disable(0);
         gmouse_set_cursor(MOUSE_CURSOR_ARROW);
         gsound_play_sfx_file("iisxxxx1");
-        dialog_out(title, body, 1, 169, 116, colorTable[32328], NULL, colorTable[32328], DIALOG_BOX_LARGE);
+        dialog_out(title, body, 1, 169, 116, colorTable[32328], nullptr, colorTable[32328], DIALOG_BOX_LARGE);
         gmouse_enable();
         game_user_wants_to_quit = 2;
         return -1;
@@ -1699,12 +1700,12 @@ int world_map(WorldMapContext ctx)
                         temp_town = InCity(world_xpos, world_ypos);
                         if (temp_town != -1) {
                             if (game_global_vars[cityXgvar[temp_town]] == 1 || (first_visit_flag & (1 << temp_town)) != 0) {
-                                text = getmsg(&map_msg_file, &mesg, temp_town + 500);
+                                text = map_msg_file.getMessage(&mesg, temp_town + 500);
                             } else {
-                                text = getmsg(&wrldmap_mesg_file, &mesg, 1004);
+                                text = wrldmap_mesg_file.getMessage(&mesg, 1004);
                             }
                         } else {
-                            text = getmsg(&wrldmap_mesg_file, &mesg, WorldTerraTable[world_ypos / 50][world_xpos / 50] + 1000);
+                            text = wrldmap_mesg_file.getMessage(&mesg, WorldTerraTable[world_ypos / 50][world_xpos / 50] + 1000);
                         }
 
                         location_name_width = text_width(text);
@@ -1961,12 +1962,12 @@ int world_map(WorldMapContext ctx)
                 temp_town = InCity(world_xpos, world_ypos);
                 if (temp_town != -1) {
                     if (game_global_vars[cityXgvar[temp_town]] == 1 || (first_visit_flag & (1 << temp_town)) != 0) {
-                        text = getmsg(&map_msg_file, &mesg, temp_town + 500);
+                        text = map_msg_file.getMessage(&mesg, temp_town + 500);
                     } else {
-                        text = getmsg(&wrldmap_mesg_file, &mesg, 1004);
+                        text = wrldmap_mesg_file.getMessage(&mesg, 1004);
                     }
                 } else {
-                    text = getmsg(&wrldmap_mesg_file, &mesg, WorldTerraTable[world_ypos / 50][world_xpos / 50] + 1000);
+                    text = wrldmap_mesg_file.getMessage(&mesg, WorldTerraTable[world_ypos / 50][world_xpos / 50] + 1000);
                 }
 
                 location_name_width = text_width(text);
@@ -2035,12 +2036,12 @@ int world_map(WorldMapContext ctx)
                 temp_town = InCity(world_xpos, world_ypos);
                 if (temp_town != -1) {
                     if (game_global_vars[cityXgvar[temp_town]] == 1 || (first_visit_flag & (1 << temp_town)) != 0) {
-                        text = getmsg(&map_msg_file, &mesg, temp_town + 500);
+                        text = map_msg_file.getMessage(&mesg, temp_town + 500);
                     } else {
-                        text = getmsg(&wrldmap_mesg_file, &mesg, 1004);
+                        text = wrldmap_mesg_file.getMessage(&mesg, 1004);
                     }
                 } else {
-                    text = getmsg(&wrldmap_mesg_file, &mesg, WorldTerraTable[world_ypos / 50][world_xpos / 50] + 1000);
+                    text = wrldmap_mesg_file.getMessage(&mesg, WorldTerraTable[world_ypos / 50][world_xpos / 50] + 1000);
                 }
 
                 location_name_width = text_width(text);
@@ -2101,7 +2102,7 @@ int world_map(WorldMapContext ctx)
             terrain = WorldTerraTable[world_ypos / 50][world_xpos / 50];
             while (1) {
                 map_index = roll_random(0, 2);
-                if (RandEnctNames[terrain][map_index] != NULL) {
+                if (RandEnctNames[terrain][map_index] != nullptr) {
                     break;
                 }
             }
@@ -2140,7 +2141,7 @@ int world_map(WorldMapContext ctx)
                 terrain = WorldTerraTable[world_ypos / 50][world_xpos / 50];
                 while (1) {
                     map_index = roll_random(0, 2);
-                    if (RandEnctNames[terrain][map_index] != NULL) {
+                    if (RandEnctNames[terrain][map_index] != nullptr) {
                         break;
                     }
                 }
@@ -2475,7 +2476,7 @@ static int CheckEvents()
                     game_global_vars[GVAR_PLAYER_REPUATION] = 100;
                 }
 
-                display_print(getmsg(&wrldmap_mesg_file, &mesg, 500));
+                display_print(wrldmap_mesg_file.getMessage(&mesg, 500));
 
                 game_global_vars[GVAR_VATS_COUNTDOWN] = 0;
                 game_global_vars[GVAR_VATS_BLOWN] = 1;
@@ -2571,7 +2572,7 @@ static int LoadTownMap(const char* filename, int map_idx)
 
     PlayCityMapMusic();
 
-    obj_turn_on(obj_dude, NULL);
+    obj_turn_on(obj_dude, nullptr);
     tile_refresh_display();
 
     if (bx_enable) {
@@ -2617,7 +2618,7 @@ static int InitWorldMapData()
 
     bk_enable = 0;
 
-    if (message_init(&wrldmap_mesg_file) != 1) {
+    if (wrldmap_mesg_file.init() != 1) {
         // FIXME: Message is misleading.
         debug_printf("\n *** WORLD MAP: Error loading world map graphics! ***\n");
         return -1;
@@ -2625,7 +2626,7 @@ static int InitWorldMapData()
 
     snprintf(path, sizeof(path), "%s%s", msg_path, "worldmap.msg");
 
-    if (message_load(&wrldmap_mesg_file, path) != 1) {
+    if (wrldmap_mesg_file.load(path) != 1) {
         // FIXME: Message is misleading.
         debug_printf("\n *** WORLD MAP: Error loading world map graphics! ***\n");
         return -1;
@@ -2634,7 +2635,7 @@ static int InitWorldMapData()
     for (index = 0; index < WORLDMAP_FRM_COUNT; index++) {
         fid = art_id(OBJ_TYPE_INTERFACE, wmapids[index], 0, 0, 0);
         wmapbmp[index] = art_ptr_lock_data(fid, 0, 0, &(wmapidsav[index]));
-        if (wmapbmp[index] == NULL) {
+        if (wmapbmp[index] == nullptr) {
             break;
         }
 
@@ -2648,39 +2649,38 @@ static int InitWorldMapData()
             art_ptr_unlock(wmapidsav[index]);
         }
 
-        message_exit(&wrldmap_mesg_file);
+        wrldmap_mesg_file.exit();
 
         return -1;
     }
 
-    sea_mask = (unsigned char*)mem_malloc(263524);
-    if (sea_mask == NULL) {
+    MemBuffer<unsigned char> seaMaskGuard(static_cast<unsigned char*>(mem_malloc(263524)));
+    if (!seaMaskGuard) {
         debug_printf("\n *** WORLD MAP: Error loading world map graphics! ***\n");
 
         for (index = 0; index < WORLDMAP_FRM_COUNT; index++) {
             art_ptr_unlock(wmapidsav[index]);
         }
 
-        message_exit(&wrldmap_mesg_file);
+        wrldmap_mesg_file.exit();
 
         return -1;
     }
 
-    line1bit_buf = (unsigned char*)mem_malloc(263524);
-    if (line1bit_buf == NULL) {
+    MemBuffer<unsigned char> lineBufGuard(static_cast<unsigned char*>(mem_malloc(263524)));
+    if (!lineBufGuard) {
         debug_printf("\n *** WORLD MAP: Error loading world map graphics! ***\n");
 
         for (index = 0; index < WORLDMAP_FRM_COUNT; index++) {
             art_ptr_unlock(wmapidsav[index]);
         }
 
-        mem_free(sea_mask);
-        message_exit(&wrldmap_mesg_file);
+        wrldmap_mesg_file.exit();
 
         return -1;
     }
 
-    memset(line1bit_buf, 0, 262500);
+    memset(lineBufGuard.get(), 0, 262500);
 
     if (!wwin_flag) {
         world_win = win_add((screenGetWidth() - WM_WINDOW_WIDTH) / 2,
@@ -2696,15 +2696,17 @@ static int InitWorldMapData()
                 art_ptr_unlock(wmapidsav[index]);
             }
 
-            mem_free(sea_mask);
-            mem_free(line1bit_buf);
-            message_exit(&wrldmap_mesg_file);
+            wrldmap_mesg_file.exit();
 
             return -1;
         }
 
         wwin_flag = 1;
     }
+
+    // Success — transfer ownership to module globals.
+    sea_mask = seaMaskGuard.release();
+    line1bit_buf = lineBufGuard.release();
 
     world_buf = win_get_buf(world_win);
 
@@ -2713,7 +2715,7 @@ static int InitWorldMapData()
             win_register_button_image(TownBttns[index],
                 wmapbmp[WORLDMAP_FRM_LITTLE_RED_BUTTON_NORMAL],
                 wmapbmp[WORLDMAP_FRM_LITTLE_RED_BUTTON_PRESSED],
-                NULL,
+                nullptr,
                 0);
             win_enable_button(TownBttns[index]);
         }
@@ -2721,7 +2723,7 @@ static int InitWorldMapData()
         win_register_button_image(WrldToggle,
             wmapbmp[WORLDMAP_FRM_LITTLE_RED_BUTTON_NORMAL],
             wmapbmp[WORLDMAP_FRM_LITTLE_RED_BUTTON_PRESSED],
-            NULL,
+            nullptr,
             0);
         win_enable_button(WrldToggle);
     } else {
@@ -2737,7 +2739,7 @@ static int InitWorldMapData()
                 500 + index,
                 wmapbmp[WORLDMAP_FRM_LITTLE_RED_BUTTON_NORMAL],
                 wmapbmp[WORLDMAP_FRM_LITTLE_RED_BUTTON_PRESSED],
-                NULL,
+                nullptr,
                 BUTTON_FLAG_TRANSPARENT);
             win_register_button_sound_func(TownBttns[index], gsound_red_butt_press, gsound_red_butt_release);
         }
@@ -2753,7 +2755,7 @@ static int InitWorldMapData()
             512,
             wmapbmp[WORLDMAP_FRM_LITTLE_RED_BUTTON_NORMAL],
             wmapbmp[WORLDMAP_FRM_LITTLE_RED_BUTTON_PRESSED],
-            NULL,
+            nullptr,
             BUTTON_FLAG_TRANSPARENT);
         win_register_button_sound_func(WrldToggle, gsound_red_butt_press, gsound_red_butt_release);
 
@@ -2777,7 +2779,7 @@ static void UnInitWorldMapData()
     mem_free(line1bit_buf);
     mem_free(sea_mask);
 
-    message_exit(&wrldmap_mesg_file);
+    wrldmap_mesg_file.exit();
 
     for (index = 0; index < WORLDMAP_FRM_COUNT; index++) {
         art_ptr_unlock(wmapidsav[index]);
@@ -3006,7 +3008,7 @@ static void block_map(unsigned int x, unsigned int y, unsigned char* dst)
             dst_height = 463 - dst_y;
 
             // NOTE: Signed comparison.
-            if ((int)dst_height <= 0) {
+            if (static_cast<int>(dst_height) <= 0) {
                 break;
             }
         }
@@ -3109,7 +3111,7 @@ WorldMapContext town_map(WorldMapContext ctx)
     }
 
     title = "";
-    text = getmsg(&map_msg_file, &mesg, 1000);
+    text = map_msg_file.getMessage(&mesg, 1000);
     body[0] = text;
 
     if (map_save_in_game(true) == -1) {
@@ -3123,7 +3125,7 @@ WorldMapContext town_map(WorldMapContext ctx)
             169,
             116,
             colorTable[32328],
-            NULL,
+            nullptr,
             colorTable[32328],
             DIALOG_BOX_LARGE);
         gmouse_enable();
@@ -3135,7 +3137,7 @@ WorldMapContext town_map(WorldMapContext ctx)
     for (index = 0; index < TOWNMAP_FRM_COUNT; index++) {
         fid = art_id(OBJ_TYPE_INTERFACE, tmapids[index], 0, 0, 0);
         tmapbmp[index] = art_ptr_lock_data(fid, 0, 0, &(tmapidsav[index]));
-        if (tmapbmp[index] == NULL) {
+        if (tmapbmp[index] == nullptr) {
             break;
         }
     }
@@ -3151,7 +3153,7 @@ WorldMapContext town_map(WorldMapContext ctx)
 
     fid = art_id(OBJ_TYPE_INTERFACE, ctx.town + 156, 0, 0, 0);
     tmap_pic = art_ptr_lock_data(fid, 0, 0, &tmap_pic_key);
-    if (tmap_pic == NULL) {
+    if (tmap_pic == nullptr) {
         debug_printf("\n *** WORLD MAP: Error loading town map graphics! ***\n");
         for (index = 0; index < 8; index++) {
             art_ptr_unlock(tmapidsav[index]);
@@ -3161,8 +3163,8 @@ WorldMapContext town_map(WorldMapContext ctx)
 
     text_font(101);
 
-    onbtn = (unsigned char*)mem_malloc(4100);
-    if (onbtn == NULL) {
+    MemBuffer<unsigned char> onbtnGuard(static_cast<unsigned char*>(mem_malloc(4100)));
+    if (!onbtnGuard) {
         for (index = 0; index < TOWNMAP_FRM_COUNT; index++) {
             art_ptr_unlock(tmapidsav[index]);
         }
@@ -3170,44 +3172,42 @@ WorldMapContext town_map(WorldMapContext ctx)
         return new_ctx;
     }
 
-    offbtn = (unsigned char*)mem_malloc(4100);
-    if (offbtn == NULL) {
+    MemBuffer<unsigned char> offbtnGuard(static_cast<unsigned char*>(mem_malloc(4100)));
+    if (!offbtnGuard) {
         for (index = 0; index < TOWNMAP_FRM_COUNT; index++) {
             art_ptr_unlock(tmapidsav[index]);
         }
         art_ptr_unlock(tmap_pic_key);
-        // FIXME: Leaking `onbtn`.
         return new_ctx;
     }
 
-    btnmsk = (unsigned char*)mem_malloc(4100);
-    if (btnmsk == NULL) {
+    MemBuffer<unsigned char> btnmskGuard(static_cast<unsigned char*>(mem_malloc(4100)));
+    if (!btnmskGuard) {
         for (index = 0; index < TOWNMAP_FRM_COUNT; index++) {
             art_ptr_unlock(tmapidsav[index]);
         }
         art_ptr_unlock(tmap_pic_key);
-        // FIXME: Leaking `offbtn`.
-        // FIXME: Leaking `onbtn`.
         return new_ctx;
     }
 
+    MemBuffer<unsigned char> hvrbtnGuards[7];
     for (index = 0; index < 7; index++) {
-        hvrbtn[index] = (unsigned char*)mem_malloc(4100);
-        if (hvrbtn[index] == NULL) {
-            while (--index >= 0) {
-                mem_free(hvrbtn[index]);
-            }
-
-            mem_free(onbtn);
-            mem_free(offbtn);
-            mem_free(btnmsk);
-
+        hvrbtnGuards[index] = MemBuffer<unsigned char>(static_cast<unsigned char*>(mem_malloc(4100)));
+        if (!hvrbtnGuards[index]) {
             for (index = 0; index < TOWNMAP_FRM_COUNT; index++) {
                 art_ptr_unlock(tmapidsav[index]);
             }
             art_ptr_unlock(tmap_pic_key);
             return new_ctx;
         }
+    }
+
+    // Transfer ownership to module globals.
+    onbtn = onbtnGuard.release();
+    offbtn = offbtnGuard.release();
+    btnmsk = btnmskGuard.release();
+    for (index = 0; index < 7; index++) {
+        hvrbtn[index] = hvrbtnGuards[index].release();
     }
 
     memset(onbtn, 0, 4100);
@@ -3241,7 +3241,7 @@ WorldMapContext town_map(WorldMapContext ctx)
         btnmsk + 164 * 12 + 69,
         164);
 
-    if (message_init(&wrldmap_mesg_file) != 1) {
+    if (wrldmap_mesg_file.init() != 1) {
         for (index = 0; index < 7; index++) {
             mem_free(hvrbtn[index]);
         }
@@ -3259,7 +3259,7 @@ WorldMapContext town_map(WorldMapContext ctx)
 
     snprintf(path, sizeof(path), "%s%s", msg_path, "worldmap.msg");
 
-    if (message_load(&wrldmap_mesg_file, path) != 1) {
+    if (wrldmap_mesg_file.load(path) != 1) {
         // FIXME: Missing `message_exit`.
         for (index = 0; index < 7; index++) {
             mem_free(hvrbtn[index]);
@@ -3300,7 +3300,7 @@ WorldMapContext town_map(WorldMapContext ctx)
             win_register_button_image(TownBttns[index],
                 tmapbmp[TOWNMAP_FRM_LITTLE_RED_BUTTON_NORMAL],
                 tmapbmp[TOWNMAP_FRM_LITTLE_RED_BUTTON_PRESSED],
-                NULL,
+                nullptr,
                 0);
             win_enable_button(TownBttns[index]);
         }
@@ -3308,7 +3308,7 @@ WorldMapContext town_map(WorldMapContext ctx)
         win_register_button_image(WrldToggle,
             tmapbmp[TOWNMAP_FRM_LITTLE_RED_BUTTON_NORMAL],
             tmapbmp[TOWNMAP_FRM_LITTLE_RED_BUTTON_PRESSED],
-            NULL,
+            nullptr,
             0);
         win_enable_button(WrldToggle);
     } else {
@@ -3324,7 +3324,7 @@ WorldMapContext town_map(WorldMapContext ctx)
                 500 + index,
                 tmapbmp[TOWNMAP_FRM_LITTLE_RED_BUTTON_NORMAL],
                 tmapbmp[TOWNMAP_FRM_LITTLE_RED_BUTTON_PRESSED],
-                NULL,
+                nullptr,
                 BUTTON_FLAG_TRANSPARENT);
             win_register_button_sound_func(TownBttns[index], gsound_red_butt_press, gsound_red_butt_release);
         }
@@ -3340,7 +3340,7 @@ WorldMapContext town_map(WorldMapContext ctx)
             512,
             tmapbmp[TOWNMAP_FRM_LITTLE_RED_BUTTON_NORMAL],
             tmapbmp[TOWNMAP_FRM_LITTLE_RED_BUTTON_PRESSED],
-            NULL,
+            nullptr,
             BUTTON_FLAG_TRANSPARENT);
         win_register_button_sound_func(WrldToggle, gsound_red_butt_press, gsound_red_butt_release);
 
@@ -3396,7 +3396,7 @@ WorldMapContext town_map(WorldMapContext ctx)
 
                 fid = art_id(OBJ_TYPE_INTERFACE, input - 344, 0, 0, 0);
                 tmap_pic = art_ptr_lock_data(fid, 0, 0, &tmap_pic_key);
-                if (tmap_pic == NULL) {
+                if (tmap_pic == nullptr) {
                     debug_printf("\n *** WORLD MAP: Error loading town map graphic! ***\n");
                     new_ctx.state = -1;
                     break;
@@ -3480,7 +3480,7 @@ WorldMapContext town_map(WorldMapContext ctx)
         mem_free(hvrbtn[index]);
     }
 
-    message_exit(&wrldmap_mesg_file);
+    wrldmap_mesg_file.exit();
 
     if (bk_enable) {
         map_enable_bk_processes();
@@ -3567,13 +3567,13 @@ static int RegTMAPsels(int win, int city)
 
             switch (v4) {
             case 0:
-                strcpy(name, getmsg(&wrldmap_mesg_file, &mesg, 10 * city + index + 200));
+                strcpy(name, wrldmap_mesg_file.getMessage(&mesg, 10 * city + index + 200));
                 break;
             case 1:
-                strcpy(name, getmsg(&wrldmap_mesg_file, &mesg, 290));
+                strcpy(name, wrldmap_mesg_file.getMessage(&mesg, 290));
                 break;
             case 2:
-                strcpy(name, getmsg(&wrldmap_mesg_file, &mesg, 501));
+                strcpy(name, wrldmap_mesg_file.getMessage(&mesg, 501));
                 break;
             }
 
@@ -3601,11 +3601,11 @@ static int RegTMAPsels(int win, int city)
                 hvrbtn[count],
                 BUTTON_FLAG_TRANSPARENT);
             win_register_button_mask(TMSelBttns[count], btnmsk);
-            win_register_button_func(TMSelBttns[count], NULL, HvrOffBtn, NULL, NULL);
+            win_register_button_func(TMSelBttns[count], nullptr, HvrOffBtn, nullptr, nullptr);
 
             debug_printf("button found count=%d, bcount=%d, btnid=%d\n", index, count, TMSelBttns[count]);
 
-            win_register_button_sound_func(TMSelBttns[count], gsound_med_butt_press, NULL);
+            win_register_button_sound_func(TMSelBttns[count], gsound_med_butt_press, nullptr);
 
             brnpos[count].x = button_x;
             brnpos[count].y = button_y;
@@ -3721,16 +3721,16 @@ static void CalcTimeAdder()
 {
     float outdoorsman;
 
-    outdoorsman = (float)skill_level(obj_dude, SKILL_OUTDOORSMAN);
+    outdoorsman = static_cast<float>(skill_level(obj_dude, SKILL_OUTDOORSMAN));
     if (outdoorsman > 100.0f) {
         outdoorsman = 100.0f;
     }
 
-    wmap_day = (unsigned int)((outdoorsman / 100.0f) * 60.0f + 60.0f);
-    time_adder = (unsigned int)(864000.0f / (float)wmap_day);
+    wmap_day = static_cast<unsigned int>((outdoorsman / 100.0f) * 60.0f + 60.0f);
+    time_adder = static_cast<unsigned int>(864000.0f / (float)wmap_day);
 
     // TODO: Check, float-double-int mess.
-    time_adder = (unsigned int)(time_adder * (1.0 - perk_level(PERK_PATHFINDER) * 0.25f));
+    time_adder = static_cast<unsigned int>(time_adder * (1.0 - perk_level(PERK_PATHFINDER) * 0.25f));
 }
 
 // 0x0x4AEB4C

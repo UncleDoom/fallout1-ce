@@ -1,8 +1,8 @@
 #include "int/audiof.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
 
 #include <adecode/adecode.h>
 
@@ -13,12 +13,12 @@
 
 namespace fallout {
 
-typedef enum AudioFileFlags {
+enum AudioFileFlags {
     AUDIO_FILE_IN_USE = 0x01,
     AUDIO_FILE_COMPRESSED = 0x02,
-} AudioFileFlags;
+};
 
-typedef struct AudioFile {
+struct AudioFile {
     int flags;
     FILE* stream;
     AudioDecoder* audioDecoder;
@@ -26,7 +26,7 @@ typedef struct AudioFile {
     int sampleRate;
     int channels;
     int position;
-} AudioFile;
+};
 
 static bool defaultCompressionFunc(char* filePath);
 static unsigned int decodeRead(void* stream, void* buffer, unsigned int size);
@@ -44,7 +44,7 @@ static int numAudiof;
 static bool defaultCompressionFunc(char* filePath)
 {
     char* pch = strrchr(filePath, '.');
-    if (pch != NULL) {
+    if (pch != nullptr) {
         strcpy(pch + 1, "raw");
     }
 
@@ -54,7 +54,7 @@ static bool defaultCompressionFunc(char* filePath)
 // 0x419EB0
 static unsigned int decodeRead(void* stream, void* buffer, unsigned int size)
 {
-    return fread(buffer, 1, size, (FILE*)stream);
+    return fread(buffer, 1, size, reinterpret_cast<FILE*>(stream));
 }
 
 // 0x419ECC
@@ -92,7 +92,7 @@ int audiofOpen(const char* fname, int flags)
     }
 
     FILE* stream = compat_fopen(path, mode);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
@@ -104,10 +104,10 @@ int audiofOpen(const char* fname, int flags)
     }
 
     if (index == numAudiof) {
-        if (audiof != NULL) {
-            audiof = (AudioFile*)myrealloc(audiof, sizeof(*audiof) * (numAudiof + 1), __FILE__, __LINE__); // "..\int\audiof.c", 206
+        if (audiof != nullptr) {
+            audiof = static_cast<AudioFile*>(myrealloc(audiof, sizeof(*audiof) * (numAudiof + 1), __FILE__, __LINE__)); // "..\int\audiof.c", 206
         } else {
-            audiof = (AudioFile*)mymalloc(sizeof(*audiof), __FILE__, __LINE__); // "..\int\audiof.c", 208
+            audiof = static_cast<AudioFile*>(mymalloc(sizeof(*audiof), __FILE__, __LINE__)); // "..\int\audiof.c", 208
         }
         numAudiof++;
     }
@@ -133,7 +133,7 @@ int audiofOpen(const char* fname, int flags)
 int audiofCloseFile(int fileHandle)
 {
     AudioFile* audioFile = &(audiof[fileHandle - 1]);
-    fclose((FILE*)audioFile->stream);
+    fclose(reinterpret_cast<FILE*>(audioFile->stream));
 
     if ((audioFile->flags & AUDIO_FILE_COMPRESSED) != 0) {
         AudioDecoder_Close(audioFile->audioDecoder);
@@ -248,7 +248,7 @@ int audiofWrite(int fileHandle, const void* buffer, unsigned int size)
 int initAudiof(AudioFileQueryCompressedFunc* isCompressedProc)
 {
     queryCompressedFunc = isCompressedProc;
-    audiof = NULL;
+    audiof = nullptr;
     numAudiof = 0;
 
     return soundSetDefaultFileIO(audiofOpen, audiofCloseFile, audiofRead, audiofWrite, audiofSeek, audiofTell, audiofFileSize);
@@ -257,12 +257,12 @@ int initAudiof(AudioFileQueryCompressedFunc* isCompressedProc)
 // 0x41A3EC
 void audiofClose()
 {
-    if (audiof != NULL) {
+    if (audiof != nullptr) {
         myfree(audiof, __FILE__, __LINE__); // "..\int\audiof.c", 404
     }
 
     numAudiof = 0;
-    audiof = NULL;
+    audiof = nullptr;
 }
 
 } // namespace fallout

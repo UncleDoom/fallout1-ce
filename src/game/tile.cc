@@ -1,11 +1,11 @@
 #include "game/tile.h"
 
-#include <assert.h>
-#include <limits.h>
-#include <string.h>
+#include <cassert>
+#include <climits>
+#include <cstring>
 
 #define _USE_MATH_DEFINES
-#include <math.h>
+#include <cmath>
 
 #include "game/config.h"
 #include "game/gconfig.h"
@@ -23,33 +23,33 @@ namespace fallout {
 
 #define TILE_IS_VALID(tile) ((tile) >= 0 && (tile) < grid_size)
 
-typedef struct RightsideUpTableEntry {
+struct RightsideUpTableEntry {
     int field_0;
     int field_4;
-} RightsideUpTableEntry;
+};
 
-typedef struct UpsideDownTableEntry {
+struct UpsideDownTableEntry {
     int field_0;
     int field_4;
-} UpsideDownTableEntry;
+};
 
-typedef struct STRUCT_51DA6C {
+struct STRUCT_51DA6C {
     int field_0;
     int offsets[2];
     int intensity;
-} STRUCT_51DA6C;
+};
 
-typedef struct RightsideUpTriangle {
+struct RightsideUpTriangle {
     int field_0;
     int field_4;
     int field_8;
-} RightsideUpTriangle;
+};
 
-typedef struct UpsideDownTriangle {
+struct UpsideDownTriangle {
     int field_0;
     int field_4;
     int field_8;
-} UpsideDownTriangle;
+};
 
 static void refresh_mapper(Rect* rect, int elevation);
 static void refresh_game(Rect* rect, int elevation);
@@ -418,7 +418,7 @@ int tile_init(TileData** a1, int squareGridWidth, int squareGridHeight, int hexG
     tile_set_center(hexGridWidth * (hexGridHeight / 2) + hexGridWidth / 2, TILE_SET_CENTER_FLAG_IGNORE_SCROLL_RESTRICTIONS);
 
     char* executable;
-    config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_EXECUTABLE_KEY, &executable);
+    game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_EXECUTABLE_KEY, &executable);
     if (compat_stricmp(executable, "mapper") == 0) {
         tile_refresh = refresh_mapper;
     }
@@ -574,7 +574,7 @@ static void refresh_mapper(Rect* rect, int elevation)
 {
     Rect rectToUpdate;
 
-    if (rect_inside_bound(rect, &buf_rect, &rectToUpdate) == -1) {
+    if (rect->insideBound(buf_rect, rectToUpdate) == -1) {
         return;
     }
 
@@ -597,13 +597,13 @@ static void refresh_game(Rect* rect, int elevation)
 {
     Rect rectToUpdate;
 
-    if (rect_inside_bound(rect, &buf_rect, &rectToUpdate) == -1) {
+    if (rect->insideBound(buf_rect, rectToUpdate) == -1) {
         return;
     }
 
     buf_fill(buf + buf_full * rectToUpdate.uly + rectToUpdate.ulx,
-        rectGetWidth(&rectToUpdate),
-        rectGetHeight(&rectToUpdate),
+        rectToUpdate.width(),
+        rectToUpdate.height(),
         buf_full,
         0);
 
@@ -780,7 +780,7 @@ bool tile_in_front_of(int tile1, int tile2)
     int dx = x2 - x1;
     int dy = y2 - y1;
 
-    return (double)dx <= (double)dy * -4.0;
+    return (double)dx <= static_cast<double>(dy) * -4.0;
 }
 
 // 0x49E508
@@ -801,7 +801,7 @@ bool tile_to_right_of(int tile1, int tile2)
     // binary value is slightly different: 0x3FF55555555556. This difference plays
     // important role as seen right in the beginning of the game, comparing tiles
     // 17488 (0x4450) and 15288 (0x3BB8).
-    return (double)dx <= (double)dy * 1.3333333333333335;
+    return (double)dx <= static_cast<double>(dy) * 1.3333333333333335;
 }
 
 // 0x49E570
@@ -837,7 +837,7 @@ int tile_dir(int tile1, int tile2)
 
     if (x2 != 0) {
         // TODO: Check.
-        int v6 = (int)trunc(atan2((double)-dy, (double)x2) * 180.0 * 0.3183098862851122);
+        int v6 = static_cast<int>(trunc(atan2((double)-dy, (double)x2) * 180.0 * 0.3183098862851122));
         int v7 = 360 - (v6 + 180) - 90;
         if (v7 < 0) {
             v7 += 360;
@@ -1275,12 +1275,12 @@ static void roof_draw(int fid, int x, int y, Rect* rect, int light)
 {
     CacheEntry* tileFrmHandle;
     Art* tileFrm = art_ptr_lock(fid, &tileFrmHandle);
-    if (tileFrm == NULL) {
+    if (tileFrm == nullptr) {
         return;
     }
 
-    int tileWidth = art_frame_width(tileFrm, 0, 0);
-    int tileHeight = art_frame_length(tileFrm, 0, 0);
+    int tileWidth = tileFrm->frameWidth(0, 0);
+    int tileHeight = tileFrm->frameLength(0, 0);
 
     Rect tileRect;
     tileRect.ulx = x;
@@ -1288,15 +1288,15 @@ static void roof_draw(int fid, int x, int y, Rect* rect, int light)
     tileRect.lrx = x + tileWidth - 1;
     tileRect.lry = y + tileHeight - 1;
 
-    if (rect_inside_bound(&tileRect, rect, &tileRect) == 0) {
-        unsigned char* tileFrmBuffer = art_frame_data(tileFrm, 0, 0);
+    if (tileRect.insideBound(*rect, tileRect) == 0) {
+        unsigned char* tileFrmBuffer = tileFrm->frameData(0, 0);
         tileFrmBuffer += tileWidth * (tileRect.uly - y) + (tileRect.ulx - x);
 
         CacheEntry* eggFrmHandle;
         Art* eggFrm = art_ptr_lock(obj_egg->fid, &eggFrmHandle);
-        if (eggFrm != NULL) {
-            int eggWidth = art_frame_width(eggFrm, 0, 0);
-            int eggHeight = art_frame_length(eggFrm, 0, 0);
+        if (eggFrm != nullptr) {
+            int eggWidth = eggFrm->frameWidth(0, 0);
+            int eggHeight = eggFrm->frameLength(0, 0);
 
             int eggScreenX;
             int eggScreenY;
@@ -1321,7 +1321,7 @@ static void roof_draw(int fid, int x, int y, Rect* rect, int light)
             obj_egg->sy = eggRect.uly;
 
             Rect intersectedRect;
-            if (rect_inside_bound(&eggRect, &tileRect, &intersectedRect) == 0) {
+            if (eggRect.insideBound(tileRect, intersectedRect) == 0) {
                 Rect rects[4];
 
                 rects[0].ulx = tileRect.ulx;
@@ -1359,7 +1359,7 @@ static void roof_draw(int fid, int x, int y, Rect* rect, int light)
                     }
                 }
 
-                unsigned char* eggBuf = art_frame_data(eggFrm, 0, 0);
+                unsigned char* eggBuf = eggFrm->frameData(0, 0);
                 intensity_mask_buf_to_buf(tileFrmBuffer + tileWidth * (intersectedRect.uly - tileRect.uly) + (intersectedRect.ulx - tileRect.ulx),
                     intersectedRect.lrx - intersectedRect.ulx + 1,
                     intersectedRect.lry - intersectedRect.uly + 1,
@@ -1458,14 +1458,14 @@ bool square_roof_intersect(int x, int y, int elevation)
             int fid = art_id(OBJ_TYPE_TILE, upper & 0xFFF, 0, 0, 0);
             CacheEntry* handle;
             Art* art = art_ptr_lock(fid, &handle);
-            if (art != NULL) {
-                unsigned char* data = art_frame_data(art, 0, 0);
-                if (data != NULL) {
+            if (art != nullptr) {
+                unsigned char* data = art->frameData(0, 0);
+                if (data != nullptr) {
                     int v18;
                     int v17;
                     square_coord_roof(idx, &v18, &v17, elevation);
 
-                    int width = art_frame_width(art, 0, 0);
+                    int width = art->frameWidth(0, 0);
                     if (data[width * (y - v17) + x - v18] != 0) {
                         result = true;
                     }
@@ -1526,7 +1526,7 @@ void grid_draw(int tile, int elevation)
 
     rect.lrx = rect.ulx + 32 - 1;
     rect.lry = rect.uly + 16 - 1;
-    if (rect_inside_bound(&rect, &buf_rect, &rect) != -1) {
+    if (rect.insideBound(buf_rect, rect) != -1) {
         draw_grid(tile, elevation, &rect);
         blit(&rect);
     }
@@ -1549,11 +1549,11 @@ void draw_grid(int tile, int elevation, Rect* rect)
     r.lrx = x + 32 - 1;
     r.lry = y + 16 - 1;
 
-    if (rect_inside_bound(&r, rect, &r) == -1) {
+    if (r.insideBound(*rect, r) == -1) {
         return;
     }
 
-    if (obj_blocking_at(NULL, tile, elevation) != NULL) {
+    if (obj_blocking_at(nullptr, tile, elevation) != nullptr) {
         trans_buf_to_buf(tile_grid_blocked + 32 * (r.uly - y) + (r.ulx - x),
             r.lrx - r.ulx + 1,
             r.lry - r.uly + 1,
@@ -1594,7 +1594,7 @@ void floor_draw(int fid, int x, int y, Rect* rect)
 
     CacheEntry* cacheEntry;
     Art* art = art_ptr_lock(fid, &cacheEntry);
-    if (art == NULL) {
+    if (art == nullptr) {
         return;
     }
 
@@ -1632,8 +1632,8 @@ void floor_draw(int fid, int x, int y, Rect* rect)
 
     if (x >= buf_width || x > rect->lrx || y >= buf_length || y > rect->lry) goto out;
 
-    frameWidth = art_frame_width(art, 0, 0);
-    frameHeight = art_frame_length(art, 0, 0);
+    frameWidth = art->frameWidth(0, 0);
+    frameHeight = art->frameLength(0, 0);
 
     if (left < x) {
         v79 = 0;
@@ -1687,7 +1687,7 @@ void floor_draw(int fid, int x, int y, Rect* rect)
         }
 
         if (v23 == 9) {
-            unsigned char* frame_data = art_frame_data(art, 0, 0);
+            unsigned char* frame_data = art->frameData(0, 0);
             dark_trans_buf_to_buf(frame_data + frameWidth * v78 + v79, v77, v76, frameWidth, buf, x, y, buf_full, verticies[0].intensity);
             goto out;
         }
@@ -1801,7 +1801,7 @@ void floor_draw(int fid, int x, int y, Rect* rect)
         }
 
         unsigned char* v66 = buf + buf_full * y + x;
-        unsigned char* v67 = art_frame_data(art, 0, 0) + frameWidth * v78 + v79;
+        unsigned char* v67 = art->frameData(0, 0) + frameWidth * v78 + v79;
         int* v68 = &(intensity_map[160 + 80 * v78]) + v79;
         int v86 = frameWidth - v77;
         int v85 = buf_full - v77;
@@ -2091,7 +2091,7 @@ void tile_update_bounds_rect()
 
 int tile_inside_bound(Rect* rect)
 {
-    return rect_inside_bound(rect, &tile_bounds_rect, rect);
+    return rect->insideBound(tile_bounds_rect, *rect);
 }
 
 bool tile_point_inside_bound(int x, int y)
@@ -2111,7 +2111,7 @@ void bounds_render(Rect* rect, int elevation)
     edge.uly = tile_bounds_rect.uly;
     edge.lrx = tile_bounds_rect.ulx + kShadowSize;
     edge.lry = tile_bounds_rect.lry;
-    if (rect_inside_bound(&edge, rect, &edge) == 0) {
+    if (edge.insideBound(*rect, edge) == 0) {
         for (int y = edge.uly; y <= edge.lry; y++) {
             unsigned char* dest = buf + buf_full * y + edge.ulx;
             int step = edge.ulx - tile_bounds_rect.ulx;
@@ -2128,7 +2128,7 @@ void bounds_render(Rect* rect, int elevation)
     edge.uly = tile_bounds_rect.uly;
     edge.lrx = tile_bounds_rect.lrx;
     edge.lry = tile_bounds_rect.uly + kShadowSize;
-    if (rect_inside_bound(&edge, rect, &edge) == 0) {
+    if (edge.insideBound(*rect, edge) == 0) {
         int step = edge.uly - tile_bounds_rect.uly;
         for (int y = edge.uly; y <= edge.lry; y++) {
             unsigned char* dest = buf + buf_full * y + edge.ulx;
@@ -2145,7 +2145,7 @@ void bounds_render(Rect* rect, int elevation)
     edge.uly = tile_bounds_rect.uly;
     edge.lrx = tile_bounds_rect.lrx;
     edge.lry = tile_bounds_rect.lry;
-    if (rect_inside_bound(&edge, rect, &edge) == 0) {
+    if (edge.insideBound(*rect, edge) == 0) {
         for (int y = edge.uly; y <= edge.lry; y++) {
             unsigned char* dest = buf + buf_full * y + edge.lrx;
             int step = tile_bounds_rect.lrx - edge.lrx;
@@ -2162,7 +2162,7 @@ void bounds_render(Rect* rect, int elevation)
     edge.uly = tile_bounds_rect.lry - kShadowSize;
     edge.lrx = tile_bounds_rect.lrx;
     edge.lry = tile_bounds_rect.lry;
-    if (rect_inside_bound(&edge, rect, &edge) == 0) {
+    if (edge.insideBound(*rect, edge) == 0) {
         int step = tile_bounds_rect.lry - edge.lry;
         for (int y = edge.lry; y >= edge.uly; y--) {
             unsigned char* dest = buf + buf_full * y + edge.ulx;

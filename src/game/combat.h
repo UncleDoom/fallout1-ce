@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_COMBAT_H_
-#define FALLOUT_GAME_COMBAT_H_
+#pragma once
+
 
 #include "game/anim.h"
 #include "game/combat_defs.h"
@@ -12,7 +12,7 @@
 namespace fallout {
 
 extern unsigned int combat_state;
-extern STRUCT_664980* gcsd;
+extern CombatSequenceParams* gcsd;
 extern bool combat_call_display;
 extern int cf_table[WEAPON_CRITICAL_FAILURE_TYPE_COUNT][WEAPON_CRITICAL_FAILURE_EFFECT_COUNT];
 
@@ -35,16 +35,10 @@ int combat_in_range(Object* critter);
 void combat_end();
 void combat_turn_run();
 void combat_end_turn();
-void combat(STRUCT_664980* attack);
-void combat_ctd_init(Attack* attack, Object* attacker, Object* defender, int hitMode, int hitLocation);
 int combat_attack(Object* a1, Object* a2, int hitMode, int location);
 int combat_bullet_start(const Object* a1, const Object* a2);
-void compute_explosion_on_extras(Attack* attack, int a2, bool isGrenade, int a4);
 int determine_to_hit(Object* a1, Object* a2, int hitLocation, int hitMode);
 int determine_to_hit_no_range(Object* a1, Object* a2, int hitLocation, int hitMode);
-void death_checks(Attack* attack);
-void apply_damage(Attack* attack, bool animated);
-void combat_display(Attack* attack);
 void combat_anim_begin();
 void combat_anim_finished();
 int combat_check_bad_shot(Object* attacker, Object* defender, int hitMode, bool aiming);
@@ -64,5 +58,3 @@ static inline bool isInCombat()
 }
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_COMBAT_H_ */

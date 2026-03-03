@@ -1,91 +1,87 @@
 #include "int/region.h"
 
-#include <limits.h>
-#include <string.h>
+#include <climits>
+#include <cstring>
 
-#include "int/memdbg.h"
 #include "plib/gnw/debug.h"
 
 namespace fallout {
 
-// 0x490F60
-void regionSetBound(Region* region)
+// --- Region class implementation ---
+
+Region::Region(int initialCapacity)
+{
+    if (initialCapacity > 0) {
+        points_.reserve(initialCapacity + 1);
+    }
+    minX_ = INT_MIN;
+    minY_ = INT_MIN;
+    maxX_ = INT_MAX;
+    maxY_ = INT_MAX;
+}
+
+void Region::setBound()
 {
     int minX = INT_MAX;
     int maxX = INT_MIN;
     int minY = INT_MAX;
     int maxY = INT_MIN;
-    int numPoints = 0;
     int totalX = 0;
     int totalY = 0;
+    int numPoints = 0;
 
-    for (int index = 0; index < region->pointsLength; index++) {
-        Point* point = &(region->points[index]);
-        if (minX >= point->x) minX = point->x;
-        if (minY >= point->y) minY = point->y;
-        if (maxX <= point->x) maxX = point->x;
-        if (maxY <= point->y) maxY = point->y;
-        totalX += point->x;
-        totalY += point->y;
+    // Last point is the duplicate closing point; iterate only real points.
+    const int count = points_.empty() ? 0 : static_cast<int>(points_.size()) - 1;
+    for (int i = 0; i < count; i++) {
+        const Point& pt = points_[i];
+        if (minX >= pt.x) minX = pt.x;
+        if (minY >= pt.y) minY = pt.y;
+        if (maxX <= pt.x) maxX = pt.x;
+        if (maxY <= pt.y) maxY = pt.y;
+        totalX += pt.x;
+        totalY += pt.y;
         numPoints++;
     }
 
-    region->minY = minY;
-    region->maxX = maxX;
-    region->maxY = maxY;
-    region->minX = minX;
+    minY_ = minY;
+    maxX_ = maxX;
+    maxY_ = maxY;
+    minX_ = minX;
 
     if (numPoints != 0) {
-        region->centerX = totalX / numPoints;
-        region->centerY = totalY / numPoints;
+        centerX_ = totalX / numPoints;
+        centerY_ = totalY / numPoints;
     }
 }
 
-// 0x491024
-bool pointInRegion(Region* region, int x, int y)
+bool Region::contains(int x, int y) const
 {
-    if (region == NULL) {
+    if (x < minX_ || x > maxX_ || y < minY_ || y > maxY_) {
         return false;
     }
 
-    if (x < region->minX || x > region->maxX || y < region->minY || y > region->maxY) {
+    const int count = points_.empty() ? 0 : static_cast<int>(points_.size()) - 1;
+    if (count <= 0) {
         return false;
     }
 
     int v1;
-
-    Point* prev = &(region->points[0]);
-    if (x >= prev->x) {
-        if (y >= prev->y) {
-            v1 = 2;
-        } else {
-            v1 = 1;
-        }
+    const Point& first = points_[0];
+    if (x >= first.x) {
+        v1 = (y >= first.y) ? 2 : 1;
     } else {
-        if (y >= prev->y) {
-            v1 = 3;
-        } else {
-            v1 = 0;
-        }
+        v1 = (y >= first.y) ? 3 : 0;
     }
 
     int v4 = 0;
-    for (int index = 0; index < region->pointsLength; index++) {
+    const Point* prev = &points_[0];
+    for (int index = 0; index < count; index++) {
+        const Point* point = &points_[index + 1];
         int v2;
-
-        Point* point = &(region->points[index + 1]);
         if (x >= point->x) {
-            if (y >= point->y) {
-                v2 = 2;
-            } else {
-                v2 = 1;
-            }
+            v2 = (y >= point->y) ? 2 : 1;
         } else {
-            if (y >= point->y) {
-                v2 = 3;
-            } else {
-                v2 = 0;
-            }
+            v2 = (y >= point->y) ? 3 : 0;
         }
 
         int v3 = v2 - v1;
@@ -95,7 +91,7 @@ bool pointInRegion(Region* region, int x, int y)
             break;
         case -2:
         case 2:
-            if ((double)x < ((double)point->x - (double)(prev->x - point->x) / (double)(prev->y - point->y) * (double)(point->y - y))) {
+            if (static_cast<double>(x) < (static_cast<double>(point->x) - static_cast<double>(prev->x - point->x) / static_cast<double>(prev->y - point->y) * static_cast<double>(point->y - y))) {
                 v3 = -v3;
             }
             break;
@@ -106,162 +102,126 @@ bool pointInRegion(Region* region, int x, int y)
 
         prev = point;
         v1 = v2;
-
         v4 += v3;
     }
 
-    if (v4 == 4 || v4 == -4) {
-        return true;
-    }
-
-    return false;
+    return (v4 == 4 || v4 == -4);
 }
 
-// 0x491188
+void Region::addPoint(int x, int y)
+{
+    if (points_.empty()) {
+        // First point: add the point and a closing duplicate.
+        points_.push_back({ x, y });
+        points_.push_back({ x, y });
+    } else {
+        // Insert before the closing duplicate point.
+        const int pointIndex = static_cast<int>(points_.size()) - 1;
+        points_.insert(points_.begin() + pointIndex, { x, y });
+        // Update closing point to match the first point.
+        points_.back() = points_.front();
+    }
+}
+
+void Region::setName(const char* name)
+{
+    if (name == nullptr) {
+        name_[0] = '\0';
+        return;
+    }
+    strncpy(name_, name, REGION_NAME_LENGTH - 1);
+    name_[REGION_NAME_LENGTH - 1] = '\0';
+}
+
+// --- Legacy free-function wrappers ---
+
+void regionSetBound(Region* region)
+{
+    if (region != nullptr) {
+        region->setBound();
+    }
+}
+
+bool pointInRegion(Region* region, int x, int y)
+{
+    if (region == nullptr) {
+        return false;
+    }
+    return region->contains(x, y);
+}
+
 Region* allocateRegion(int initialCapacity)
 {
-    Region* region = (Region*)mymalloc(sizeof(*region), __FILE__, __LINE__); // "..\int\REGION.C", 142
-    memset(region, 0, sizeof(*region));
-
-    if (initialCapacity != 0) {
-        region->points = (Point*)mymalloc(sizeof(*region->points) * (initialCapacity + 1), __FILE__, __LINE__); // "..\int\REGION.C", 147
-        region->pointsCapacity = initialCapacity + 1;
-    } else {
-        region->points = NULL;
-        region->pointsCapacity = 0;
-    }
-
-    region->name[0] = '\0';
-    region->flags = 0;
-    region->minY = INT_MIN;
-    region->maxY = INT_MAX;
-    region->procs[3] = 0;
-    region->rightProcs[1] = 0;
-    region->rightProcs[3] = 0;
-    region->field_68 = 0;
-    region->rightProcs[0] = 0;
-    region->field_70 = 0;
-    region->rightProcs[2] = 0;
-    region->mouseEventCallback = NULL;
-    region->rightMouseEventCallback = NULL;
-    region->mouseEventCallbackUserData = 0;
-    region->rightMouseEventCallbackUserData = 0;
-    region->pointsLength = 0;
-    region->minX = region->minY;
-    region->maxX = region->maxY;
-    region->procs[2] = 0;
-    region->procs[1] = 0;
-    region->procs[0] = 0;
-    region->rightProcs[0] = 0;
-
-    return region;
+    return new Region(initialCapacity);
 }
 
-// 0x491274
 void regionAddPoint(Region* region, int x, int y)
 {
-    if (region == NULL) {
+    if (region == nullptr) {
         debug_printf("regionAddPoint(): null region ptr\n");
         return;
     }
-
-    if (region->points != NULL) {
-        if (region->pointsCapacity - 1 == region->pointsLength) {
-            region->points = (Point*)myrealloc(region->points, sizeof(*region->points) * (region->pointsCapacity + 1), __FILE__, __LINE__); // "..\int\REGION.C", 190
-            region->pointsCapacity++;
-        }
-    } else {
-        region->pointsCapacity = 2;
-        region->pointsLength = 0;
-        region->points = (Point*)mymalloc(sizeof(*region->points) * 2, __FILE__, __LINE__); // "..\int\REGION.C", 185
-    }
-
-    int pointIndex = region->pointsLength;
-    region->pointsLength++;
-
-    Point* point = &(region->points[pointIndex]);
-    point->x = x;
-    point->y = y;
-
-    Point* end = &(region->points[pointIndex + 1]);
-    end->x = region->points->x;
-    end->y = region->points->y;
+    region->addPoint(x, y);
 }
 
-// 0x491318
 void regionDelete(Region* region)
 {
-    if (region == NULL) {
+    if (region == nullptr) {
         debug_printf("regionDelete(): null region ptr\n");
         return;
     }
-
-    if (region->points != NULL) {
-        myfree(region->points, __FILE__, __LINE__); // "..\int\REGION.C", 206
-    }
-
-    myfree(region, __FILE__, __LINE__); // "..\int\REGION.C", 207
+    delete region;
 }
 
-// 0x4A2F54
 void regionAddName(Region* region, const char* name)
 {
-    if (region == NULL) {
+    if (region == nullptr) {
         debug_printf("regionAddName(): null region ptr\n");
         return;
     }
-
-    if (name == NULL) {
-        region->name[0] = '\0';
-        return;
-    }
-
-    strncpy(region->name, name, REGION_NAME_LENGTH - 1);
+    region->setName(name);
 }
 
-// 0x49138C
 const char* regionGetName(Region* region)
 {
-    if (region == NULL) {
+    if (region == nullptr) {
         debug_printf("regionGetName(): null region ptr\n");
         return "<null>";
     }
-
-    return region->name;
+    return region->getName();
 }
 
-// 0x4913A4
 void* regionGetUserData(Region* region)
 {
-    if (region == NULL) {
+    if (region == nullptr) {
         debug_printf("regionGetUserData(): null region ptr\n");
-        return NULL;
+        return nullptr;
     }
-
-    return region->userData;
+    return region->getUserData();
 }
 
-// 0x4913C0
 void regionSetUserData(Region* region, void* data)
 {
-    if (region == NULL) {
+    if (region == nullptr) {
         debug_printf("regionSetUserData(): null region ptr\n");
         return;
     }
-
-    region->userData = data;
+    region->setUserData(data);
 }
 
-// 0x4913DC
 void regionSetFlag(Region* region, int value)
 {
-    region->flags |= value;
+    if (region != nullptr) {
+        region->setFlag(value);
+    }
 }
 
-// 0x4913E0
 int regionGetFlag(Region* region)
 {
-    return region->flags;
+    if (region != nullptr) {
+        return region->getFlags();
+    }
+    return 0;
 }
 
 } // namespace fallout

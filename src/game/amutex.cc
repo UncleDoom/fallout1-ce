@@ -15,7 +15,7 @@ static HANDLE autorun_mutex;
 bool autorun_mutex_create()
 {
 #ifdef _WIN32
-    autorun_mutex = CreateMutexA(NULL, FALSE, "InterplayGenericAutorunMutex");
+    autorun_mutex = CreateMutexA(nullptr, FALSE, "InterplayGenericAutorunMutex");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         CloseHandle(autorun_mutex);
         return false;
@@ -29,7 +29,7 @@ bool autorun_mutex_create()
 void autorun_mutex_destroy()
 {
 #ifdef _WIN32
-    if (autorun_mutex != NULL) {
+    if (autorun_mutex != nullptr) {
         CloseHandle(autorun_mutex);
     }
 #endif

@@ -1,43 +1,66 @@
-#ifndef FALLOUT_GAME_GSOUND_H_
-#define FALLOUT_GAME_GSOUND_H_
+#pragma once
+
 
 #include "game/object_types.h"
 #include "int/sound.h"
 
 namespace fallout {
 
-typedef enum WeaponSoundEffect {
-    WEAPON_SOUND_EFFECT_READY,
-    WEAPON_SOUND_EFFECT_ATTACK,
-    WEAPON_SOUND_EFFECT_OUT_OF_AMMO,
-    WEAPON_SOUND_EFFECT_AMMO_FLYING,
-    WEAPON_SOUND_EFFECT_HIT,
-    WEAPON_SOUND_EFFECT_COUNT,
-} WeaponSoundEffect;
+enum class WeaponSoundEffect : int {
+    Ready = 0,
+    Attack = 1,
+    OutOfAmmo = 2,
+    AmmoFlying = 3,
+    Hit = 4,
+    Count = 5,
+};
 
-typedef enum SoundEffectActionType {
-    SOUND_EFFECT_ACTION_TYPE_ACTIVE,
-    SOUND_EFFECT_ACTION_TYPE_PASSIVE,
-} SoundEffectActionType;
+inline constexpr int WEAPON_SOUND_EFFECT_READY = static_cast<int>(WeaponSoundEffect::Ready);
+inline constexpr int WEAPON_SOUND_EFFECT_ATTACK = static_cast<int>(WeaponSoundEffect::Attack);
+inline constexpr int WEAPON_SOUND_EFFECT_OUT_OF_AMMO = static_cast<int>(WeaponSoundEffect::OutOfAmmo);
+inline constexpr int WEAPON_SOUND_EFFECT_AMMO_FLYING = static_cast<int>(WeaponSoundEffect::AmmoFlying);
+inline constexpr int WEAPON_SOUND_EFFECT_HIT = static_cast<int>(WeaponSoundEffect::Hit);
+inline constexpr int WEAPON_SOUND_EFFECT_COUNT = static_cast<int>(WeaponSoundEffect::Count);
 
-typedef enum ScenerySoundEffect {
-    SCENERY_SOUND_EFFECT_OPEN,
-    SCENERY_SOUND_EFFECT_CLOSED,
-    SCENERY_SOUND_EFFECT_LOCKED,
-    SCENERY_SOUND_EFFECT_UNLOCKED,
-    SCENERY_SOUND_EFFECT_USED,
-    SCENERY_SOUND_EFFECT_COUNT,
-} ScenerySoundEffect;
+enum class SoundEffectActionType : int {
+    Active = 0,
+    Passive = 1,
+};
 
-typedef enum CharacterSoundEffect {
-    CHARACTER_SOUND_EFFECT_UNUSED,
-    CHARACTER_SOUND_EFFECT_KNOCKDOWN,
-    CHARACTER_SOUND_EFFECT_PASS_OUT,
-    CHARACTER_SOUND_EFFECT_DIE,
-    CHARACTER_SOUND_EFFECT_CONTACT,
-} CharacterSoundEffect;
+inline constexpr int SOUND_EFFECT_ACTION_TYPE_ACTIVE = static_cast<int>(SoundEffectActionType::Active);
+inline constexpr int SOUND_EFFECT_ACTION_TYPE_PASSIVE = static_cast<int>(SoundEffectActionType::Passive);
 
-typedef void(SoundEndCallback)();
+enum class ScenerySoundEffect : int {
+    Open = 0,
+    Closed = 1,
+    Locked = 2,
+    Unlocked = 3,
+    Used = 4,
+    Count = 5,
+};
+
+inline constexpr int SCENERY_SOUND_EFFECT_OPEN = static_cast<int>(ScenerySoundEffect::Open);
+inline constexpr int SCENERY_SOUND_EFFECT_CLOSED = static_cast<int>(ScenerySoundEffect::Closed);
+inline constexpr int SCENERY_SOUND_EFFECT_LOCKED = static_cast<int>(ScenerySoundEffect::Locked);
+inline constexpr int SCENERY_SOUND_EFFECT_UNLOCKED = static_cast<int>(ScenerySoundEffect::Unlocked);
+inline constexpr int SCENERY_SOUND_EFFECT_USED = static_cast<int>(ScenerySoundEffect::Used);
+inline constexpr int SCENERY_SOUND_EFFECT_COUNT = static_cast<int>(ScenerySoundEffect::Count);
+
+enum class CharacterSoundEffect : int {
+    Unused = 0,
+    Knockdown = 1,
+    PassOut = 2,
+    Die = 3,
+    Contact = 4,
+};
+
+inline constexpr int CHARACTER_SOUND_EFFECT_UNUSED = static_cast<int>(CharacterSoundEffect::Unused);
+inline constexpr int CHARACTER_SOUND_EFFECT_KNOCKDOWN = static_cast<int>(CharacterSoundEffect::Knockdown);
+inline constexpr int CHARACTER_SOUND_EFFECT_PASS_OUT = static_cast<int>(CharacterSoundEffect::PassOut);
+inline constexpr int CHARACTER_SOUND_EFFECT_DIE = static_cast<int>(CharacterSoundEffect::Die);
+inline constexpr int CHARACTER_SOUND_EFFECT_CONTACT = static_cast<int>(CharacterSoundEffect::Contact);
+
+using SoundEndCallback = void();
 
 int gsound_init();
 void gsound_reset();
@@ -108,5 +131,3 @@ void gsound_lrg_butt_release(int btn, int keyCode);
 int gsound_play_sfx_file(const char* name);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_GSOUND_H_ */

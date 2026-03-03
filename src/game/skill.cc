@@ -1,7 +1,7 @@
 #include "game/skill.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "game/actions.h"
 #include "game/combat.h"
@@ -28,11 +28,11 @@
 
 namespace fallout {
 
-#define SKILL_LEVEL_MAX 200
+static constexpr int SKILL_LEVEL_MAX = 200;
 
-#define SKILLS_MAX_USES_PER_DAY 3
+static constexpr int SKILLS_MAX_USES_PER_DAY = 3;
 
-#define HEALABLE_DAMAGE_FLAGS_LENGTH 5
+static constexpr int HEALABLE_DAMAGE_FLAGS_LENGTH = 5;
 
 static void show_skill_use_messages(Object* obj, int skill, Object* a3, int a4, int a5);
 static int skill_game_difficulty(int skill);
@@ -40,7 +40,7 @@ static int skill_use_slot_available(int skill);
 static int skill_use_slot_add(int skill);
 static int skill_use_slot_clear();
 
-typedef struct SkillDescription {
+struct SkillDescription {
     char* name;
     char* description;
     char* attributes;
@@ -52,28 +52,28 @@ typedef struct SkillDescription {
     int points_modifier;
     int experience;
     int field_28;
-} SkillDescription;
+};
 
 // 0x507AA4
 static SkillDescription skill_data[SKILL_COUNT] = {
-    { NULL, NULL, NULL, 28, 35, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 29, 10, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 30, 10, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 31, 65, 1, STAT_AGILITY, STAT_STRENGTH, 1, 0, 0 },
-    { NULL, NULL, NULL, 32, 55, 1, STAT_AGILITY, STAT_STRENGTH, 1, 0, 0 },
-    { NULL, NULL, NULL, 33, 40, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 34, 30, 1, STAT_PERCEPTION, STAT_INTELLIGENCE, 1, 25, 0 },
-    { NULL, NULL, NULL, 35, 15, 1, STAT_PERCEPTION, STAT_INTELLIGENCE, 1, 50, 0 },
-    { NULL, NULL, NULL, 36, 25, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 37, 20, 1, STAT_PERCEPTION, STAT_AGILITY, 1, 25, 1 },
-    { NULL, NULL, NULL, 38, 20, 1, STAT_AGILITY, STAT_INVALID, 1, 25, 1 },
-    { NULL, NULL, NULL, 39, 20, 1, STAT_PERCEPTION, STAT_AGILITY, 1, 25, 1 },
-    { NULL, NULL, NULL, 40, 25, 2, STAT_INTELLIGENCE, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 41, 20, 1, STAT_INTELLIGENCE, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 42, 25, 2, STAT_CHARISMA, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 43, 20, 2, STAT_CHARISMA, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 44, 20, 3, STAT_LUCK, STAT_INVALID, 1, 0, 0 },
-    { NULL, NULL, NULL, 45, 5, 1, STAT_ENDURANCE, STAT_INTELLIGENCE, 1, 100, 0 },
+    { nullptr, nullptr, nullptr, 28, 35, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 29, 10, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 30, 10, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 31, 65, 1, STAT_AGILITY, STAT_STRENGTH, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 32, 55, 1, STAT_AGILITY, STAT_STRENGTH, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 33, 40, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 34, 30, 1, STAT_PERCEPTION, STAT_INTELLIGENCE, 1, 25, 0 },
+    { nullptr, nullptr, nullptr, 35, 15, 1, STAT_PERCEPTION, STAT_INTELLIGENCE, 1, 50, 0 },
+    { nullptr, nullptr, nullptr, 36, 25, 1, STAT_AGILITY, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 37, 20, 1, STAT_PERCEPTION, STAT_AGILITY, 1, 25, 1 },
+    { nullptr, nullptr, nullptr, 38, 20, 1, STAT_AGILITY, STAT_INVALID, 1, 25, 1 },
+    { nullptr, nullptr, nullptr, 39, 20, 1, STAT_PERCEPTION, STAT_AGILITY, 1, 25, 1 },
+    { nullptr, nullptr, nullptr, 40, 25, 2, STAT_INTELLIGENCE, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 41, 20, 1, STAT_INTELLIGENCE, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 42, 25, 2, STAT_CHARISMA, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 43, 20, 2, STAT_CHARISMA, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 44, 20, 3, STAT_LUCK, STAT_INVALID, 1, 0, 0 },
+    { nullptr, nullptr, nullptr, 45, 5, 1, STAT_ENDURANCE, STAT_INTELLIGENCE, 1, 100, 0 },
 };
 
 // 0x507DBC
@@ -103,29 +103,29 @@ int skill_init()
     int index;
     MessageListItem mesg;
 
-    if (!message_init(&skill_message_file)) {
+    if (!skill_message_file.init()) {
         return -1;
     }
 
     snprintf(path, sizeof(path), "%s%s", msg_path, "skill.msg");
 
-    if (!message_load(&skill_message_file, path)) {
+    if (!skill_message_file.load(path)) {
         return -1;
     }
 
     for (index = 0; index < SKILL_COUNT; index++) {
         mesg.num = 100 + index;
-        if (message_search(&skill_message_file, &mesg)) {
+        if (skill_message_file.search(&mesg)) {
             skill_data[index].name = mesg.text;
         }
 
         mesg.num = 200 + index;
-        if (message_search(&skill_message_file, &mesg)) {
+        if (skill_message_file.search(&mesg)) {
             skill_data[index].description = mesg.text;
         }
 
         mesg.num = 300 + index;
-        if (message_search(&skill_message_file, &mesg)) {
+        if (skill_message_file.search(&mesg)) {
             skill_data[index].attributes = mesg.text;
         }
     }
@@ -156,28 +156,28 @@ void skill_reset()
 // 0x4982D4
 void skill_exit()
 {
-    message_exit(&skill_message_file);
+    skill_message_file.exit();
 }
 
 // 0x4982E4
 int skill_load(DB_FILE* stream)
 {
-    return db_freadIntCount(stream, tag_skill, NUM_TAGGED_SKILLS);
+    return stream->freadIntCount(tag_skill, NUM_TAGGED_SKILLS);
 }
 
 // 0x498304
 int skill_save(DB_FILE* stream)
 {
-    return db_fwriteIntCount(stream, tag_skill, NUM_TAGGED_SKILLS);
+    return stream->fwriteIntCount(tag_skill, NUM_TAGGED_SKILLS);
 }
 
 // 0x498324
-void skill_set_defaults(CritterProtoData* data)
+void CritterProtoData::setSkillDefaults()
 {
     int index;
 
     for (index = 0; index < SKILL_COUNT; index++) {
-        data->skills[index] = 0;
+        skills[index] = 0;
     }
 }
 
@@ -363,7 +363,7 @@ int skill_contest(Object* attacker, Object* defender, int skill, int attackerMod
         attackerRoll = roll_check_critical(attackerHowMuch, 0);
     }
 
-    if (howMuch != NULL) {
+    if (howMuch != nullptr) {
         *howMuch = attackerHowMuch;
     }
 
@@ -373,19 +373,19 @@ int skill_contest(Object* attacker, Object* defender, int skill, int attackerMod
 // 0x4986A8
 char* skill_name(int skill)
 {
-    return skill >= 0 && skill < SKILL_COUNT ? skill_data[skill].name : NULL;
+    return skill >= 0 && skill < SKILL_COUNT ? skill_data[skill].name : nullptr;
 }
 
 // 0x4986CC
 char* skill_description(int skill)
 {
-    return skill >= 0 && skill < SKILL_COUNT ? skill_data[skill].description : NULL;
+    return skill >= 0 && skill < SKILL_COUNT ? skill_data[skill].description : nullptr;
 }
 
 // 0x4986F0
 char* skill_attribute(int skill)
 {
-    return skill >= 0 && skill < SKILL_COUNT ? skill_data[skill].attributes : NULL;
+    return skill >= 0 && skill < SKILL_COUNT ? skill_data[skill].attributes : nullptr;
 }
 
 // 0x498714
@@ -423,7 +423,7 @@ static void show_skill_use_messages(Object* obj, int skill, Object* a3, int a4, 
     if (stat_pc_add_experience(xpToAdd) == 0 && a4 > 0) {
         MessageListItem messageListItem;
         messageListItem.num = 505; // You earn %d XP for honing your skills
-        if (message_search(&skill_message_file, &messageListItem)) {
+        if (skill_message_file.search(&messageListItem)) {
             int after = stat_pc_get(PC_STAT_EXPERIENCE);
 
             char text[60];
@@ -468,7 +468,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
             // 591: You're too tired.
             // 592: The strain might kill you.
             messageListItem.num = 590 + roll_random(0, 2);
-            if (message_search(&skill_message_file, &messageListItem)) {
+            if (skill_message_file.search(&messageListItem)) {
                 display_print(messageListItem.text);
             }
 
@@ -480,7 +480,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
             // 513: Let the dead rest in peace.
             // 514: It's dead, get over it.
             messageListItem.num = 512 + roll_random(0, 2);
-            if (message_search(&skill_message_file, &messageListItem)) {
+            if (skill_message_file.search(&messageListItem)) {
                 debug_printf(messageListItem.text);
             }
 
@@ -504,7 +504,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
                 if (obj == obj_dude) {
                     // You heal %d hit points.
                     messageListItem.num = 500;
-                    if (!message_search(&skill_message_file, &messageListItem)) {
+                    if (!skill_message_file.search(&messageListItem)) {
                         return -1;
                     }
 
@@ -526,7 +526,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
             } else {
                 // You fail to do any healing.
                 messageListItem.num = 503;
-                if (!message_search(&skill_message_file, &messageListItem)) {
+                if (!skill_message_file.search(&messageListItem)) {
                     return -1;
                 }
 
@@ -541,7 +541,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
                 // 501: You look healty already
                 // 502: %s looks healthy already
                 messageListItem.num = (a2 == obj_dude ? 501 : 502);
-                if (!message_search(&skill_message_file, &messageListItem)) {
+                if (!skill_message_file.search(&messageListItem)) {
                     return -1;
                 }
 
@@ -567,7 +567,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
             // 591: You're too tired.
             // 592: The strain might kill you.
             messageListItem.num = 590 + roll_random(0, 2);
-            if (message_search(&skill_message_file, &messageListItem)) {
+            if (skill_message_file.search(&messageListItem)) {
                 display_print(messageListItem.text);
             }
 
@@ -579,7 +579,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
             // 513: Let the dead rest in peace.
             // 514: It's dead, get over it.
             messageListItem.num = 512 + roll_random(0, 2);
-            if (message_search(&skill_message_file, &messageListItem)) {
+            if (skill_message_file.search(&messageListItem)) {
                 display_print(messageListItem.text);
             }
             break;
@@ -612,7 +612,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
                         // 533: crippled right leg
                         // 534: crippled left leg
                         messageListItem.num = 530 + index;
-                        if (!message_search(&skill_message_file, &messageListItem)) {
+                        if (!skill_message_file.search(&messageListItem)) {
                             return -1;
                         }
 
@@ -635,7 +635,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
                             prefix.num = (a2 == obj_dude ? 525 : 526);
                         }
 
-                        if (!message_search(&skill_message_file, &prefix)) {
+                        if (!skill_message_file.search(&prefix)) {
                             return -1;
                         }
 
@@ -663,7 +663,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
                 if (obj == obj_dude) {
                     // You heal %d hit points.
                     messageListItem.num = 500;
-                    if (!message_search(&skill_message_file, &messageListItem)) {
+                    if (!skill_message_file.search(&messageListItem)) {
                         return -1;
                     }
 
@@ -691,7 +691,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
             } else {
                 // You fail to do any healing.
                 messageListItem.num = 503;
-                if (!message_search(&skill_message_file, &messageListItem)) {
+                if (!skill_message_file.search(&messageListItem)) {
                     return -1;
                 }
 
@@ -706,7 +706,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
                 // 501: You look healty already
                 // 502: %s looks healthy already
                 messageListItem.num = (a2 == obj_dude ? 501 : 502);
-                if (!message_search(&skill_message_file, &messageListItem)) {
+                if (!skill_message_file.search(&messageListItem)) {
                     return -1;
                 }
 
@@ -736,7 +736,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
     case SKILL_TRAPS:
         // You fail to find any traps.
         messageListItem.num = 551;
-        if (message_search(&skill_message_file, &messageListItem)) {
+        if (skill_message_file.search(&messageListItem)) {
             display_print(messageListItem.text);
         }
 
@@ -744,7 +744,7 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
     case SKILL_SCIENCE:
         // You fail to learn anything.
         messageListItem.num = 552;
-        if (message_search(&skill_message_file, &messageListItem)) {
+        if (skill_message_file.search(&messageListItem)) {
             display_print(messageListItem.text);
         }
 
@@ -752,14 +752,14 @@ int skill_use(Object* obj, Object* a2, int skill, int criticalChanceModifier)
     case SKILL_REPAIR:
         // You cannot repair that.
         messageListItem.num = 553;
-        if (message_search(&skill_message_file, &messageListItem)) {
+        if (skill_message_file.search(&messageListItem)) {
             display_print(messageListItem.text);
         }
         return -1;
     default:
         // skill_use: invalid skill used.
         messageListItem.num = 510;
-        if (message_search(&skill_message_file, &messageListItem)) {
+        if (skill_message_file.search(&messageListItem)) {
             debug_printf(messageListItem.text);
         }
 
@@ -836,7 +836,7 @@ int skill_check_stealing(Object* a1, Object* a2, Object* item, bool isPlanting)
         // 571: You steal the %s.
         // 573: You plant the %s.
         messageListItem.num = isPlanting ? 573 : 571;
-        if (!message_search(&skill_message_file, &messageListItem)) {
+        if (!skill_message_file.search(&messageListItem)) {
             return -1;
         }
 
@@ -848,7 +848,7 @@ int skill_check_stealing(Object* a1, Object* a2, Object* item, bool isPlanting)
         // 570: You're caught stealing the %s.
         // 572: You're caught planting the %s.
         messageListItem.num = isPlanting ? 572 : 570;
-        if (!message_search(&skill_message_file, &messageListItem)) {
+        if (!skill_message_file.search(&messageListItem)) {
             return -1;
         }
 
@@ -878,7 +878,7 @@ static int skill_game_difficulty(int skill)
     case SKILL_GAMBLING:
     case SKILL_OUTDOORSMAN:
         game_difficulty = GAME_DIFFICULTY_NORMAL;
-        config_get_value(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_GAME_DIFFICULTY_KEY, &game_difficulty);
+        game_config.getValue(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_GAME_DIFFICULTY_KEY, &game_difficulty);
 
         if (game_difficulty == GAME_DIFFICULTY_HARD) {
             return -10;
@@ -937,13 +937,13 @@ static int skill_use_slot_clear()
 // 0x499520
 int skill_use_slot_save(DB_FILE* stream)
 {
-    return db_fwriteIntCount(stream, (int*)timesSkillUsed, SKILL_COUNT * SKILLS_MAX_USES_PER_DAY);
+    return stream->fwriteIntCount(reinterpret_cast<int*>(timesSkillUsed), SKILL_COUNT * SKILLS_MAX_USES_PER_DAY);
 }
 
 // 0x499540
 int skill_use_slot_load(DB_FILE* stream)
 {
-    return db_freadIntCount(stream, (int*)timesSkillUsed, SKILL_COUNT * SKILLS_MAX_USES_PER_DAY);
+    return stream->freadIntCount(reinterpret_cast<int*>(timesSkillUsed), SKILL_COUNT * SKILLS_MAX_USES_PER_DAY);
 }
 
 } // namespace fallout

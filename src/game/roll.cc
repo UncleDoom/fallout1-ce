@@ -1,7 +1,7 @@
 #include "game/roll.h"
 
-#include <limits.h>
-#include <stdlib.h>
+#include <climits>
+#include <cstdlib>
 
 #include <random>
 
@@ -68,7 +68,7 @@ int roll_check(int difficulty, int criticalSuccessModifier, int* howMuchPtr)
     int delta = difficulty - roll_random(1, 100);
     int result = roll_check_critical(delta, criticalSuccessModifier);
 
-    if (howMuchPtr != NULL) {
+    if (howMuchPtr != nullptr) {
         *howMuchPtr = delta;
     }
 
@@ -225,7 +225,7 @@ static void check_chi_squared()
     double v1 = 0.0;
 
     for (int index = 0; index < 25; index++) {
-        double v2 = ((double)results[index] - 4000.0) * ((double)results[index] - 4000.0) / 4000.0;
+        double v2 = (static_cast<double>(results[index]) - 4000.0) * (static_cast<double>(results[index]) - 4000.0) / 4000.0;
         v1 += v2;
     }
 

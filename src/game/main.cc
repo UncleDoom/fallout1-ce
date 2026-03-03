@@ -10,8 +10,8 @@
 //
 // Function names and visibility scope are from in OS X binary.
 
-#include <limits.h>
-#include <stddef.h>
+#include <climits>
+#include <cstddef>
 
 #include "game/amutex.h"
 #include "game/art.h"
@@ -47,8 +47,8 @@
 
 namespace fallout {
 
-#define DEATH_WINDOW_WIDTH 640
-#define DEATH_WINDOW_HEIGHT 480
+static constexpr int DEATH_WINDOW_WIDTH = 640;
+static constexpr int DEATH_WINDOW_HEIGHT = 480;
 
 static bool main_init_system(int argc, char** argv);
 static int main_reset_system();
@@ -71,7 +71,7 @@ static char mainMap[] = "V13Ent.map";
 int main_game_paused = 0;
 
 // 0x505A70
-static char** main_selfrun_list = NULL;
+static char** main_selfrun_list = nullptr;
 
 // 0x505A74
 static int main_selfrun_count = 0;
@@ -103,7 +103,7 @@ int gnw_main(int argc, char** argv)
         int language_filter = 1;
         bool done = false;
 
-        config_get_value(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_LANGUAGE_FILTER_KEY, &language_filter);
+        game_config.getValue(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_LANGUAGE_FILTER_KEY, &language_filter);
 
         while (!done) {
             kb_clear();
@@ -261,7 +261,7 @@ static int main_load_new(char* mapFileName)
     game_user_wants_to_quit = 0;
     main_show_death_scene = 0;
     obj_dude->flags &= ~OBJECT_FLAT;
-    obj_turn_on(obj_dude, NULL);
+    obj_turn_on(obj_dude, nullptr);
     mouse_hide();
 
     int win = win_add(0, 0, screenGetWidth(), screenGetHeight(), colorTable[0], WINDOW_MODAL | WINDOW_MOVE_ON_TOP);
@@ -289,7 +289,7 @@ static int main_loadgame_new()
 
     obj_dude->flags &= ~OBJECT_FLAT;
 
-    obj_turn_on(obj_dude, NULL);
+    obj_turn_on(obj_dude, nullptr);
     mouse_hide();
 
     map_init();
@@ -303,7 +303,7 @@ static int main_loadgame_new()
 // 0x472A40
 static void main_unload_new()
 {
-    obj_turn_off(obj_dude, NULL);
+    obj_turn_off(obj_dude, nullptr);
     map_exit();
 }
 
@@ -352,7 +352,7 @@ static void main_game_loop()
 // 0x472AE8
 static bool main_selfrun_init()
 {
-    if (main_selfrun_list != NULL) {
+    if (main_selfrun_list != nullptr) {
         // NOTE: Uninline.
         main_selfrun_exit();
     }
@@ -369,13 +369,13 @@ static bool main_selfrun_init()
 // 0x472B3C
 static void main_selfrun_exit()
 {
-    if (main_selfrun_list != NULL) {
+    if (main_selfrun_list != nullptr) {
         selfrun_free_list(&main_selfrun_list);
     }
 
     main_selfrun_count = 0;
     main_selfrun_index = 0;
-    main_selfrun_list = NULL;
+    main_selfrun_list = nullptr;
 }
 
 // 0x472B68
@@ -385,7 +385,7 @@ static void main_selfrun_record()
     bool ready = false;
 
     char** fileList;
-    int fileListLength = db_get_file_list("maps\\*.map", &fileList, NULL, 0);
+    int fileListLength = db_get_file_list("maps\\*.map", &fileList, nullptr, 0);
     if (fileListLength != 0) {
         int selectedFileIndex = win_list_select("Select Map", fileList, fileListLength, 0, 80, 80, 0x10000 | 0x100 | 4);
         if (selectedFileIndex != -1) {
@@ -395,12 +395,12 @@ static void main_selfrun_record()
             recordingName[0] = '\0';
             if (win_get_str(recordingName, sizeof(recordingName) - 2, "Enter name for recording (8 characters max, no extension):", 100, 100) == 0) {
                 memset(&selfrunData, 0, sizeof(selfrunData));
-                if (selfrun_prep_recording(recordingName, fileList[selectedFileIndex], &selfrunData) == 0) {
+                if (selfrunData.prepRecording(recordingName, fileList[selectedFileIndex]) == 0) {
                     ready = true;
                 }
             }
         }
-        db_free_file_list(&fileList, NULL);
+        db_free_file_list(&fileList, nullptr);
     }
 
     if (ready) {
@@ -414,7 +414,7 @@ static void main_selfrun_record()
 
         proto_dude_init("premade\\combat.gcd");
         main_load_new(selfrunData.mapFileName);
-        selfrun_recording_loop(&selfrunData);
+        selfrunData.recordingLoop();
         palette_fade_to(white_palette);
 
         // NOTE: Uninline.
@@ -445,7 +445,7 @@ static void main_selfrun_play()
 
     if (!toggle && main_selfrun_count > 0) {
         SelfrunData selfrunData;
-        if (selfrun_prep_playback(main_selfrun_list[main_selfrun_index], &selfrunData) == 0) {
+        if (selfrunData.prepPlayback(main_selfrun_list[main_selfrun_index]) == 0) {
             main_menu_hide(true);
             main_menu_destroy();
             gsound_background_stop();
@@ -456,7 +456,7 @@ static void main_selfrun_play()
 
             proto_dude_init("premade\\combat.gcd");
             main_load_new(selfrunData.mapFileName);
-            selfrun_playback_loop(&selfrunData);
+            selfrunData.playbackLoop();
             palette_fade_to(white_palette);
 
             // NOTE: Uninline.
@@ -510,12 +510,12 @@ static void main_death_scene()
         WINDOW_MOVE_ON_TOP);
     if (win != -1) {
         unsigned char* windowBuffer = win_get_buf(win);
-        if (windowBuffer != NULL) {
+        if (windowBuffer != nullptr) {
             // DEATH.FRM
             CacheEntry* backgroundHandle;
             int fid = art_id(OBJ_TYPE_INTERFACE, 309, 0, 0, 0);
             unsigned char* background = art_ptr_lock_data(fid, 0, 0, &backgroundHandle);
-            if (background != NULL) {
+            if (background != nullptr) {
                 while (mouse_get_buttons() != 0) {
                     sharedFpsLimiter.mark();
 
@@ -573,7 +573,7 @@ static void main_death_scene()
                     sharedFpsLimiter.throttle();
                 } while (elapsed_time(time) < delay);
 
-                gsound_speech_callback_set(NULL);
+                gsound_speech_callback_set(nullptr);
 
                 gsound_speech_stop();
 

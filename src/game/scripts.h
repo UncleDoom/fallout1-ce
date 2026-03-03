@@ -1,7 +1,8 @@
-#ifndef FALLOUT_GAME_SCRIPTS_H_
-#define FALLOUT_GAME_SCRIPTS_H_
+#pragma once
+
 
 #include "game/combat_defs.h"
+#include "game/enum_utils.h"
 #include "game/message.h"
 #include "game/object_types.h"
 #include "int/intrpret.h"
@@ -19,60 +20,112 @@ namespace fallout {
 #define GAME_TIME_TICKS_PER_DAY (24 * 60 * 60 * 10)
 #define GAME_TIME_TICKS_PER_YEAR (365 * 24 * 60 * 60 * 10)
 
-#define SCRIPT_DIALOG_MESSAGE_LIST_CAPACITY 1000
+inline constexpr int SCRIPT_DIALOG_MESSAGE_LIST_CAPACITY = 1000;
 
-typedef enum ScriptRequests {
-    SCRIPT_REQUEST_COMBAT = 0x01,
-    SCRIPT_REQUEST_TOWN_MAP = 0x02,
-    SCRIPT_REQUEST_WORLD_MAP = 0x04,
-    SCRIPT_REQUEST_ELEVATOR = 0x08,
-    SCRIPT_REQUEST_EXPLOSION = 0x10,
-    SCRIPT_REQUEST_DIALOG = 0x20,
-    SCRIPT_REQUEST_NO_INITIAL_COMBAT_STATE = 0x40,
-    SCRIPT_REQUEST_ENDGAME = 0x80,
-    SCRIPT_REQUEST_LOOTING = 0x100,
-    SCRIPT_REQUEST_STEALING = 0x200,
-    SCRIPT_REQUEST_LOCKED = 0x400,
-} ScriptRequests;
+// Bitmask of pending script-initiated requests.
+enum class ScriptRequests : unsigned {
+    Combat = 0x01,
+    TownMap = 0x02,
+    WorldMap = 0x04,
+    Elevator = 0x08,
+    Explosion = 0x10,
+    Dialog = 0x20,
+    NoInitialCombatState = 0x40,
+    Endgame = 0x80,
+    Looting = 0x100,
+    Stealing = 0x200,
+    Locked = 0x400,
+};
+DEFINE_ENUM_FLAG_OPERATORS(ScriptRequests)
 
-typedef enum ScriptType {
-    SCRIPT_TYPE_SYSTEM, // s_system
-    SCRIPT_TYPE_SPATIAL, // s_spatial
-    SCRIPT_TYPE_TIMED, // s_time
-    SCRIPT_TYPE_ITEM, // s_item
-    SCRIPT_TYPE_CRITTER, // s_critter
-    SCRIPT_TYPE_COUNT,
-} ScriptType;
+// Legacy constants
+inline constexpr int SCRIPT_REQUEST_COMBAT = static_cast<int>(ScriptRequests::Combat);
+inline constexpr int SCRIPT_REQUEST_TOWN_MAP = static_cast<int>(ScriptRequests::TownMap);
+inline constexpr int SCRIPT_REQUEST_WORLD_MAP = static_cast<int>(ScriptRequests::WorldMap);
+inline constexpr int SCRIPT_REQUEST_ELEVATOR = static_cast<int>(ScriptRequests::Elevator);
+inline constexpr int SCRIPT_REQUEST_EXPLOSION = static_cast<int>(ScriptRequests::Explosion);
+inline constexpr int SCRIPT_REQUEST_DIALOG = static_cast<int>(ScriptRequests::Dialog);
+inline constexpr int SCRIPT_REQUEST_NO_INITIAL_COMBAT_STATE = static_cast<int>(ScriptRequests::NoInitialCombatState);
+inline constexpr int SCRIPT_REQUEST_ENDGAME = static_cast<int>(ScriptRequests::Endgame);
+inline constexpr int SCRIPT_REQUEST_LOOTING = static_cast<int>(ScriptRequests::Looting);
+inline constexpr int SCRIPT_REQUEST_STEALING = static_cast<int>(ScriptRequests::Stealing);
+inline constexpr int SCRIPT_REQUEST_LOCKED = static_cast<int>(ScriptRequests::Locked);
 
-typedef enum ScriptProc {
-    SCRIPT_PROC_NO_PROC = 0,
-    SCRIPT_PROC_START = 1,
-    SCRIPT_PROC_SPATIAL = 2,
-    SCRIPT_PROC_DESCRIPTION = 3,
-    SCRIPT_PROC_PICKUP = 4,
-    SCRIPT_PROC_DROP = 5,
-    SCRIPT_PROC_USE = 6,
-    SCRIPT_PROC_USE_OBJ_ON = 7,
-    SCRIPT_PROC_USE_SKILL_ON = 8,
-    SCRIPT_PROC_9 = 9, // use_ad_on_proc
-    SCRIPT_PROC_10 = 10, // use_disad_on_proc
-    SCRIPT_PROC_TALK = 11,
-    SCRIPT_PROC_CRITTER = 12,
-    SCRIPT_PROC_COMBAT = 13,
-    SCRIPT_PROC_DAMAGE = 14,
-    SCRIPT_PROC_MAP_ENTER = 15,
-    SCRIPT_PROC_MAP_EXIT = 16,
-    SCRIPT_PROC_CREATE = 17,
-    SCRIPT_PROC_DESTROY = 18,
-    SCRIPT_PROC_19 = 19, // barter_init_proc
-    SCRIPT_PROC_20 = 20, // barter_proc
-    SCRIPT_PROC_LOOK_AT = 21,
-    SCRIPT_PROC_TIMED = 22,
-    SCRIPT_PROC_MAP_UPDATE = 23,
-    SCRIPT_PROC_COUNT,
-} ScriptProc;
 
-typedef struct Script {
+enum class ScriptType : int {
+    System = 0, // s_system
+    Spatial = 1, // s_spatial
+    Timed = 2, // s_time
+    Item = 3, // s_item
+    Critter = 4, // s_critter
+    Count = 5,
+};
+
+// Legacy constants
+inline constexpr int SCRIPT_TYPE_SYSTEM = static_cast<int>(ScriptType::System);
+inline constexpr int SCRIPT_TYPE_SPATIAL = static_cast<int>(ScriptType::Spatial);
+inline constexpr int SCRIPT_TYPE_TIMED = static_cast<int>(ScriptType::Timed);
+inline constexpr int SCRIPT_TYPE_ITEM = static_cast<int>(ScriptType::Item);
+inline constexpr int SCRIPT_TYPE_CRITTER = static_cast<int>(ScriptType::Critter);
+inline constexpr int SCRIPT_TYPE_COUNT = static_cast<int>(ScriptType::Count);
+
+enum class ScriptProc : int {
+    NoProc = 0,
+    Start = 1,
+    Spatial = 2,
+    Description = 3,
+    Pickup = 4,
+    Drop = 5,
+    Use = 6,
+    UseObjOn = 7,
+    UseSkillOn = 8,
+    Proc9 = 9, // use_ad_on_proc
+    Proc10 = 10, // use_disad_on_proc
+    Talk = 11,
+    Critter = 12,
+    Combat = 13,
+    Damage = 14,
+    MapEnter = 15,
+    MapExit = 16,
+    Create = 17,
+    Destroy = 18,
+    Proc19 = 19, // barter_init_proc
+    Proc20 = 20, // barter_proc
+    LookAt = 21,
+    Timed = 22,
+    MapUpdate = 23,
+    Count = 24,
+};
+
+// Legacy constants
+inline constexpr int SCRIPT_PROC_NO_PROC = static_cast<int>(ScriptProc::NoProc);
+inline constexpr int SCRIPT_PROC_START = static_cast<int>(ScriptProc::Start);
+inline constexpr int SCRIPT_PROC_SPATIAL = static_cast<int>(ScriptProc::Spatial);
+inline constexpr int SCRIPT_PROC_DESCRIPTION = static_cast<int>(ScriptProc::Description);
+inline constexpr int SCRIPT_PROC_PICKUP = static_cast<int>(ScriptProc::Pickup);
+inline constexpr int SCRIPT_PROC_DROP = static_cast<int>(ScriptProc::Drop);
+inline constexpr int SCRIPT_PROC_USE = static_cast<int>(ScriptProc::Use);
+inline constexpr int SCRIPT_PROC_USE_OBJ_ON = static_cast<int>(ScriptProc::UseObjOn);
+inline constexpr int SCRIPT_PROC_USE_SKILL_ON = static_cast<int>(ScriptProc::UseSkillOn);
+inline constexpr int SCRIPT_PROC_9 = static_cast<int>(ScriptProc::Proc9);
+inline constexpr int SCRIPT_PROC_10 = static_cast<int>(ScriptProc::Proc10);
+inline constexpr int SCRIPT_PROC_TALK = static_cast<int>(ScriptProc::Talk);
+inline constexpr int SCRIPT_PROC_CRITTER = static_cast<int>(ScriptProc::Critter);
+inline constexpr int SCRIPT_PROC_COMBAT = static_cast<int>(ScriptProc::Combat);
+inline constexpr int SCRIPT_PROC_DAMAGE = static_cast<int>(ScriptProc::Damage);
+inline constexpr int SCRIPT_PROC_MAP_ENTER = static_cast<int>(ScriptProc::MapEnter);
+inline constexpr int SCRIPT_PROC_MAP_EXIT = static_cast<int>(ScriptProc::MapExit);
+inline constexpr int SCRIPT_PROC_CREATE = static_cast<int>(ScriptProc::Create);
+inline constexpr int SCRIPT_PROC_DESTROY = static_cast<int>(ScriptProc::Destroy);
+inline constexpr int SCRIPT_PROC_19 = static_cast<int>(ScriptProc::Proc19);
+inline constexpr int SCRIPT_PROC_20 = static_cast<int>(ScriptProc::Proc20);
+inline constexpr int SCRIPT_PROC_LOOK_AT = static_cast<int>(ScriptProc::LookAt);
+inline constexpr int SCRIPT_PROC_TIMED = static_cast<int>(ScriptProc::Timed);
+inline constexpr int SCRIPT_PROC_MAP_UPDATE = static_cast<int>(ScriptProc::MapUpdate);
+inline constexpr int SCRIPT_PROC_COUNT = static_cast<int>(ScriptProc::Count);
+
+class Script {
+public:
     int scr_id;
     int scr_next;
 
@@ -124,7 +177,13 @@ typedef struct Script {
     int field_D4;
     int field_D8;
     int field_DC;
-} Script;
+
+    int clearCombatRequests();
+    int removeLocalVars();
+    int buildLookupTable();
+    int writeSubNode(DB_FILE* stream);
+    int readSubNode(DB_FILE* stream);
+};
 
 extern int num_script_indexes;
 
@@ -156,10 +215,9 @@ int script_q_save(DB_FILE* stream, void* data);
 int script_q_load(DB_FILE* stream, void** dataPtr);
 int script_q_process(Object* obj, void* data);
 int scripts_clear_state();
-int scripts_clear_combat_requests(Script* script);
+
 int scripts_check_state();
 int scripts_check_state_in_combat();
-int scripts_request_combat(STRUCT_664980* a1);
 void scripts_request_townmap();
 void scripts_request_worldmap();
 int scripts_request_elevator(int elevator);
@@ -192,7 +250,7 @@ int scr_save(DB_FILE* stream);
 int scr_load(DB_FILE* stream);
 int scr_ptr(int sid, Script** script);
 int scr_new(int* sidPtr, int scriptType);
-int scr_remove_local_vars(Script* script);
+
 int scr_remove(int index);
 int scr_remove_all();
 int scr_remove_all_force();
@@ -216,5 +274,3 @@ bool scr_end_combat();
 int scr_explode_scenery(Object* a1, int tile, int radius, int elevation);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_SCRIPTS_H_ */

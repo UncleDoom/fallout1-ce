@@ -1,5 +1,5 @@
-#ifndef FALLOUT_PLIB_GNW_INPUT_H_
-#define FALLOUT_PLIB_GNW_INPUT_H_
+#pragma once
+
 
 #include <SDL.h>
 
@@ -8,11 +8,11 @@
 
 namespace fallout {
 
-typedef void(IdleFunc)();
-typedef void(FocusFunc)(int);
-typedef void(BackgroundProcess)();
-typedef int(PauseWinFunc)();
-typedef int(ScreenDumpFunc)(int width, int height, unsigned char* buffer, unsigned char* palette);
+using IdleFunc = void();
+using FocusFunc = void(int);
+using BackgroundProcess = void();
+using PauseWinFunc = int();
+using ScreenDumpFunc = int(int width, int height, unsigned char* buffer, unsigned char* palette);
 
 int GNW_input_init(int use_msec_timer);
 void GNW_input_exit();
@@ -54,5 +54,3 @@ void beginTextInput();
 void endTextInput();
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_INPUT_H_ */

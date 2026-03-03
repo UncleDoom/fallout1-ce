@@ -1,6 +1,6 @@
 #include "game/credits.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "game/art.h"
 #include "game/cycle.h"
@@ -22,7 +22,7 @@
 
 namespace fallout {
 
-#define CREDITS_WINDOW_SCROLLING_DELAY 38
+static constexpr int CREDITS_WINDOW_SCROLLING_DELAY = 38;
 
 static bool credits_get_next_line(char* dest, int* font, int* color);
 
@@ -65,7 +65,7 @@ void credits(const char* filePath, int backgroundFid, bool useReversedStyle)
     char localizedPath[COMPAT_MAX_PATH];
     if (message_make_path(localizedPath, sizeof(localizedPath), filePath)) {
         credits_file = db_fopen(localizedPath, "rt");
-        if (credits_file != NULL) {
+        if (credits_file != nullptr) {
             soundUpdate();
 
             cycle_disable();
@@ -82,8 +82,8 @@ void credits(const char* filePath, int backgroundFid, bool useReversedStyle)
             soundUpdate();
             if (window != -1) {
                 unsigned char* windowBuffer = win_get_buf(window);
-                if (windowBuffer != NULL) {
-                    unsigned char* backgroundBuffer = (unsigned char*)mem_malloc(windowWidth * windowHeight);
+                if (windowBuffer != nullptr) {
+                    unsigned char* backgroundBuffer = static_cast<unsigned char*>(mem_malloc(windowWidth * windowHeight));
                     if (backgroundBuffer) {
                         soundUpdate();
 
@@ -92,10 +92,10 @@ void credits(const char* filePath, int backgroundFid, bool useReversedStyle)
                         if (backgroundFid != -1) {
                             CacheEntry* backgroundFrmHandle;
                             Art* frm = art_ptr_lock(backgroundFid, &backgroundFrmHandle);
-                            if (frm != NULL) {
-                                int width = art_frame_width(frm, 0, 0);
-                                int height = art_frame_length(frm, 0, 0);
-                                unsigned char* backgroundFrmData = art_frame_data(frm, 0, 0);
+                            if (frm != nullptr) {
+                                int width = frm->frameWidth(0, 0);
+                                int height = frm->frameLength(0, 0);
+                                unsigned char* backgroundFrmData = frm->frameData(0, 0);
                                 buf_to_buf(backgroundFrmData,
                                     width,
                                     height,
@@ -106,8 +106,8 @@ void credits(const char* filePath, int backgroundFid, bool useReversedStyle)
                             }
                         }
 
-                        unsigned char* intermediateBuffer = (unsigned char*)mem_malloc(windowWidth * windowHeight);
-                        if (intermediateBuffer != NULL) {
+                        unsigned char* intermediateBuffer = static_cast<unsigned char*>(mem_malloc(windowWidth * windowHeight));
+                        if (intermediateBuffer != nullptr) {
                             memset(intermediateBuffer, 0, windowWidth * windowHeight);
 
                             text_font(title_font);
@@ -118,14 +118,14 @@ void credits(const char* filePath, int backgroundFid, bool useReversedStyle)
 
                             int lineHeight = nameFontLineHeight + (titleFontLineHeight >= nameFontLineHeight ? titleFontLineHeight - nameFontLineHeight : 0);
                             int stringBufferSize = windowWidth * lineHeight;
-                            unsigned char* stringBuffer = (unsigned char*)mem_malloc(stringBufferSize);
-                            if (stringBuffer != NULL) {
+                            unsigned char* stringBuffer = static_cast<unsigned char*>(mem_malloc(stringBufferSize));
+                            if (stringBuffer != nullptr) {
                                 const char* boom = "boom";
                                 int exploding_head_frame = 0;
                                 int exploding_head_cycle = 0;
                                 int violence_level = 0;
 
-                                config_get_value(&game_config, GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_VIOLENCE_LEVEL_KEY, &violence_level);
+                                game_config.getValue(GAME_CONFIG_PREFERENCES_KEY, GAME_CONFIG_VIOLENCE_LEVEL_KEY, &violence_level);
 
                                 buf_to_buf(backgroundBuffer,
                                     windowWidth,
@@ -196,10 +196,10 @@ void credits(const char* filePath, int backgroundFid, bool useReversedStyle)
                                                 CacheEntry* exploding_head_key;
                                                 int exploding_head_fid = art_id(OBJ_TYPE_INTERFACE, 39, 0, 0, 0);
                                                 Art* exploding_head_frm = art_ptr_lock(exploding_head_fid, &exploding_head_key);
-                                                if (exploding_head_frm != NULL && exploding_head_frame - 1 < art_frame_max_frame(exploding_head_frm)) {
-                                                    int width = art_frame_width(exploding_head_frm, exploding_head_frame - 1, 0);
-                                                    int height = art_frame_length(exploding_head_frm, exploding_head_frame - 1, 0);
-                                                    unsigned char* logoData = art_frame_data(exploding_head_frm, exploding_head_frame - 1, 0);
+                                                if (exploding_head_frm != nullptr && exploding_head_frame - 1 < exploding_head_frm->maxFrame()) {
+                                                    int width = exploding_head_frm->frameWidth(exploding_head_frame - 1, 0);
+                                                    int height = exploding_head_frm->frameLength(exploding_head_frame - 1, 0);
+                                                    unsigned char* logoData = exploding_head_frm->frameData(exploding_head_frame - 1, 0);
                                                     trans_buf_to_buf(logoData,
                                                         width,
                                                         height,
@@ -294,7 +294,7 @@ void credits(const char* filePath, int backgroundFid, bool useReversedStyle)
 
             gmouse_set_cursor(MOUSE_CURSOR_ARROW);
             cycle_enable();
-            db_fclose(credits_file);
+            credits_file->fclose();
         }
     }
 
@@ -305,7 +305,7 @@ void credits(const char* filePath, int backgroundFid, bool useReversedStyle)
 static bool credits_get_next_line(char* dest, int* font, int* color)
 {
     char string[256];
-    while (db_fgets(string, 256, credits_file)) {
+    while (credits_file->fgets(string, 256)) {
         char* pch;
         if (string[0] == ';') {
             continue;

@@ -1,11 +1,11 @@
-#ifndef FALLOUT_GAME_SFXLIST_H_
-#define FALLOUT_GAME_SFXLIST_H_
+#pragma once
+
 
 namespace fallout {
 
-#define SFXL_OK 0
-#define SFXL_ERR 1
-#define SFXL_ERR_TAG_INVALID 2
+inline constexpr int SFXL_OK = 0;
+inline constexpr int SFXL_ERR = 1;
+inline constexpr int SFXL_ERR_TAG_INVALID = 2;
 
 bool sfxl_tag_is_legal(int tag);
 int sfxl_init(const char* soundEffectsPath, int compression, int debugLevel);
@@ -16,5 +16,3 @@ int sfxl_size_full(int tag, int* sizePtr);
 int sfxl_size_cached(int tag, int* sizePtr);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_SFXLIST_H_ */

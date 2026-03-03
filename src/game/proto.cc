@@ -1,11 +1,12 @@
 #include "game/proto.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "game/art.h"
 #include "game/combat.h"
 #include "game/config.h"
+#include "game/raii.h"
 #include "game/critter.h"
 #include "game/editor.h"
 #include "game/game.h"
@@ -26,8 +27,7 @@
 namespace fallout {
 
 static char* proto_get_msg_info(int pid, int message);
-static int proto_read_CombatData(CritterCombatData* data, DB_FILE* stream);
-static int proto_write_CombatData(CritterCombatData* data, DB_FILE* stream);
+
 static int proto_read_item_data(ItemProtoData* item_data, int type, DB_FILE* stream);
 static int proto_read_scenery_data(SceneryProtoData* scenery_data, int type, DB_FILE* stream);
 static int proto_read_protoSubNode(Proto* buf, DB_FILE* stream);
@@ -193,7 +193,7 @@ int proto_list_str(int pid, char* proto_path)
         return -1;
     }
 
-    if (proto_path == NULL) {
+    if (proto_path == nullptr) {
         return -1;
     }
 
@@ -203,11 +203,11 @@ int proto_list_str(int pid, char* proto_path)
     strcat(path, art_dir(PID_TYPE(pid)));
     strcat(path, ".lst");
 
-    DB_FILE* stream = db_fopen(path, "rt");
+    DbFileGuard stream(db_fopen(path, "rt"));
 
     int i = 1;
     char string[256];
-    while (db_fgets(string, sizeof(string), stream)) {
+    while (stream.get()->fgets(string, sizeof(string))) {
         if (i == (pid & 0xFFFFFF)) {
             break;
         }
@@ -215,19 +215,17 @@ int proto_list_str(int pid, char* proto_path)
         i++;
     }
 
-    db_fclose(stream);
-
     if (i != (pid & 0xFFFFFF)) {
         return -1;
     }
 
     char* pch = strchr(string, ' ');
-    if (pch != NULL) {
+    if (pch != nullptr) {
         *pch = '\0';
     }
 
     pch = strchr(string, '\n');
-    if (pch != NULL) {
+    if (pch != nullptr) {
         *pch = '\0';
     }
 
@@ -338,7 +336,7 @@ static char* proto_get_msg_info(int pid, int message)
 
             MessageListItem messageListItem;
             messageListItem.num = proto->messageId + message;
-            if (message_search(messageList, &messageListItem)) {
+            if (messageList->search(&messageListItem)) {
                 v1 = messageListItem.text;
             }
         }
@@ -391,8 +389,8 @@ int proto_critter_init(Proto* a1, int a2)
     CritterProtoData* data = &(a1->critter.data);
     data->experience = 60;
     data->killType = 0;
-    stat_set_defaults(data);
-    skill_set_defaults(data);
+    data->setStatDefaults();
+    data->setSkillDefaults();
 
     return 0;
 }
@@ -406,29 +404,29 @@ void clear_pupdate_data(Object* obj)
 }
 
 // 0x48D4BC
-static int proto_read_CombatData(CritterCombatData* data, DB_FILE* stream)
+int CritterCombatData::readCombatData(DB_FILE* stream)
 {
-    if (db_freadInt32(stream, &(data->damageLastTurn)) == -1) return -1;
-    if (db_freadInt32(stream, &(data->maneuver)) == -1) return -1;
-    if (db_freadInt32(stream, &(data->ap)) == -1) return -1;
-    if (db_freadInt32(stream, &(data->results)) == -1) return -1;
-    if (db_freadInt32(stream, &(data->aiPacket)) == -1) return -1;
-    if (db_freadInt32(stream, &(data->team)) == -1) return -1;
-    if (db_freadInt32(stream, &(data->whoHitMeCid)) == -1) return -1;
+    if (stream->freadInt32(&(damageLastTurn)) == -1) return -1;
+    if (stream->freadInt32(&(maneuver)) == -1) return -1;
+    if (stream->freadInt32(&(ap)) == -1) return -1;
+    if (stream->freadInt32(&(results)) == -1) return -1;
+    if (stream->freadInt32(&(aiPacket)) == -1) return -1;
+    if (stream->freadInt32(&(team)) == -1) return -1;
+    if (stream->freadInt32(&(whoHitMeCid)) == -1) return -1;
 
     return 0;
 }
 
 // 0x48D544
-static int proto_write_CombatData(CritterCombatData* data, DB_FILE* stream)
+int CritterCombatData::writeCombatData(DB_FILE* stream)
 {
-    if (db_fwriteInt32(stream, data->damageLastTurn) == -1) return -1;
-    if (db_fwriteInt32(stream, data->maneuver) == -1) return -1;
-    if (db_fwriteInt32(stream, data->ap) == -1) return -1;
-    if (db_fwriteInt32(stream, data->results) == -1) return -1;
-    if (db_fwriteInt32(stream, data->aiPacket) == -1) return -1;
-    if (db_fwriteInt32(stream, data->team) == -1) return -1;
-    if (db_fwriteInt32(stream, data->whoHitMeCid) == -1) return -1;
+    if (stream->fwriteInt32(damageLastTurn) == -1) return -1;
+    if (stream->fwriteInt32(maneuver) == -1) return -1;
+    if (stream->fwriteInt32(ap) == -1) return -1;
+    if (stream->fwriteInt32(results) == -1) return -1;
+    if (stream->fwriteInt32(aiPacket) == -1) return -1;
+    if (stream->fwriteInt32(team) == -1) return -1;
+    if (stream->fwriteInt32(whoHitMeCid) == -1) return -1;
 
     return 0;
 }
@@ -440,19 +438,19 @@ int proto_read_protoUpdateData(Object* obj, DB_FILE* stream)
     int temp;
 
     Inventory* inventory = &(obj->data.inventory);
-    if (db_freadInt32(stream, &(inventory->length)) == -1) return -1;
-    if (db_freadInt32(stream, &(inventory->capacity)) == -1) return -1;
+    if (stream->freadInt32(&(inventory->length)) == -1) return -1;
+    if (stream->freadInt32(&(inventory->capacity)) == -1) return -1;
     // CE: Original code reads inventory items pointer which is meaningless.
-    if (db_freadInt32(stream, &temp) == -1) return -1;
+    if (stream->freadInt32(&temp) == -1) return -1;
 
     if (PID_TYPE(obj->pid) == OBJ_TYPE_CRITTER) {
-        if (db_freadInt32(stream, &(obj->data.critter.field_0)) == -1) return -1;
-        if (proto_read_CombatData(&(obj->data.critter.combat), stream) == -1) return -1;
-        if (db_freadInt32(stream, &(obj->data.critter.hp)) == -1) return -1;
-        if (db_freadInt32(stream, &(obj->data.critter.radiation)) == -1) return -1;
-        if (db_freadInt32(stream, &(obj->data.critter.poison)) == -1) return -1;
+        if (stream->freadInt32(&(obj->data.critter.field_0)) == -1) return -1;
+        if (obj->data.critter.combat.readCombatData(stream) == -1) return -1;
+        if (stream->freadInt32(&(obj->data.critter.hp)) == -1) return -1;
+        if (stream->freadInt32(&(obj->data.critter.radiation)) == -1) return -1;
+        if (stream->freadInt32(&(obj->data.critter.poison)) == -1) return -1;
     } else {
-        if (db_freadInt32(stream, &(obj->data.flags)) == -1) return -1;
+        if (stream->freadInt32(&(obj->data.flags)) == -1) return -1;
 
         if (obj->data.flags == 0xCCCCCCCC) {
             debug_printf("\nNote: Reading pud: updated_flags was un-Set!");
@@ -465,17 +463,17 @@ int proto_read_protoUpdateData(Object* obj, DB_FILE* stream)
 
             switch (proto->item.type) {
             case ITEM_TYPE_WEAPON:
-                if (db_freadInt32(stream, &(obj->data.item.weapon.ammoQuantity)) == -1) return -1;
-                if (db_freadInt32(stream, &(obj->data.item.weapon.ammoTypePid)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.item.weapon.ammoQuantity)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.item.weapon.ammoTypePid)) == -1) return -1;
                 break;
             case ITEM_TYPE_AMMO:
-                if (db_freadInt32(stream, &(obj->data.item.ammo.quantity)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.item.ammo.quantity)) == -1) return -1;
                 break;
             case ITEM_TYPE_MISC:
-                if (db_freadInt32(stream, &(obj->data.item.misc.charges)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.item.misc.charges)) == -1) return -1;
                 break;
             case ITEM_TYPE_KEY:
-                if (db_freadInt32(stream, &(obj->data.item.key.keyCode)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.item.key.keyCode)) == -1) return -1;
                 break;
             default:
                 break;
@@ -487,31 +485,31 @@ int proto_read_protoUpdateData(Object* obj, DB_FILE* stream)
 
             switch (proto->scenery.type) {
             case SCENERY_TYPE_DOOR:
-                if (db_freadInt32(stream, &(obj->data.scenery.door.openFlags)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.scenery.door.openFlags)) == -1) return -1;
                 break;
             case SCENERY_TYPE_STAIRS:
-                if (db_freadInt32(stream, &(obj->data.scenery.stairs.destinationMap)) == -1) return -1;
-                if (db_freadInt32(stream, &(obj->data.scenery.stairs.destinationBuiltTile)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.scenery.stairs.destinationMap)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.scenery.stairs.destinationBuiltTile)) == -1) return -1;
                 break;
             case SCENERY_TYPE_ELEVATOR:
-                if (db_freadInt32(stream, &(obj->data.scenery.elevator.type)) == -1) return -1;
-                if (db_freadInt32(stream, &(obj->data.scenery.elevator.level)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.scenery.elevator.type)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.scenery.elevator.level)) == -1) return -1;
                 break;
             case SCENERY_TYPE_LADDER_UP:
-                if (db_freadInt32(stream, &(obj->data.scenery.ladder.destinationBuiltTile)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.scenery.ladder.destinationBuiltTile)) == -1) return -1;
                 break;
             case SCENERY_TYPE_LADDER_DOWN:
-                if (db_freadInt32(stream, &(obj->data.scenery.ladder.destinationBuiltTile)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.scenery.ladder.destinationBuiltTile)) == -1) return -1;
                 break;
             }
 
             break;
         case OBJ_TYPE_MISC:
             if (obj->pid >= 0x5000010 && obj->pid <= 0x5000017) {
-                if (db_freadInt32(stream, &(obj->data.misc.map)) == -1) return -1;
-                if (db_freadInt32(stream, &(obj->data.misc.tile)) == -1) return -1;
-                if (db_freadInt32(stream, &(obj->data.misc.elevation)) == -1) return -1;
-                if (db_freadInt32(stream, &(obj->data.misc.rotation)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.misc.map)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.misc.tile)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.misc.elevation)) == -1) return -1;
+                if (stream->freadInt32(&(obj->data.misc.rotation)) == -1) return -1;
             }
             break;
         }
@@ -526,19 +524,19 @@ int proto_write_protoUpdateData(Object* obj, DB_FILE* stream)
     Proto* proto;
 
     ObjectData* data = &(obj->data);
-    if (db_fwriteInt32(stream, data->inventory.length) == -1) return -1;
-    if (db_fwriteInt32(stream, data->inventory.capacity) == -1) return -1;
+    if (stream->fwriteInt32(data->inventory.length) == -1) return -1;
+    if (stream->fwriteInt32(data->inventory.capacity) == -1) return -1;
     // CE: Original code writes inventory items pointer, which is meaningless.
-    if (db_fwriteInt32(stream, 0) == -1) return -1;
+    if (stream->fwriteInt32(0) == -1) return -1;
 
     if (PID_TYPE(obj->pid) == OBJ_TYPE_CRITTER) {
-        if (db_fwriteInt32(stream, data->flags) == -1) return -1;
-        if (proto_write_CombatData(&(obj->data.critter.combat), stream) == -1) return -1;
-        if (db_fwriteInt32(stream, data->critter.hp) == -1) return -1;
-        if (db_fwriteInt32(stream, data->critter.radiation) == -1) return -1;
-        if (db_fwriteInt32(stream, data->critter.poison) == -1) return -1;
+        if (stream->fwriteInt32(data->flags) == -1) return -1;
+        if (obj->data.critter.combat.writeCombatData(stream) == -1) return -1;
+        if (stream->fwriteInt32(data->critter.hp) == -1) return -1;
+        if (stream->fwriteInt32(data->critter.radiation) == -1) return -1;
+        if (stream->fwriteInt32(data->critter.poison) == -1) return -1;
     } else {
-        if (db_fwriteInt32(stream, data->flags) == -1) return -1;
+        if (stream->fwriteInt32(data->flags) == -1) return -1;
 
         switch (PID_TYPE(obj->pid)) {
         case OBJ_TYPE_ITEM:
@@ -546,17 +544,17 @@ int proto_write_protoUpdateData(Object* obj, DB_FILE* stream)
 
             switch (proto->item.type) {
             case ITEM_TYPE_WEAPON:
-                if (db_fwriteInt32(stream, data->item.weapon.ammoQuantity) == -1) return -1;
-                if (db_fwriteInt32(stream, data->item.weapon.ammoTypePid) == -1) return -1;
+                if (stream->fwriteInt32(data->item.weapon.ammoQuantity) == -1) return -1;
+                if (stream->fwriteInt32(data->item.weapon.ammoTypePid) == -1) return -1;
                 break;
             case ITEM_TYPE_AMMO:
-                if (db_fwriteInt32(stream, data->item.ammo.quantity) == -1) return -1;
+                if (stream->fwriteInt32(data->item.ammo.quantity) == -1) return -1;
                 break;
             case ITEM_TYPE_MISC:
-                if (db_fwriteInt32(stream, data->item.misc.charges) == -1) return -1;
+                if (stream->fwriteInt32(data->item.misc.charges) == -1) return -1;
                 break;
             case ITEM_TYPE_KEY:
-                if (db_fwriteInt32(stream, data->item.key.keyCode) == -1) return -1;
+                if (stream->fwriteInt32(data->item.key.keyCode) == -1) return -1;
                 break;
             }
             break;
@@ -565,21 +563,21 @@ int proto_write_protoUpdateData(Object* obj, DB_FILE* stream)
 
             switch (proto->scenery.type) {
             case SCENERY_TYPE_DOOR:
-                if (db_fwriteInt32(stream, data->scenery.door.openFlags) == -1) return -1;
+                if (stream->fwriteInt32(data->scenery.door.openFlags) == -1) return -1;
                 break;
             case SCENERY_TYPE_STAIRS:
-                if (db_fwriteInt32(stream, data->scenery.stairs.destinationMap) == -1) return -1;
-                if (db_fwriteInt32(stream, data->scenery.stairs.destinationBuiltTile) == -1) return -1;
+                if (stream->fwriteInt32(data->scenery.stairs.destinationMap) == -1) return -1;
+                if (stream->fwriteInt32(data->scenery.stairs.destinationBuiltTile) == -1) return -1;
                 break;
             case SCENERY_TYPE_ELEVATOR:
-                if (db_fwriteInt32(stream, data->scenery.elevator.type) == -1) return -1;
-                if (db_fwriteInt32(stream, data->scenery.elevator.level) == -1) return -1;
+                if (stream->fwriteInt32(data->scenery.elevator.type) == -1) return -1;
+                if (stream->fwriteInt32(data->scenery.elevator.level) == -1) return -1;
                 break;
             case SCENERY_TYPE_LADDER_UP:
-                if (db_fwriteInt32(stream, data->scenery.ladder.destinationBuiltTile) == -1) return -1;
+                if (stream->fwriteInt32(data->scenery.ladder.destinationBuiltTile) == -1) return -1;
                 break;
             case SCENERY_TYPE_LADDER_DOWN:
-                if (db_fwriteInt32(stream, data->scenery.ladder.destinationBuiltTile) == -1) return -1;
+                if (stream->fwriteInt32(data->scenery.ladder.destinationBuiltTile) == -1) return -1;
                 break;
             default:
                 break;
@@ -587,10 +585,10 @@ int proto_write_protoUpdateData(Object* obj, DB_FILE* stream)
             break;
         case OBJ_TYPE_MISC:
             if (obj->pid >= 0x5000010 && obj->pid <= 0x5000017) {
-                if (db_fwriteInt32(stream, data->misc.map) == -1) return -1;
-                if (db_fwriteInt32(stream, data->misc.tile) == -1) return -1;
-                if (db_fwriteInt32(stream, data->misc.elevation) == -1) return -1;
-                if (db_fwriteInt32(stream, data->misc.rotation) == -1) return -1;
+                if (stream->fwriteInt32(data->misc.map) == -1) return -1;
+                if (stream->fwriteInt32(data->misc.tile) == -1) return -1;
+                if (stream->fwriteInt32(data->misc.elevation) == -1) return -1;
+                if (stream->fwriteInt32(data->misc.rotation) == -1) return -1;
             }
             break;
         default:
@@ -613,7 +611,7 @@ int proto_update_gen(Object* obj)
     ObjectData* data = &(obj->data);
     data->inventory.length = 0;
     data->inventory.capacity = 0;
-    data->inventory.items = NULL;
+    data->inventory.items = nullptr;
 
     if (proto_ptr(obj->pid, &proto) == -1) {
         return -1;
@@ -681,7 +679,7 @@ int proto_update_init(Object* obj)
         return -1;
     }
 
-    if (obj == NULL) {
+    if (obj == nullptr) {
         return -1;
     }
 
@@ -698,12 +696,12 @@ int proto_update_init(Object* obj)
     ObjectData* data = &(obj->data);
     data->inventory.length = 0;
     data->inventory.capacity = 0;
-    data->inventory.items = NULL;
+    data->inventory.items = nullptr;
     combat_data_init(obj);
     data->critter.hp = stat_level(obj, STAT_MAXIMUM_HIT_POINTS);
     data->critter.combat.ap = stat_level(obj, STAT_MAXIMUM_ACTION_POINTS);
     stat_recalc_derived(obj);
-    obj->data.critter.combat.whoHitMe = NULL;
+    obj->data.critter.combat.whoHitMe = nullptr;
 
     Proto* proto;
     if (proto_ptr(obj->pid, &proto) != -1) {
@@ -731,14 +729,14 @@ int proto_dude_update_gender()
 
     art_vault_guy_num = art_num;
 
-    if (inven_worn(obj_dude) == NULL) {
+    if (inven_worn(obj_dude) == nullptr) {
         int v1 = 0;
-        if (inven_right_hand(obj_dude) != NULL || inven_left_hand(obj_dude) != NULL) {
+        if (inven_right_hand(obj_dude) != nullptr || inven_left_hand(obj_dude) != nullptr) {
             v1 = (obj_dude->fid & 0xF000) >> 12;
         }
 
         int fid = art_id(OBJ_TYPE_CRITTER, art_vault_guy_num, 0, v1, 0);
-        obj_change_fid(obj_dude, fid, NULL);
+        obj_change_fid(obj_dude, fid, nullptr);
     }
 
     proto->fid = art_id(OBJ_TYPE_CRITTER, art_vault_guy_num, 0, 0, 0);
@@ -758,7 +756,7 @@ int proto_dude_init(const char* path)
     pc_proto.fid = art_id(OBJ_TYPE_CRITTER, art_vault_guy_num, 0, 0, 0);
 
     if (init_true) {
-        obj_inven_free(&(obj_dude->data.inventory));
+        obj_dude->data.inventory.inven_free();
     }
 
     init_true = 1;
@@ -788,7 +786,7 @@ int proto_dude_init(const char* path)
     inven_reset_dude();
 
     if ((obj_dude->flags & OBJECT_FLAT) != 0) {
-        obj_toggle_flat(obj_dude, NULL);
+        obj_toggle_flat(obj_dude, nullptr);
     }
 
     if ((obj_dude->flags & OBJECT_NO_BLOCK) != 0) {
@@ -1038,7 +1036,7 @@ int proto_init()
     int i;
 
     // TODO: Get rid of cast.
-    proto_critter_init((Proto*)&pc_proto, 0x1000000);
+    proto_critter_init(reinterpret_cast<Proto*>(&pc_proto), 0x1000000);
 
     pc_proto.pid = 0x1000000;
     pc_proto.fid = art_id(OBJ_TYPE_CRITTER, 1, 0, 0, 0);
@@ -1056,7 +1054,7 @@ int proto_init()
     proto_dude_init("premade\\player.gcd");
 
     for (i = 0; i < 6; i++) {
-        if (!message_init(&(proto_msg_files[i]))) {
+        if (!(proto_msg_files[i]).init()) {
             debug_printf("\nError: Initing proto message files!");
             return -1;
         }
@@ -1065,7 +1063,7 @@ int proto_init()
     for (i = 0; i < 6; i++) {
         snprintf(path, sizeof(path), "%spro_%.4s%s", msg_path, art_dir(i), ".msg");
 
-        if (!message_load(&(proto_msg_files[i]), path)) {
+        if (!(proto_msg_files[i]).load(path)) {
             debug_printf("\nError: Loading proto message files!");
             return -1;
         }
@@ -1076,7 +1074,7 @@ int proto_init()
     critter_stats_list = &(mp_critter_stats_list[2]);
     for (i = 0; i < STAT_COUNT; i++) {
         critter_stats_list[i] = stat_name(i);
-        if (critter_stats_list[i] == NULL) {
+        if (critter_stats_list[i] == nullptr) {
             debug_printf("\nError: Finding stat names!");
             return -1;
         }
@@ -1086,59 +1084,59 @@ int proto_init()
     perk_code_strs = &(mp_perk_code_strs[1]);
     for (i = 0; i < PERK_COUNT; i++) {
         mp_perk_code_strs[i] = perk_name(i);
-        if (mp_perk_code_strs[i] == NULL) {
+        if (mp_perk_code_strs[i] == nullptr) {
             debug_printf("\nError: Finding perk names!");
             return -1;
         }
     }
 
-    if (!message_init(&proto_main_msg_file)) {
+    if (!proto_main_msg_file.init()) {
         debug_printf("\nError: Initing main proto message file!");
         return -1;
     }
 
     snprintf(path, sizeof(path), "%sproto.msg", msg_path);
 
-    if (!message_load(&proto_main_msg_file, path)) {
+    if (!proto_main_msg_file.load(path)) {
         debug_printf("\nError: Loading main proto message file!");
         return -1;
     }
 
-    proto_none_str = getmsg(&proto_main_msg_file, &messageListItem, 10);
+    proto_none_str = proto_main_msg_file.getMessage(&messageListItem, 10);
 
     // material type names
     for (i = 0; i < MATERIAL_TYPE_COUNT; i++) {
-        item_pro_material[i] = getmsg(&proto_main_msg_file, &messageListItem, 100 + i);
+        item_pro_material[i] = proto_main_msg_file.getMessage(&messageListItem, 100 + i);
     }
 
     // item type names
     for (i = 0; i < ITEM_TYPE_COUNT; i++) {
-        item_pro_type[i] = getmsg(&proto_main_msg_file, &messageListItem, 150 + i);
+        item_pro_type[i] = proto_main_msg_file.getMessage(&messageListItem, 150 + i);
     }
 
     // scenery type names
     for (i = 0; i < SCENERY_TYPE_COUNT; i++) {
-        scenery_pro_type[i] = getmsg(&proto_main_msg_file, &messageListItem, 200 + i);
+        scenery_pro_type[i] = proto_main_msg_file.getMessage(&messageListItem, 200 + i);
     }
 
     // damage code types
     for (i = 0; i < DAMAGE_TYPE_COUNT; i++) {
-        damage_code_strs[i] = getmsg(&proto_main_msg_file, &messageListItem, 250 + i);
+        damage_code_strs[i] = proto_main_msg_file.getMessage(&messageListItem, 250 + i);
     }
 
     // caliber types
     for (i = 0; i < CALIBER_TYPE_COUNT; i++) {
-        cal_type_strs[i] = getmsg(&proto_main_msg_file, &messageListItem, 300 + i);
+        cal_type_strs[i] = proto_main_msg_file.getMessage(&messageListItem, 300 + i);
     }
 
     // race types
     for (i = 0; i < RACE_TYPE_COUNT; i++) {
-        race_type_strs[i] = getmsg(&proto_main_msg_file, &messageListItem, 350 + i);
+        race_type_strs[i] = proto_main_msg_file.getMessage(&messageListItem, 350 + i);
     }
 
     // body types
     for (i = 0; i < BODY_TYPE_COUNT; i++) {
-        body_type_strs[i] = getmsg(&proto_main_msg_file, &messageListItem, 400 + i);
+        body_type_strs[i] = proto_main_msg_file.getMessage(&messageListItem, 400 + i);
     }
 
     return 0;
@@ -1148,7 +1146,7 @@ int proto_init()
 void proto_reset()
 {
     // TODO: Get rid of cast.
-    proto_critter_init((Proto*)&pc_proto, 0x1000000);
+    proto_critter_init(reinterpret_cast<Proto*>(&pc_proto), 0x1000000);
     pc_proto.pid = 0x1000000;
     pc_proto.fid = art_id(OBJ_TYPE_CRITTER, 1, 0, 0, 0);
 
@@ -1176,10 +1174,10 @@ void proto_exit()
     protos_been_initialized = 0;
 
     for (i = 0; i < 6; i++) {
-        message_exit(&(proto_msg_files[i]));
+        (proto_msg_files[i]).exit();
     }
 
-    message_exit(&proto_main_msg_file);
+    proto_main_msg_file.exit();
 }
 
 // Count .pro lines in .lst files.
@@ -1189,8 +1187,8 @@ int proto_header_load()
 {
     for (int index = 0; index < 6; index++) {
         ProtoList* ptr = &(protolists[index]);
-        ptr->head = NULL;
-        ptr->tail = NULL;
+        ptr->head = nullptr;
+        ptr->tail = nullptr;
         ptr->length = 0;
         ptr->max_entries_num = 1;
 
@@ -1200,14 +1198,14 @@ int proto_header_load()
         strcat(path, art_dir(index));
         strcat(path, ".lst");
 
-        DB_FILE* stream = db_fopen(path, "rt");
-        if (stream == NULL) {
+        DbFileGuard stream(db_fopen(path, "rt"));
+        if (!stream) {
             return -1;
         }
 
         int ch = '\0';
         while (1) {
-            ch = db_fgetc(stream);
+            ch = stream.get()->fgetc();
             if (ch == -1) {
                 break;
             }
@@ -1220,8 +1218,6 @@ int proto_header_load()
         if (ch != '\n') {
             ptr->max_entries_num++;
         }
-
-        db_fclose(stream);
     }
 
     return 0;
@@ -1232,70 +1228,70 @@ static int proto_read_item_data(ItemProtoData* item_data, int type, DB_FILE* str
 {
     switch (type) {
     case ITEM_TYPE_ARMOR:
-        if (db_freadInt32(stream, &(item_data->armor.armorClass)) == -1) return -1;
-        if (db_freadIntCount(stream, item_data->armor.damageResistance, 7) == -1) return -1;
-        if (db_freadIntCount(stream, item_data->armor.damageThreshold, 7) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->armor.perk)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->armor.maleFid)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->armor.femaleFid)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->armor.armorClass)) == -1) return -1;
+        if (stream->freadIntCount(item_data->armor.damageResistance, 7) == -1) return -1;
+        if (stream->freadIntCount(item_data->armor.damageThreshold, 7) == -1) return -1;
+        if (stream->freadInt32(&(item_data->armor.perk)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->armor.maleFid)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->armor.femaleFid)) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_CONTAINER:
-        if (db_freadInt32(stream, &(item_data->container.maxSize)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->container.openFlags)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->container.maxSize)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->container.openFlags)) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_DRUG:
-        if (db_freadInt32(stream, &(item_data->drug.stat[0])) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->drug.stat[1])) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->drug.stat[2])) == -1) return -1;
-        if (db_freadIntCount(stream, item_data->drug.amount, 3) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->drug.duration1)) == -1) return -1;
-        if (db_freadIntCount(stream, item_data->drug.amount1, 3) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->drug.duration2)) == -1) return -1;
-        if (db_freadIntCount(stream, item_data->drug.amount2, 3) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->drug.addictionChance)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->drug.withdrawalEffect)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->drug.withdrawalOnset)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->drug.stat[0])) == -1) return -1;
+        if (stream->freadInt32(&(item_data->drug.stat[1])) == -1) return -1;
+        if (stream->freadInt32(&(item_data->drug.stat[2])) == -1) return -1;
+        if (stream->freadIntCount(item_data->drug.amount, 3) == -1) return -1;
+        if (stream->freadInt32(&(item_data->drug.duration1)) == -1) return -1;
+        if (stream->freadIntCount(item_data->drug.amount1, 3) == -1) return -1;
+        if (stream->freadInt32(&(item_data->drug.duration2)) == -1) return -1;
+        if (stream->freadIntCount(item_data->drug.amount2, 3) == -1) return -1;
+        if (stream->freadInt32(&(item_data->drug.addictionChance)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->drug.withdrawalEffect)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->drug.withdrawalOnset)) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_WEAPON:
-        if (db_freadInt32(stream, &(item_data->weapon.animationCode)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.minDamage)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.maxDamage)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.damageType)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.maxRange1)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.maxRange2)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.projectilePid)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.minStrength)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.actionPointCost1)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.actionPointCost2)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.criticalFailureType)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.perk)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.rounds)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.caliber)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.ammoTypePid)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->weapon.ammoCapacity)) == -1) return -1;
-        if (db_freadByte(stream, &(item_data->weapon.soundCode)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.animationCode)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.minDamage)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.maxDamage)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.damageType)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.maxRange1)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.maxRange2)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.projectilePid)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.minStrength)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.actionPointCost1)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.actionPointCost2)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.criticalFailureType)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.perk)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.rounds)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.caliber)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.ammoTypePid)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->weapon.ammoCapacity)) == -1) return -1;
+        if (stream->freadByte(&(item_data->weapon.soundCode)) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_AMMO:
-        if (db_freadInt32(stream, &(item_data->ammo.caliber)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->ammo.quantity)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->ammo.armorClassModifier)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->ammo.damageResistanceModifier)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->ammo.damageMultiplier)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->ammo.damageDivisor)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->ammo.caliber)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->ammo.quantity)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->ammo.armorClassModifier)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->ammo.damageResistanceModifier)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->ammo.damageMultiplier)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->ammo.damageDivisor)) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_MISC:
-        if (db_freadInt32(stream, &(item_data->misc.powerTypePid)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->misc.powerType)) == -1) return -1;
-        if (db_freadInt32(stream, &(item_data->misc.charges)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->misc.powerTypePid)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->misc.powerType)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->misc.charges)) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_KEY:
-        if (db_freadInt32(stream, &(item_data->key.keyCode)) == -1) return -1;
+        if (stream->freadInt32(&(item_data->key.keyCode)) == -1) return -1;
 
         return 0;
     }
@@ -1308,27 +1304,27 @@ static int proto_read_scenery_data(SceneryProtoData* scenery_data, int type, DB_
 {
     switch (type) {
     case SCENERY_TYPE_DOOR:
-        if (db_freadInt32(stream, &(scenery_data->door.openFlags)) == -1) return -1;
-        if (db_freadInt32(stream, &(scenery_data->door.keyCode)) == -1) return -1;
+        if (stream->freadInt32(&(scenery_data->door.openFlags)) == -1) return -1;
+        if (stream->freadInt32(&(scenery_data->door.keyCode)) == -1) return -1;
 
         return 0;
     case SCENERY_TYPE_STAIRS:
-        if (db_freadInt32(stream, &(scenery_data->stairs.field_0)) == -1) return -1;
-        if (db_freadInt32(stream, &(scenery_data->stairs.field_4)) == -1) return -1;
+        if (stream->freadInt32(&(scenery_data->stairs.field_0)) == -1) return -1;
+        if (stream->freadInt32(&(scenery_data->stairs.field_4)) == -1) return -1;
 
         return 0;
     case SCENERY_TYPE_ELEVATOR:
-        if (db_freadInt32(stream, &(scenery_data->elevator.type)) == -1) return -1;
-        if (db_freadInt32(stream, &(scenery_data->elevator.level)) == -1) return -1;
+        if (stream->freadInt32(&(scenery_data->elevator.type)) == -1) return -1;
+        if (stream->freadInt32(&(scenery_data->elevator.level)) == -1) return -1;
 
         return 0;
     case SCENERY_TYPE_LADDER_UP:
     case SCENERY_TYPE_LADDER_DOWN:
-        if (db_freadInt32(stream, &(scenery_data->ladder.field_0)) == -1) return -1;
+        if (stream->freadInt32(&(scenery_data->ladder.field_0)) == -1) return -1;
 
         return 0;
     case SCENERY_TYPE_GENERIC:
-        if (db_freadInt32(stream, &(scenery_data->generic.field_0)) == -1) return -1;
+        if (stream->freadInt32(&(scenery_data->generic.field_0)) == -1) return -1;
 
         return 0;
     }
@@ -1340,72 +1336,72 @@ static int proto_read_scenery_data(SceneryProtoData* scenery_data, int type, DB_
 // 0x48F398
 static int proto_read_protoSubNode(Proto* proto, DB_FILE* stream)
 {
-    if (db_freadInt32(stream, &(proto->pid)) == -1) return -1;
-    if (db_freadInt32(stream, &(proto->messageId)) == -1) return -1;
-    if (db_freadInt32(stream, &(proto->fid)) == -1) return -1;
+    if (stream->freadInt32(&(proto->pid)) == -1) return -1;
+    if (stream->freadInt32(&(proto->messageId)) == -1) return -1;
+    if (stream->freadInt32(&(proto->fid)) == -1) return -1;
 
     switch (PID_TYPE(proto->pid)) {
     case OBJ_TYPE_ITEM:
-        if (db_freadInt32(stream, &(proto->item.lightDistance)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.lightIntensity)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.flags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.extendedFlags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.sid)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.type)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.material)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.size)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.weight)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.cost)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->item.inventoryFid)) == -1) return -1;
-        if (db_freadByte(stream, &(proto->item.field_80)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.lightDistance)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.lightIntensity)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.flags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.extendedFlags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.sid)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.type)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.material)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.size)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.weight)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.cost)) == -1) return -1;
+        if (stream->freadInt32(&(proto->item.inventoryFid)) == -1) return -1;
+        if (stream->freadByte(&(proto->item.field_80)) == -1) return -1;
         if (proto_read_item_data(&(proto->item.data), proto->item.type, stream) == -1) return -1;
 
         return 0;
     case OBJ_TYPE_CRITTER:
-        if (db_freadInt32(stream, &(proto->critter.lightDistance)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->critter.lightIntensity)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->critter.flags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->critter.extendedFlags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->critter.sid)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->critter.headFid)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->critter.aiPacket)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->critter.team)) == -1) return -1;
+        if (stream->freadInt32(&(proto->critter.lightDistance)) == -1) return -1;
+        if (stream->freadInt32(&(proto->critter.lightIntensity)) == -1) return -1;
+        if (stream->freadInt32(&(proto->critter.flags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->critter.extendedFlags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->critter.sid)) == -1) return -1;
+        if (stream->freadInt32(&(proto->critter.headFid)) == -1) return -1;
+        if (stream->freadInt32(&(proto->critter.aiPacket)) == -1) return -1;
+        if (stream->freadInt32(&(proto->critter.team)) == -1) return -1;
 
-        if (critter_read_data(stream, &(proto->critter.data)) == -1) return -1;
+        if (proto->critter.data.readData(stream) == -1) return -1;
 
         return 0;
     case OBJ_TYPE_SCENERY:
-        if (db_freadInt32(stream, &(proto->scenery.lightDistance)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->scenery.lightIntensity)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->scenery.flags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->scenery.extendedFlags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->scenery.sid)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->scenery.type)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->scenery.material)) == -1) return -1;
-        if (db_freadByte(stream, &(proto->scenery.field_34)) == -1) return -1;
+        if (stream->freadInt32(&(proto->scenery.lightDistance)) == -1) return -1;
+        if (stream->freadInt32(&(proto->scenery.lightIntensity)) == -1) return -1;
+        if (stream->freadInt32(&(proto->scenery.flags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->scenery.extendedFlags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->scenery.sid)) == -1) return -1;
+        if (stream->freadInt32(&(proto->scenery.type)) == -1) return -1;
+        if (stream->freadInt32(&(proto->scenery.material)) == -1) return -1;
+        if (stream->freadByte(&(proto->scenery.field_34)) == -1) return -1;
         if (proto_read_scenery_data(&(proto->scenery.data), proto->scenery.type, stream) == -1) return -1;
         return 0;
     case OBJ_TYPE_WALL:
-        if (db_freadInt32(stream, &(proto->wall.lightDistance)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->wall.lightIntensity)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->wall.flags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->wall.extendedFlags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->wall.sid)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->wall.material)) == -1) return -1;
+        if (stream->freadInt32(&(proto->wall.lightDistance)) == -1) return -1;
+        if (stream->freadInt32(&(proto->wall.lightIntensity)) == -1) return -1;
+        if (stream->freadInt32(&(proto->wall.flags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->wall.extendedFlags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->wall.sid)) == -1) return -1;
+        if (stream->freadInt32(&(proto->wall.material)) == -1) return -1;
 
         return 0;
     case OBJ_TYPE_TILE:
-        if (db_freadInt32(stream, &(proto->tile.flags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->tile.extendedFlags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->tile.sid)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->tile.material)) == -1) return -1;
+        if (stream->freadInt32(&(proto->tile.flags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->tile.extendedFlags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->tile.sid)) == -1) return -1;
+        if (stream->freadInt32(&(proto->tile.material)) == -1) return -1;
 
         return 0;
     case OBJ_TYPE_MISC:
-        if (db_freadInt32(stream, &(proto->misc.lightDistance)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->misc.lightIntensity)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->misc.flags)) == -1) return -1;
-        if (db_freadInt32(stream, &(proto->misc.extendedFlags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->misc.lightDistance)) == -1) return -1;
+        if (stream->freadInt32(&(proto->misc.lightIntensity)) == -1) return -1;
+        if (stream->freadInt32(&(proto->misc.flags)) == -1) return -1;
+        if (stream->freadInt32(&(proto->misc.extendedFlags)) == -1) return -1;
 
         return 0;
     }
@@ -1418,70 +1414,70 @@ static int proto_write_item_data(ItemProtoData* item_data, int type, DB_FILE* st
 {
     switch (type) {
     case ITEM_TYPE_ARMOR:
-        if (db_fwriteInt32(stream, item_data->armor.armorClass) == -1) return -1;
-        if (db_fwriteInt32List(stream, item_data->armor.damageResistance, 7) == -1) return -1;
-        if (db_fwriteInt32List(stream, item_data->armor.damageThreshold, 7) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->armor.perk) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->armor.maleFid) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->armor.femaleFid) == -1) return -1;
+        if (stream->fwriteInt32(item_data->armor.armorClass) == -1) return -1;
+        if (stream->fwriteInt32List(item_data->armor.damageResistance, 7) == -1) return -1;
+        if (stream->fwriteInt32List(item_data->armor.damageThreshold, 7) == -1) return -1;
+        if (stream->fwriteInt32(item_data->armor.perk) == -1) return -1;
+        if (stream->fwriteInt32(item_data->armor.maleFid) == -1) return -1;
+        if (stream->fwriteInt32(item_data->armor.femaleFid) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_CONTAINER:
-        if (db_fwriteInt32(stream, item_data->container.maxSize) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->container.openFlags) == -1) return -1;
+        if (stream->fwriteInt32(item_data->container.maxSize) == -1) return -1;
+        if (stream->fwriteInt32(item_data->container.openFlags) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_DRUG:
-        if (db_fwriteInt32(stream, item_data->drug.stat[0]) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->drug.stat[1]) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->drug.stat[2]) == -1) return -1;
-        if (db_fwriteInt32List(stream, item_data->drug.amount, 3) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->drug.duration1) == -1) return -1;
-        if (db_fwriteInt32List(stream, item_data->drug.amount1, 3) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->drug.duration2) == -1) return -1;
-        if (db_fwriteInt32List(stream, item_data->drug.amount2, 3) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->drug.addictionChance) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->drug.withdrawalEffect) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->drug.withdrawalOnset) == -1) return -1;
+        if (stream->fwriteInt32(item_data->drug.stat[0]) == -1) return -1;
+        if (stream->fwriteInt32(item_data->drug.stat[1]) == -1) return -1;
+        if (stream->fwriteInt32(item_data->drug.stat[2]) == -1) return -1;
+        if (stream->fwriteInt32List(item_data->drug.amount, 3) == -1) return -1;
+        if (stream->fwriteInt32(item_data->drug.duration1) == -1) return -1;
+        if (stream->fwriteInt32List(item_data->drug.amount1, 3) == -1) return -1;
+        if (stream->fwriteInt32(item_data->drug.duration2) == -1) return -1;
+        if (stream->fwriteInt32List(item_data->drug.amount2, 3) == -1) return -1;
+        if (stream->fwriteInt32(item_data->drug.addictionChance) == -1) return -1;
+        if (stream->fwriteInt32(item_data->drug.withdrawalEffect) == -1) return -1;
+        if (stream->fwriteInt32(item_data->drug.withdrawalOnset) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_WEAPON:
-        if (db_fwriteInt32(stream, item_data->weapon.animationCode) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.maxDamage) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.minDamage) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.damageType) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.maxRange1) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.maxRange2) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.projectilePid) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.minStrength) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.actionPointCost1) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.actionPointCost2) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.criticalFailureType) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.perk) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.rounds) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.caliber) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.ammoTypePid) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->weapon.ammoCapacity) == -1) return -1;
-        if (db_fwriteByte(stream, item_data->weapon.soundCode) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.animationCode) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.maxDamage) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.minDamage) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.damageType) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.maxRange1) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.maxRange2) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.projectilePid) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.minStrength) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.actionPointCost1) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.actionPointCost2) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.criticalFailureType) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.perk) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.rounds) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.caliber) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.ammoTypePid) == -1) return -1;
+        if (stream->fwriteInt32(item_data->weapon.ammoCapacity) == -1) return -1;
+        if (stream->fwriteByte(item_data->weapon.soundCode) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_AMMO:
-        if (db_fwriteInt32(stream, item_data->ammo.caliber) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->ammo.quantity) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->ammo.armorClassModifier) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->ammo.damageResistanceModifier) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->ammo.damageMultiplier) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->ammo.damageDivisor) == -1) return -1;
+        if (stream->fwriteInt32(item_data->ammo.caliber) == -1) return -1;
+        if (stream->fwriteInt32(item_data->ammo.quantity) == -1) return -1;
+        if (stream->fwriteInt32(item_data->ammo.armorClassModifier) == -1) return -1;
+        if (stream->fwriteInt32(item_data->ammo.damageResistanceModifier) == -1) return -1;
+        if (stream->fwriteInt32(item_data->ammo.damageMultiplier) == -1) return -1;
+        if (stream->fwriteInt32(item_data->ammo.damageDivisor) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_MISC:
-        if (db_fwriteInt32(stream, item_data->misc.powerTypePid) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->misc.powerType) == -1) return -1;
-        if (db_fwriteInt32(stream, item_data->misc.charges) == -1) return -1;
+        if (stream->fwriteInt32(item_data->misc.powerTypePid) == -1) return -1;
+        if (stream->fwriteInt32(item_data->misc.powerType) == -1) return -1;
+        if (stream->fwriteInt32(item_data->misc.charges) == -1) return -1;
 
         return 0;
     case ITEM_TYPE_KEY:
-        if (db_fwriteInt32(stream, item_data->key.keyCode) == -1) return -1;
+        if (stream->fwriteInt32(item_data->key.keyCode) == -1) return -1;
 
         return 0;
     }
@@ -1494,27 +1490,27 @@ static int proto_write_scenery_data(SceneryProtoData* scenery_data, int type, DB
 {
     switch (type) {
     case SCENERY_TYPE_DOOR:
-        if (db_fwriteInt32(stream, scenery_data->door.openFlags) == -1) return -1;
-        if (db_fwriteInt32(stream, scenery_data->door.keyCode) == -1) return -1;
+        if (stream->fwriteInt32(scenery_data->door.openFlags) == -1) return -1;
+        if (stream->fwriteInt32(scenery_data->door.keyCode) == -1) return -1;
 
         return 0;
     case SCENERY_TYPE_STAIRS:
-        if (db_fwriteInt32(stream, scenery_data->stairs.field_0) == -1) return -1;
-        if (db_fwriteInt32(stream, scenery_data->stairs.field_4) == -1) return -1;
+        if (stream->fwriteInt32(scenery_data->stairs.field_0) == -1) return -1;
+        if (stream->fwriteInt32(scenery_data->stairs.field_4) == -1) return -1;
 
         return 0;
     case SCENERY_TYPE_ELEVATOR:
-        if (db_fwriteInt32(stream, scenery_data->elevator.type) == -1) return -1;
-        if (db_fwriteInt32(stream, scenery_data->elevator.level) == -1) return -1;
+        if (stream->fwriteInt32(scenery_data->elevator.type) == -1) return -1;
+        if (stream->fwriteInt32(scenery_data->elevator.level) == -1) return -1;
 
         return 0;
     case SCENERY_TYPE_LADDER_UP:
     case SCENERY_TYPE_LADDER_DOWN:
-        if (db_fwriteInt32(stream, scenery_data->ladder.field_0) == -1) return -1;
+        if (stream->fwriteInt32(scenery_data->ladder.field_0) == -1) return -1;
 
         return 0;
     case SCENERY_TYPE_GENERIC:
-        if (db_fwriteInt32(stream, scenery_data->generic.field_0) == -1) return -1;
+        if (stream->fwriteInt32(scenery_data->generic.field_0) == -1) return -1;
 
         return 0;
     }
@@ -1525,70 +1521,70 @@ static int proto_write_scenery_data(SceneryProtoData* scenery_data, int type, DB
 // 0x48FBAC
 static int proto_write_protoSubNode(Proto* proto, DB_FILE* stream)
 {
-    if (db_fwriteInt32(stream, proto->pid) == -1) return -1;
-    if (db_fwriteInt32(stream, proto->messageId) == -1) return -1;
-    if (db_fwriteInt32(stream, proto->fid) == -1) return -1;
+    if (stream->fwriteInt32(proto->pid) == -1) return -1;
+    if (stream->fwriteInt32(proto->messageId) == -1) return -1;
+    if (stream->fwriteInt32(proto->fid) == -1) return -1;
 
     switch (PID_TYPE(proto->pid)) {
     case OBJ_TYPE_ITEM:
-        if (db_fwriteInt32(stream, proto->item.lightDistance) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.lightIntensity) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.flags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.extendedFlags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.sid) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.type) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.material) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.size) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.weight) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.cost) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->item.inventoryFid) == -1) return -1;
-        if (db_fwriteByte(stream, proto->item.field_80) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.lightDistance) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.lightIntensity) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.flags) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.extendedFlags) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.sid) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.type) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.material) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.size) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.weight) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.cost) == -1) return -1;
+        if (stream->fwriteInt32(proto->item.inventoryFid) == -1) return -1;
+        if (stream->fwriteByte(proto->item.field_80) == -1) return -1;
         if (proto_write_item_data(&(proto->item.data), proto->item.type, stream) == -1) return -1;
 
         return 0;
     case OBJ_TYPE_CRITTER:
-        if (db_fwriteInt32(stream, proto->critter.lightDistance) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->critter.lightIntensity) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->critter.flags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->critter.extendedFlags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->critter.sid) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->critter.headFid) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->critter.aiPacket) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->critter.team) == -1) return -1;
-        if (critter_write_data(stream, &(proto->critter.data)) == -1) return -1;
+        if (stream->fwriteInt32(proto->critter.lightDistance) == -1) return -1;
+        if (stream->fwriteInt32(proto->critter.lightIntensity) == -1) return -1;
+        if (stream->fwriteInt32(proto->critter.flags) == -1) return -1;
+        if (stream->fwriteInt32(proto->critter.extendedFlags) == -1) return -1;
+        if (stream->fwriteInt32(proto->critter.sid) == -1) return -1;
+        if (stream->fwriteInt32(proto->critter.headFid) == -1) return -1;
+        if (stream->fwriteInt32(proto->critter.aiPacket) == -1) return -1;
+        if (stream->fwriteInt32(proto->critter.team) == -1) return -1;
+        if (proto->critter.data.writeData(stream) == -1) return -1;
 
         return 0;
     case OBJ_TYPE_SCENERY:
-        if (db_fwriteInt32(stream, proto->scenery.lightDistance) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->scenery.lightIntensity) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->scenery.flags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->scenery.extendedFlags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->scenery.sid) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->scenery.type) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->scenery.material) == -1) return -1;
-        if (db_fwriteByte(stream, proto->scenery.field_34) == -1) return -1;
+        if (stream->fwriteInt32(proto->scenery.lightDistance) == -1) return -1;
+        if (stream->fwriteInt32(proto->scenery.lightIntensity) == -1) return -1;
+        if (stream->fwriteInt32(proto->scenery.flags) == -1) return -1;
+        if (stream->fwriteInt32(proto->scenery.extendedFlags) == -1) return -1;
+        if (stream->fwriteInt32(proto->scenery.sid) == -1) return -1;
+        if (stream->fwriteInt32(proto->scenery.type) == -1) return -1;
+        if (stream->fwriteInt32(proto->scenery.material) == -1) return -1;
+        if (stream->fwriteByte(proto->scenery.field_34) == -1) return -1;
         if (proto_write_scenery_data(&(proto->scenery.data), proto->scenery.type, stream) == -1) return -1;
     case OBJ_TYPE_WALL:
-        if (db_fwriteInt32(stream, proto->wall.lightDistance) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->wall.lightIntensity) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->wall.flags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->wall.extendedFlags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->wall.sid) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->wall.material) == -1) return -1;
+        if (stream->fwriteInt32(proto->wall.lightDistance) == -1) return -1;
+        if (stream->fwriteInt32(proto->wall.lightIntensity) == -1) return -1;
+        if (stream->fwriteInt32(proto->wall.flags) == -1) return -1;
+        if (stream->fwriteInt32(proto->wall.extendedFlags) == -1) return -1;
+        if (stream->fwriteInt32(proto->wall.sid) == -1) return -1;
+        if (stream->fwriteInt32(proto->wall.material) == -1) return -1;
 
         return 0;
     case OBJ_TYPE_TILE:
-        if (db_fwriteInt32(stream, proto->tile.flags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->tile.extendedFlags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->tile.sid) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->tile.material) == -1) return -1;
+        if (stream->fwriteInt32(proto->tile.flags) == -1) return -1;
+        if (stream->fwriteInt32(proto->tile.extendedFlags) == -1) return -1;
+        if (stream->fwriteInt32(proto->tile.sid) == -1) return -1;
+        if (stream->fwriteInt32(proto->tile.material) == -1) return -1;
 
         return 0;
     case OBJ_TYPE_MISC:
-        if (db_fwriteInt32(stream, proto->misc.lightDistance) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->misc.lightIntensity) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->misc.flags) == -1) return -1;
-        if (db_fwriteInt32(stream, proto->misc.extendedFlags) == -1) return -1;
+        if (stream->fwriteInt32(proto->misc.lightDistance) == -1) return -1;
+        if (stream->fwriteInt32(proto->misc.lightIntensity) == -1) return -1;
+        if (stream->fwriteInt32(proto->misc.flags) == -1) return -1;
+        if (stream->fwriteInt32(proto->misc.extendedFlags) == -1) return -1;
 
         return 0;
     }
@@ -1610,16 +1606,12 @@ int proto_save_pid(int pid)
 
     proto_list_str(pid, path + strlen(path));
 
-    DB_FILE* stream = db_fopen(path, "wb");
-    if (stream == NULL) {
+    DbFileGuard stream(db_fopen(path, "wb"));
+    if (!stream) {
         return -1;
     }
 
-    int rc = proto_write_protoSubNode(proto, stream);
-
-    db_fclose(stream);
-
-    return rc;
+    return proto_write_protoSubNode(proto, stream.get());
 }
 
 // 0x490034
@@ -1633,24 +1625,21 @@ int proto_load_pid(int pid, Proto** protoPtr)
         return -1;
     }
 
-    DB_FILE* stream = db_fopen(path, "rb");
-    if (stream == NULL) {
+    DbFileGuard stream(db_fopen(path, "rb"));
+    if (!stream) {
         debug_printf("\nError: Can't fopen proto!\n");
-        *protoPtr = NULL;
+        *protoPtr = nullptr;
         return -1;
     }
 
     if (proto_find_free_subnode(PID_TYPE(pid), protoPtr) == -1) {
-        db_fclose(stream);
         return -1;
     }
 
-    if (proto_read_protoSubNode(*protoPtr, stream) != 0) {
-        db_fclose(stream);
+    if (proto_read_protoSubNode(*protoPtr, stream.get()) != 0) {
         return -1;
     }
 
-    db_fclose(stream);
     return 0;
 }
 
@@ -1659,26 +1648,26 @@ int proto_find_free_subnode(int type, Proto** protoPtr)
 {
     size_t size = (type >= 0 && type < 11) ? proto_sizes[type] : 0;
 
-    Proto* proto = (Proto*)mem_malloc(size);
+    Proto* proto = static_cast<Proto*>(mem_malloc(size));
     *protoPtr = proto;
-    if (proto == NULL) {
+    if (proto == nullptr) {
         return -1;
     }
 
     ProtoList* protoList = &(protolists[type]);
     ProtoListExtent* protoListExtent = protoList->tail;
 
-    if (protoList->head != NULL) {
+    if (protoList->head != nullptr) {
         if (protoListExtent->length == PROTO_LIST_EXTENT_SIZE) {
-            ProtoListExtent* newExtent = protoListExtent->next = (ProtoListExtent*)mem_malloc(sizeof(ProtoListExtent));
-            if (protoListExtent == NULL) {
+            ProtoListExtent* newExtent = protoListExtent->next = static_cast<ProtoListExtent*>(mem_malloc(sizeof(ProtoListExtent)));
+            if (protoListExtent == nullptr) {
                 mem_free(proto);
-                *protoPtr = NULL;
+                *protoPtr = nullptr;
                 return -1;
             }
 
             newExtent->length = 0;
-            newExtent->next = NULL;
+            newExtent->next = nullptr;
 
             protoList->tail = newExtent;
             protoList->length++;
@@ -1686,14 +1675,14 @@ int proto_find_free_subnode(int type, Proto** protoPtr)
             protoListExtent = newExtent;
         }
     } else {
-        protoListExtent = (ProtoListExtent*)mem_malloc(sizeof(ProtoListExtent));
-        if (protoListExtent == NULL) {
+        protoListExtent = static_cast<ProtoListExtent*>(mem_malloc(sizeof(ProtoListExtent)));
+        if (protoListExtent == nullptr) {
             mem_free(proto);
-            *protoPtr = NULL;
+            *protoPtr = nullptr;
             return -1;
         }
 
-        protoListExtent->next = NULL;
+        protoListExtent->next = nullptr;
         protoListExtent->length = 0;
 
         protoList->length = 1;
@@ -1716,7 +1705,7 @@ void proto_remove_all()
         ProtoList* protoList = &(protolists[type]);
 
         ProtoListExtent* curr = protoList->head;
-        while (curr != NULL) {
+        while (curr != nullptr) {
             ProtoListExtent* next = curr->next;
             for (int index = 0; index < curr->length; index++) {
                 mem_free(curr->proto[index]);
@@ -1725,8 +1714,8 @@ void proto_remove_all()
             curr = next;
         }
 
-        protoList->head = NULL;
-        protoList->tail = NULL;
+        protoList->head = nullptr;
+        protoList->tail = nullptr;
         protoList->length = 0;
     }
 }
@@ -1734,22 +1723,22 @@ void proto_remove_all()
 // 0x4904AC
 int proto_ptr(int pid, Proto** protoPtr)
 {
-    *protoPtr = NULL;
+    *protoPtr = nullptr;
 
     if (pid == -1) {
         return -1;
     }
 
     if (pid == 0x1000000) {
-        *protoPtr = (Proto*)&pc_proto;
+        *protoPtr = reinterpret_cast<Proto*>(&pc_proto);
         return 0;
     }
 
     ProtoList* protoList = &(protolists[PID_TYPE(pid)]);
     ProtoListExtent* protoListExtent = protoList->head;
-    while (protoListExtent != NULL) {
+    while (protoListExtent != nullptr) {
         for (int index = 0; index < protoListExtent->length; index++) {
-            Proto* proto = (Proto*)protoListExtent->proto[index];
+            Proto* proto = reinterpret_cast<Proto*>(protoListExtent->proto[index]);
             if (pid == proto->pid) {
                 *protoPtr = proto;
                 return 0;
@@ -1786,10 +1775,10 @@ int ResetPlayer()
     proto_ptr(obj_dude->pid, &proto);
 
     stat_pc_set_defaults();
-    stat_set_defaults(&(proto->critter.data));
+    proto->critter.data.setStatDefaults();
     critter_reset();
     editor_reset();
-    skill_set_defaults(&(proto->critter.data));
+    proto->critter.data.setSkillDefaults();
     skill_reset();
     perk_reset();
     trait_reset();

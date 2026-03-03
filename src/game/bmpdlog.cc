@@ -1,7 +1,7 @@
 #include "game/bmpdlog.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
@@ -23,44 +23,44 @@
 
 namespace fallout {
 
-#define FILE_DIALOG_LINE_COUNT 12
+static constexpr int FILE_DIALOG_LINE_COUNT = 12;
 
-#define FILE_DIALOG_DOUBLE_CLICK_DELAY 32
+static constexpr int FILE_DIALOG_DOUBLE_CLICK_DELAY = 32;
 
-#define LOAD_FILE_DIALOG_DONE_BUTTON_X 58
-#define LOAD_FILE_DIALOG_DONE_BUTTON_Y 187
+static constexpr int LOAD_FILE_DIALOG_DONE_BUTTON_X = 58;
+static constexpr int LOAD_FILE_DIALOG_DONE_BUTTON_Y = 187;
 
-#define LOAD_FILE_DIALOG_DONE_LABEL_X 79
-#define LOAD_FILE_DIALOG_DONE_LABEL_Y 187
+static constexpr int LOAD_FILE_DIALOG_DONE_LABEL_X = 79;
+static constexpr int LOAD_FILE_DIALOG_DONE_LABEL_Y = 187;
 
-#define LOAD_FILE_DIALOG_CANCEL_BUTTON_X 163
-#define LOAD_FILE_DIALOG_CANCEL_BUTTON_Y 187
+static constexpr int LOAD_FILE_DIALOG_CANCEL_BUTTON_X = 163;
+static constexpr int LOAD_FILE_DIALOG_CANCEL_BUTTON_Y = 187;
 
-#define LOAD_FILE_DIALOG_CANCEL_LABEL_X 182
-#define LOAD_FILE_DIALOG_CANCEL_LABEL_Y 187
+static constexpr int LOAD_FILE_DIALOG_CANCEL_LABEL_X = 182;
+static constexpr int LOAD_FILE_DIALOG_CANCEL_LABEL_Y = 187;
 
-#define SAVE_FILE_DIALOG_DONE_BUTTON_X 58
-#define SAVE_FILE_DIALOG_DONE_BUTTON_Y 214
+static constexpr int SAVE_FILE_DIALOG_DONE_BUTTON_X = 58;
+static constexpr int SAVE_FILE_DIALOG_DONE_BUTTON_Y = 214;
 
-#define SAVE_FILE_DIALOG_DONE_LABEL_X 79
-#define SAVE_FILE_DIALOG_DONE_LABEL_Y 213
+static constexpr int SAVE_FILE_DIALOG_DONE_LABEL_X = 79;
+static constexpr int SAVE_FILE_DIALOG_DONE_LABEL_Y = 213;
 
-#define SAVE_FILE_DIALOG_CANCEL_BUTTON_X 163
-#define SAVE_FILE_DIALOG_CANCEL_BUTTON_Y 214
+static constexpr int SAVE_FILE_DIALOG_CANCEL_BUTTON_X = 163;
+static constexpr int SAVE_FILE_DIALOG_CANCEL_BUTTON_Y = 214;
 
-#define SAVE_FILE_DIALOG_CANCEL_LABEL_X 182
-#define SAVE_FILE_DIALOG_CANCEL_LABEL_Y 213
+static constexpr int SAVE_FILE_DIALOG_CANCEL_LABEL_X = 182;
+static constexpr int SAVE_FILE_DIALOG_CANCEL_LABEL_Y = 213;
 
-#define FILE_DIALOG_TITLE_X 49
-#define FILE_DIALOG_TITLE_Y 16
+static constexpr int FILE_DIALOG_TITLE_X = 49;
+static constexpr int FILE_DIALOG_TITLE_Y = 16;
 
-#define FILE_DIALOG_SCROLL_BUTTON_X 36
-#define FILE_DIALOG_SCROLL_BUTTON_Y 44
+static constexpr int FILE_DIALOG_SCROLL_BUTTON_X = 36;
+static constexpr int FILE_DIALOG_SCROLL_BUTTON_Y = 44;
 
-#define FILE_DIALOG_FILE_LIST_X 55
-#define FILE_DIALOG_FILE_LIST_Y 49
-#define FILE_DIALOG_FILE_LIST_WIDTH 190
-#define FILE_DIALOG_FILE_LIST_HEIGHT 124
+static constexpr int FILE_DIALOG_FILE_LIST_X = 55;
+static constexpr int FILE_DIALOG_FILE_LIST_Y = 49;
+static constexpr int FILE_DIALOG_FILE_LIST_WIDTH = 190;
+static constexpr int FILE_DIALOG_FILE_LIST_HEIGHT = 124;
 
 static void PrntFlist(unsigned char* buffer, char** fileList, int pageOffset, int fileListLength, int selectedIndex, int pitch);
 
@@ -132,12 +132,12 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
     bool v86 = false;
 
     bool hasTwoButtons = false;
-    if (a8 != NULL) {
+    if (a8 != nullptr) {
         hasTwoButtons = true;
     }
 
     bool hasTitle = false;
-    if (title != NULL) {
+    if (title != nullptr) {
         hasTitle = true;
     }
 
@@ -179,7 +179,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
     int backgroundHeight;
     int fid = art_id(OBJ_TYPE_INTERFACE, dbox[dialogType], 0, 0, 0);
     unsigned char* background = art_lock(fid, &backgroundHandle, &backgroundWidth, &backgroundHeight);
-    if (background == NULL) {
+    if (background == nullptr) {
         text_font(savedFont);
         return -1;
     }
@@ -197,23 +197,23 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
     unsigned char* windowBuf = win_get_buf(win);
     memcpy(windowBuf, background, backgroundWidth * backgroundHeight);
 
-    CacheEntry* doneBoxHandle = NULL;
-    unsigned char* doneBox = NULL;
+    CacheEntry* doneBoxHandle = nullptr;
+    unsigned char* doneBox = nullptr;
     int doneBoxWidth;
     int doneBoxHeight;
 
-    CacheEntry* downButtonHandle = NULL;
-    unsigned char* downButton = NULL;
+    CacheEntry* downButtonHandle = nullptr;
+    unsigned char* downButton = nullptr;
     int downButtonWidth;
     int downButtonHeight;
 
-    CacheEntry* upButtonHandle = NULL;
-    unsigned char* upButton = NULL;
+    CacheEntry* upButtonHandle = nullptr;
+    unsigned char* upButton = nullptr;
 
     if ((flags & DIALOG_BOX_0x20) == 0) {
         int doneBoxFid = art_id(OBJ_TYPE_INTERFACE, 209, 0, 0, 0);
         doneBox = art_lock(doneBoxFid, &doneBoxHandle, &doneBoxWidth, &doneBoxHeight);
-        if (doneBox == NULL) {
+        if (doneBox == nullptr) {
             art_ptr_unlock(backgroundHandle);
             text_font(savedFont);
             win_delete(win);
@@ -222,7 +222,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
 
         int downButtonFid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
         downButton = art_lock(downButtonFid, &downButtonHandle, &downButtonWidth, &downButtonHeight);
-        if (downButton == NULL) {
+        if (downButton == nullptr) {
             art_ptr_unlock(doneBoxHandle);
             art_ptr_unlock(backgroundHandle);
             text_font(savedFont);
@@ -232,7 +232,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
 
         int upButtonFid = art_id(OBJ_TYPE_INTERFACE, 8, 0, 0, 0);
         upButton = art_ptr_lock_data(upButtonFid, 0, 0, &upButtonHandle);
-        if (upButton == NULL) {
+        if (upButton == nullptr) {
             art_ptr_unlock(downButtonHandle);
             art_ptr_unlock(doneBoxHandle);
             art_ptr_unlock(backgroundHandle);
@@ -244,7 +244,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
         int v27 = hasTwoButtons ? doneX[dialogType] : (backgroundWidth - doneBoxWidth) / 2;
         buf_to_buf(doneBox, doneBoxWidth, doneBoxHeight, doneBoxWidth, windowBuf + backgroundWidth * doneY[dialogType] + v27, backgroundWidth);
 
-        if (!message_init(&messageList)) {
+        if (!messageList.init()) {
             art_ptr_unlock(upButtonHandle);
             art_ptr_unlock(downButtonHandle);
             art_ptr_unlock(doneBoxHandle);
@@ -257,7 +257,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
         char path[COMPAT_MAX_PATH];
         snprintf(path, sizeof(path), "%s%s", msg_path, "DBOX.MSG");
 
-        if (!message_load(&messageList, path)) {
+        if (!messageList.load(path)) {
             art_ptr_unlock(upButtonHandle);
             art_ptr_unlock(downButtonHandle);
             art_ptr_unlock(doneBoxHandle);
@@ -272,11 +272,11 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
         // 100 - DONE
         // 101 - YES
         messageListItem.num = (flags & DIALOG_BOX_YES_NO) == 0 ? 100 : 101;
-        if (message_search(&messageList, &messageListItem)) {
+        if (messageList.search(&messageListItem)) {
             text_to_buf(windowBuf + backgroundWidth * (doneY[dialogType] + 3) + v27 + 35, messageListItem.text, backgroundWidth, backgroundWidth, colorTable[18979]);
         }
 
-        int btn = win_register_button(win, v27 + 13, doneY[dialogType] + 4, downButtonWidth, downButtonHeight, -1, -1, -1, 500, upButton, downButton, NULL, BUTTON_FLAG_TRANSPARENT);
+        int btn = win_register_button(win, v27 + 13, doneY[dialogType] + 4, downButtonWidth, downButtonHeight, -1, -1, -1, 500, upButton, downButton, nullptr, BUTTON_FLAG_TRANSPARENT);
         if (btn != -1) {
             win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
         }
@@ -287,7 +287,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
     if (hasTwoButtons && dialogType == DIALOG_TYPE_LARGE) {
         if (v86) {
             if ((flags & DIALOG_BOX_YES_NO) != 0) {
-                a8 = getmsg(&messageList, &messageListItem, 102);
+                a8 = messageList.getMessage(&messageListItem, 102);
             }
 
             text_font(103);
@@ -314,7 +314,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
         } else {
             int doneBoxFid = art_id(OBJ_TYPE_INTERFACE, 209, 0, 0, 0);
             unsigned char* doneBox = art_lock(doneBoxFid, &doneBoxHandle, &doneBoxWidth, &doneBoxHeight);
-            if (doneBox == NULL) {
+            if (doneBox == nullptr) {
                 art_ptr_unlock(backgroundHandle);
                 text_font(savedFont);
                 win_delete(win);
@@ -323,7 +323,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
 
             int downButtonFid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
             unsigned char* downButton = art_lock(downButtonFid, &downButtonHandle, &downButtonWidth, &downButtonHeight);
-            if (downButton == NULL) {
+            if (downButton == nullptr) {
                 art_ptr_unlock(doneBoxHandle);
                 art_ptr_unlock(backgroundHandle);
                 text_font(savedFont);
@@ -333,7 +333,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
 
             int upButtonFid = art_id(OBJ_TYPE_INTERFACE, 8, 0, 0, 0);
             unsigned char* upButton = art_ptr_lock_data(upButtonFid, 0, 0, &upButtonHandle);
-            if (upButton == NULL) {
+            if (upButton == nullptr) {
                 art_ptr_unlock(downButtonHandle);
                 art_ptr_unlock(doneBoxHandle);
                 art_ptr_unlock(backgroundHandle);
@@ -342,7 +342,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
                 return -1;
             }
 
-            if (!message_init(&messageList)) {
+            if (!messageList.init()) {
                 art_ptr_unlock(upButtonHandle);
                 art_ptr_unlock(downButtonHandle);
                 art_ptr_unlock(doneBoxHandle);
@@ -355,7 +355,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
             char path[COMPAT_MAX_PATH];
             snprintf(path, sizeof(path), "%s%s", msg_path, "DBOX.MSG");
 
-            if (!message_load(&messageList, path)) {
+            if (!messageList.load(path)) {
                 art_ptr_unlock(upButtonHandle);
                 art_ptr_unlock(downButtonHandle);
                 art_ptr_unlock(doneBoxHandle);
@@ -388,7 +388,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
                 501,
                 upButton,
                 downButton,
-                NULL,
+                nullptr,
                 BUTTON_FLAG_TRANSPARENT);
             if (btn != -1) {
                 win_register_button_sound_func(btn, gsound_red_butt_press, gsound_red_butt_release);
@@ -496,7 +496,7 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
         art_ptr_unlock(doneBoxHandle);
         art_ptr_unlock(downButtonHandle);
         art_ptr_unlock(upButtonHandle);
-        message_exit(&messageList);
+        messageList.exit();
     }
 
     return rc;
@@ -529,7 +529,7 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
     for (int index = 0; index < FILE_DIALOG_FRM_COUNT; index++) {
         int fid = art_id(OBJ_TYPE_INTERFACE, flgids[index], 0, 0, 0);
         frmBuffers[index] = art_lock(fid, &(frmHandles[index]), &(frmSizes[index].width), &(frmSizes[index].height));
-        if (frmBuffers[index] == NULL) {
+        if (frmBuffers[index] == nullptr) {
             while (--index >= 0) {
                 art_ptr_unlock(frmHandles[index]);
             }
@@ -557,7 +557,7 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
     MessageList messageList;
     MessageListItem messageListItem;
 
-    if (!message_init(&messageList)) {
+    if (!messageList.init()) {
         win_delete(win);
 
         for (int index = 0; index < FILE_DIALOG_FRM_COUNT; index++) {
@@ -570,7 +570,7 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
     char path[COMPAT_MAX_PATH];
     snprintf(path, sizeof(path), "%s%s", msg_path, "DBOX.MSG");
 
-    if (!message_load(&messageList, path)) {
+    if (!messageList.load(path)) {
         win_delete(win);
 
         for (int index = 0; index < FILE_DIALOG_FRM_COUNT; index++) {
@@ -583,11 +583,11 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
     text_font(103);
 
     // DONE
-    const char* done = getmsg(&messageList, &messageListItem, 100);
+    const char* done = messageList.getMessage(&messageListItem, 100);
     text_to_buf(windowBuffer + LOAD_FILE_DIALOG_DONE_LABEL_Y * backgroundWidth + LOAD_FILE_DIALOG_DONE_LABEL_X, done, backgroundWidth, backgroundWidth, colorTable[18979]);
 
     // CANCEL
-    const char* cancel = getmsg(&messageList, &messageListItem, 103);
+    const char* cancel = messageList.getMessage(&messageListItem, 103);
     text_to_buf(windowBuffer + LOAD_FILE_DIALOG_CANCEL_LABEL_Y * backgroundWidth + LOAD_FILE_DIALOG_CANCEL_LABEL_X, cancel, backgroundWidth, backgroundWidth, colorTable[18979]);
 
     int doneBtn = win_register_button(win,
@@ -601,7 +601,7 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
         500,
         frmBuffers[FILE_DIALOG_FRM_LITTLE_RED_BUTTON_NORMAL],
         frmBuffers[FILE_DIALOG_FRM_LITTLE_RED_BUTTON_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (doneBtn != -1) {
         win_register_button_sound_func(doneBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -618,7 +618,7 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
         501,
         frmBuffers[FILE_DIALOG_FRM_LITTLE_RED_BUTTON_NORMAL],
         frmBuffers[FILE_DIALOG_FRM_LITTLE_RED_BUTTON_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (cancelBtn != -1) {
         win_register_button_sound_func(cancelBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -635,7 +635,7 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
         505,
         frmBuffers[FILE_DIALOG_FRM_SCROLL_UP_ARROW_NORMAL],
         frmBuffers[FILE_DIALOG_FRM_SCROLL_UP_ARROW_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (scrollUpBtn != -1) {
         win_register_button_sound_func(cancelBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -652,7 +652,7 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
         503,
         frmBuffers[FILE_DIALOG_FRM_SCROLL_DOWN_ARROW_NORMAL],
         frmBuffers[FILE_DIALOG_FRM_SCROLL_DOWN_ARROW_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (scrollUpBtn != -1) {
         win_register_button_sound_func(cancelBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -668,12 +668,12 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
         -1,
         -1,
         502,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
         0);
 
-    if (title != NULL) {
+    if (title != nullptr) {
         text_to_buf(windowBuffer + backgroundWidth * FILE_DIALOG_TITLE_Y + FILE_DIALOG_TITLE_X, title, backgroundWidth, backgroundWidth, colorTable[18979]);
     }
 
@@ -885,7 +885,7 @@ int file_dialog(char* title, char** fileList, char* dest, int fileListLength, in
         art_ptr_unlock(frmHandles[index]);
     }
 
-    message_exit(&messageList);
+    messageList.exit();
     text_font(oldFont);
 
     return rc;
@@ -918,7 +918,7 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
     for (int index = 0; index < FILE_DIALOG_FRM_COUNT; index++) {
         int fid = art_id(OBJ_TYPE_INTERFACE, flgids2[index], 0, 0, 0);
         frmBuffers[index] = art_lock(fid, &(frmHandles[index]), &(frmSizes[index].width), &(frmSizes[index].height));
-        if (frmBuffers[index] == NULL) {
+        if (frmBuffers[index] == nullptr) {
             while (--index >= 0) {
                 art_ptr_unlock(frmHandles[index]);
             }
@@ -946,7 +946,7 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
     MessageList messageList;
     MessageListItem messageListItem;
 
-    if (!message_init(&messageList)) {
+    if (!messageList.init()) {
         win_delete(win);
 
         for (int index = 0; index < FILE_DIALOG_FRM_COUNT; index++) {
@@ -959,7 +959,7 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
     char path[COMPAT_MAX_PATH];
     snprintf(path, sizeof(path), "%s%s", msg_path, "DBOX.MSG");
 
-    if (!message_load(&messageList, path)) {
+    if (!messageList.load(path)) {
         win_delete(win);
 
         for (int index = 0; index < FILE_DIALOG_FRM_COUNT; index++) {
@@ -972,11 +972,11 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
     text_font(103);
 
     // DONE
-    const char* done = getmsg(&messageList, &messageListItem, 100);
+    const char* done = messageList.getMessage(&messageListItem, 100);
     text_to_buf(windowBuffer + backgroundWidth * SAVE_FILE_DIALOG_DONE_LABEL_Y + SAVE_FILE_DIALOG_DONE_LABEL_X, done, backgroundWidth, backgroundWidth, colorTable[18979]);
 
     // CANCEL
-    const char* cancel = getmsg(&messageList, &messageListItem, 103);
+    const char* cancel = messageList.getMessage(&messageListItem, 103);
     text_to_buf(windowBuffer + backgroundWidth * SAVE_FILE_DIALOG_CANCEL_LABEL_Y + SAVE_FILE_DIALOG_CANCEL_LABEL_X, cancel, backgroundWidth, backgroundWidth, colorTable[18979]);
 
     int doneBtn = win_register_button(win,
@@ -990,7 +990,7 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
         500,
         frmBuffers[FILE_DIALOG_FRM_LITTLE_RED_BUTTON_NORMAL],
         frmBuffers[FILE_DIALOG_FRM_LITTLE_RED_BUTTON_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (doneBtn != -1) {
         win_register_button_sound_func(doneBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1007,7 +1007,7 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
         501,
         frmBuffers[FILE_DIALOG_FRM_LITTLE_RED_BUTTON_NORMAL],
         frmBuffers[FILE_DIALOG_FRM_LITTLE_RED_BUTTON_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (cancelBtn != -1) {
         win_register_button_sound_func(cancelBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1024,7 +1024,7 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
         505,
         frmBuffers[FILE_DIALOG_FRM_SCROLL_UP_ARROW_NORMAL],
         frmBuffers[FILE_DIALOG_FRM_SCROLL_UP_ARROW_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (scrollUpBtn != -1) {
         win_register_button_sound_func(cancelBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1041,7 +1041,7 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
         503,
         frmBuffers[FILE_DIALOG_FRM_SCROLL_DOWN_ARROW_NORMAL],
         frmBuffers[FILE_DIALOG_FRM_SCROLL_DOWN_ARROW_PRESSED],
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (scrollUpBtn != -1) {
         win_register_button_sound_func(cancelBtn, gsound_red_butt_press, gsound_red_butt_release);
@@ -1057,12 +1057,12 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
         -1,
         -1,
         502,
-        NULL,
-        NULL,
-        NULL,
+        nullptr,
+        nullptr,
+        nullptr,
         0);
 
-    if (title != NULL) {
+    if (title != nullptr) {
         text_to_buf(windowBuffer + backgroundWidth * FILE_DIALOG_TITLE_Y + FILE_DIALOG_TITLE_X, title, backgroundWidth, backgroundWidth, colorTable[18979]);
     }
 
@@ -1383,7 +1383,7 @@ int save_file_dialog(char* title, char** fileList, char* dest, int fileListLengt
         art_ptr_unlock(frmHandles[index]);
     }
 
-    message_exit(&messageList);
+    messageList.exit();
     text_font(oldFont);
 
     return rc;

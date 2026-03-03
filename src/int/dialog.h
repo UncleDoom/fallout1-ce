@@ -1,11 +1,11 @@
-#ifndef FALLOUT_INT_DIALOG_H_
-#define FALLOUT_INT_DIALOG_H_
+#pragma once
+
 
 #include "int/intrpret.h"
 
 namespace fallout {
 
-typedef void DialogWinDrawCallback(int win);
+using DialogWinDrawCallback = void(int win);
 
 extern DialogWinDrawCallback* replyWinDrawCallback;
 extern DialogWinDrawCallback* optionsWinDrawCallback;
@@ -39,5 +39,3 @@ int dialogToggleMediaFlag(int a1);
 int dialogGetMediaFlag();
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_DIALOG_H_ */

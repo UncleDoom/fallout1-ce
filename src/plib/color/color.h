@@ -1,31 +1,31 @@
-#ifndef FALLOUT_PLIB_COLOR_COLOR_H_
-#define FALLOUT_PLIB_COLOR_COLOR_H_
+#pragma once
 
-#include <stdlib.h>
+
+#include <cstdlib>
 
 namespace fallout {
 
-#define COLOR_PALETTE_STACK_CAPACITY 16
+inline constexpr int COLOR_PALETTE_STACK_CAPACITY = 16;
 
-typedef unsigned char Color;
-typedef long ColorRGB;
-typedef unsigned char ColorIndex;
+using Color = unsigned char;
+using ColorRGB = long;
+using ColorIndex = unsigned char;
 
-typedef const char*(ColorNameMangleFunc)(const char*);
-typedef void(fade_bk_func)();
+using ColorNameMangleFunc = const char*(const char*);
+using fade_bk_func = void();
 
-typedef void*(ColorOpenFunc)(const char* path);
-typedef int(ColorReadFunc)(void* fd, void* buffer, size_t size);
-typedef int(ColorCloseFunc)(void* fd);
-typedef void*(ColorMallocFunc)(size_t size);
-typedef void*(ColorReallocFunc)(void* ptr, size_t size);
-typedef void(ColorFreeFunc)(void* ptr);
+using ColorOpenFunc = void*(const char* path);
+using ColorReadFunc = int(void* fd, void* buffer, size_t size);
+using ColorCloseFunc = int(void* fd);
+using ColorMallocFunc = void*(size_t size);
+using ColorReallocFunc = void*(void* ptr, size_t size);
+using ColorFreeFunc = void(void* ptr);
 
-typedef struct ColorPaletteStackEntry {
+struct ColorPaletteStackEntry {
     unsigned char mappedColors[256];
     unsigned char cmap[768];
     unsigned char colorTable[32768];
-} ColorPaletteStackEntry;
+};
 
 extern unsigned char cmap[768];
 
@@ -67,5 +67,3 @@ void colorsClose();
 unsigned char* getColorPalette();
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_COLOR_COLOR_H_ */

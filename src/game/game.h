@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_GAME_H_
-#define FALLOUT_GAME_GAME_H_
+#pragma once
+
 
 #include "game/game_vars.h"
 #include "game/message.h"
@@ -7,14 +7,21 @@
 
 namespace fallout {
 
-typedef enum GameState {
-    GAME_STATE_0,
-    GAME_STATE_1,
-    GAME_STATE_2,
-    GAME_STATE_3,
-    GAME_STATE_4,
-    GAME_STATE_5,
-} GameState;
+enum class GameState : int {
+    State0 = 0,
+    State1 = 1,
+    State2 = 2,
+    State3 = 3,
+    State4 = 4,
+    State5 = 5,
+};
+
+inline constexpr int GAME_STATE_0 = static_cast<int>(GameState::State0);
+inline constexpr int GAME_STATE_1 = static_cast<int>(GameState::State1);
+inline constexpr int GAME_STATE_2 = static_cast<int>(GameState::State2);
+inline constexpr int GAME_STATE_3 = static_cast<int>(GameState::State3);
+inline constexpr int GAME_STATE_4 = static_cast<int>(GameState::State4);
+inline constexpr int GAME_STATE_5 = static_cast<int>(GameState::State5);
 
 extern int* game_global_vars;
 extern int num_game_global_vars;
@@ -42,5 +49,3 @@ void game_state_update();
 int game_quit_with_confirm();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_GAME_H_ */

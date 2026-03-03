@@ -1,34 +1,51 @@
-#ifndef FALLOUT_INT_MOVIE_H_
-#define FALLOUT_INT_MOVIE_H_
+#pragma once
 
+
+#include "game/enum_utils.h"
 #include "plib/gnw/rect.h"
 
 namespace fallout {
 
-typedef enum MovieFlags {
-    MOVIE_FLAG_0x01 = 0x01,
-    MOVIE_FLAG_0x02 = 0x02,
-    MOVIE_FLAG_0x04 = 0x04,
-    MOVIE_FLAG_0x08 = 0x08,
-} MovieFlags;
+enum class MovieFlags : unsigned {
+    Flag0x01 = 0x01,
+    Flag0x02 = 0x02,
+    Flag0x04 = 0x04,
+    Flag0x08 = 0x08,
+};
 
-typedef enum MovieExtendedFlags {
-    MOVIE_EXTENDED_FLAG_0x01 = 0x01,
-    MOVIE_EXTENDED_FLAG_0x02 = 0x02,
-    MOVIE_EXTENDED_FLAG_0x04 = 0x04,
-    MOVIE_EXTENDED_FLAG_0x08 = 0x08,
-    MOVIE_EXTENDED_FLAG_0x10 = 0x10,
-} MovieExtendedFlags;
+DEFINE_ENUM_FLAG_OPERATORS(MovieFlags)
 
-typedef char*(MovieSubtitleFunc)(char* movieFilePath);
-typedef void(MoviePaletteFunc)(unsigned char* palette, int start, int end);
-typedef void(MovieUpdateCallbackProc)(int frame);
-typedef void(MovieFrameGrabProc)(unsigned char* data, int width, int height, int pitch);
-typedef void(MovieCaptureFrameProc)(unsigned char* data, int width, int height, int pitch, int movieX, int movieY, int movieWidth, int movieHeight);
-typedef void(MoviePreDrawFunc)(int win, Rect* rect);
-typedef void(MovieStartFunc)(int win);
-typedef void(MovieEndFunc)(int win, int x, int y, int width, int height);
-typedef int(MovieFailedOpenFunc)(char* path);
+inline constexpr int MOVIE_FLAG_0x01 = static_cast<int>(MovieFlags::Flag0x01);
+inline constexpr int MOVIE_FLAG_0x02 = static_cast<int>(MovieFlags::Flag0x02);
+inline constexpr int MOVIE_FLAG_0x04 = static_cast<int>(MovieFlags::Flag0x04);
+inline constexpr int MOVIE_FLAG_0x08 = static_cast<int>(MovieFlags::Flag0x08);
+
+enum class MovieExtendedFlags : unsigned {
+    Flag0x01 = 0x01,
+    Flag0x02 = 0x02,
+    Flag0x04 = 0x04,
+    Flag0x08 = 0x08,
+    Flag0x10 = 0x10,
+};
+
+DEFINE_ENUM_FLAG_OPERATORS(MovieExtendedFlags)
+
+inline constexpr int MOVIE_EXTENDED_FLAG_0x01 = static_cast<int>(MovieExtendedFlags::Flag0x01);
+inline constexpr int MOVIE_EXTENDED_FLAG_0x02 = static_cast<int>(MovieExtendedFlags::Flag0x02);
+inline constexpr int MOVIE_EXTENDED_FLAG_0x04 = static_cast<int>(MovieExtendedFlags::Flag0x04);
+inline constexpr int MOVIE_EXTENDED_FLAG_0x08 = static_cast<int>(MovieExtendedFlags::Flag0x08);
+inline constexpr int MOVIE_EXTENDED_FLAG_0x10 = static_cast<int>(MovieExtendedFlags::Flag0x10);
+
+
+using MovieSubtitleFunc = char*(char* movieFilePath);
+using MoviePaletteFunc = void(unsigned char* palette, int start, int end);
+using MovieUpdateCallbackProc = void(int frame);
+using MovieFrameGrabProc = void(unsigned char* data, int width, int height, int pitch);
+using MovieCaptureFrameProc = void(unsigned char* data, int width, int height, int pitch, int movieX, int movieY, int movieWidth, int movieHeight);
+using MoviePreDrawFunc = void(int win, Rect* rect);
+using MovieStartFunc = void(int win);
+using MovieEndFunc = void(int win, int x, int y, int width, int height);
+using MovieFailedOpenFunc = int(char* path);
 
 void movieSetPreDrawFunc(MoviePreDrawFunc* func);
 void movieSetFailedOpenFunc(MovieFailedOpenFunc* func);
@@ -51,5 +68,3 @@ void movieUpdate();
 int moviePlaying();
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_MOVIE_H_ */

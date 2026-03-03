@@ -1,5 +1,5 @@
-#ifndef FALLOUT_INT_EXPORT_H_
-#define FALLOUT_INT_EXPORT_H_
+#pragma once
+
 
 #include "int/intrpret.h"
 
@@ -15,5 +15,3 @@ int exportExportProcedure(Program* program, const char* identifier, int address,
 void exportClearAllVariables();
 
 } // namespace fallout
-
-#endif /* FALLOUT_INT_EXPORT_H_ */

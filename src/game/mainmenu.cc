@@ -1,8 +1,8 @@
 #include "game/mainmenu.h"
 
-#include <ctype.h>
-#include <limits.h>
-#include <string.h>
+#include <cctype>
+#include <climits>
+#include <cstring>
 
 #include "game/art.h"
 #include "game/game.h"
@@ -20,17 +20,17 @@
 
 namespace fallout {
 
-#define MAIN_MENU_WINDOW_WIDTH 640
-#define MAIN_MENU_WINDOW_HEIGHT 480
+static constexpr int MAIN_MENU_WINDOW_WIDTH = 640;
+static constexpr int MAIN_MENU_WINDOW_HEIGHT = 480;
 
-typedef enum MainMenuButton {
+enum MainMenuButton {
     MAIN_MENU_BUTTON_INTRO,
     MAIN_MENU_BUTTON_NEW_GAME,
     MAIN_MENU_BUTTON_LOAD_GAME,
     MAIN_MENU_BUTTON_CREDITS,
     MAIN_MENU_BUTTON_EXIT,
     MAIN_MENU_BUTTON_COUNT,
-} MainMenuButton;
+};
 
 static int main_menu_fatal_error();
 static void main_menu_play_sound(const char* fileName);
@@ -39,16 +39,16 @@ static void main_menu_play_sound(const char* fileName);
 static int main_window = -1;
 
 // 0x505A88
-static unsigned char* main_window_buf = NULL;
+static unsigned char* main_window_buf = nullptr;
 
 // 0x505A8C
-static unsigned char* background_data = NULL;
+static unsigned char* background_data = nullptr;
 
 // 0x505A90
-static unsigned char* button_up_data = NULL;
+static unsigned char* button_up_data = nullptr;
 
 // 0x505A94
-static unsigned char* button_down_data = NULL;
+static unsigned char* button_down_data = nullptr;
 
 // 0x505A98
 bool in_main_menu = false;
@@ -123,7 +123,7 @@ int main_menu_create()
     // mainmenu.frm
     int backgroundFid = art_id(OBJ_TYPE_INTERFACE, 140, 0, 0, 0);
     background_data = art_ptr_lock_data(backgroundFid, 0, 0, &background_key);
-    if (background_data == NULL) {
+    if (background_data == nullptr) {
         // NOTE: Uninline.
         return main_menu_fatal_error();
     }
@@ -140,7 +140,7 @@ int main_menu_create()
 
     // Copyright.
     msg.num = 14;
-    if (message_search(&misc_message_file, &msg)) {
+    if (misc_message_file.search(&msg)) {
         win_print(main_window, msg.text, 0, 15, 460, colorTable[21204] | 0x4000000 | 0x2000000);
     }
 
@@ -153,7 +153,7 @@ int main_menu_create()
     // menuup.frm
     fid = art_id(OBJ_TYPE_INTERFACE, 299, 0, 0, 0);
     button_up_data = art_ptr_lock_data(fid, 0, 0, &button_up_key);
-    if (button_up_data == NULL) {
+    if (button_up_data == nullptr) {
         // NOTE: Uninline.
         return main_menu_fatal_error();
     }
@@ -161,7 +161,7 @@ int main_menu_create()
     // menudown.frm
     fid = art_id(OBJ_TYPE_INTERFACE, 300, 0, 0, 0);
     button_down_data = art_ptr_lock_data(fid, 0, 0, &button_down_key);
-    if (button_down_data == NULL) {
+    if (button_down_data == nullptr) {
         // NOTE: Uninline.
         return main_menu_fatal_error();
     }
@@ -182,7 +182,7 @@ int main_menu_create()
             button_values[index],
             button_up_data,
             button_down_data,
-            NULL,
+            nullptr,
             BUTTON_FLAG_TRANSPARENT);
         if (buttons[index] == -1) {
             // NOTE: Uninline.
@@ -196,7 +196,7 @@ int main_menu_create()
 
     for (int index = 0; index < MAIN_MENU_BUTTON_COUNT; index++) {
         msg.num = 9 + index;
-        if (message_search(&misc_message_file, &msg)) {
+        if (misc_message_file.search(&msg)) {
             len = text_width(msg.text);
             text_to_buf(main_window_buf + MAIN_MENU_WINDOW_WIDTH * (42 * index - index + 46) + 520 - (len / 2),
                 msg.text,
@@ -230,14 +230,14 @@ void main_menu_destroy()
 
     if (button_down_data) {
         art_ptr_unlock(button_down_key);
-        button_down_key = NULL;
-        button_down_data = NULL;
+        button_down_key = nullptr;
+        button_down_data = nullptr;
     }
 
     if (button_up_data) {
         art_ptr_unlock(button_up_key);
-        button_up_key = NULL;
-        button_up_data = NULL;
+        button_up_key = nullptr;
+        button_up_data = nullptr;
     }
 
     if (main_window != -1) {

@@ -1,7 +1,7 @@
 #include "plib/color/color.h"
 
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstring>
 
 #include <algorithm>
 
@@ -46,7 +46,7 @@ static bool colorsInited = false;
 static double currentGamma = 1.0;
 
 // 0x539EF0
-static fade_bk_func* colorFadeBkFuncP = NULL;
+static fade_bk_func* colorFadeBkFuncP = nullptr;
 
 // 0x539EF4
 static ColorMallocFunc* mallocPtr = defaultMalloc;
@@ -58,7 +58,7 @@ static ColorReallocFunc* reallocPtr = defaultRealloc;
 static ColorFreeFunc* freePtr = defaultFree;
 
 // 0x539F00
-static ColorNameMangleFunc* colorNameMangler = NULL;
+static ColorNameMangleFunc* colorNameMangler = nullptr;
 
 // 0x539F04
 unsigned char cmap[768] = {
@@ -107,7 +107,7 @@ static ColorOpenFunc* openFunc;
 // 0x4BFDC0
 static void* colorOpen(const char* filePath)
 {
-    if (openFunc != NULL) {
+    if (openFunc != nullptr) {
         return openFunc(filePath);
     }
 
@@ -117,7 +117,7 @@ static void* colorOpen(const char* filePath)
 // 0x4BFDD8
 static int colorRead(void* fd, void* buffer, size_t size)
 {
-    if (readFunc != NULL) {
+    if (readFunc != nullptr) {
         return readFunc(fd, buffer, size);
     }
 
@@ -127,7 +127,7 @@ static int colorRead(void* fd, void* buffer, size_t size)
 // 0x4BFDF0
 static int colorClose(void* fd)
 {
-    if (closeFunc != NULL) {
+    if (closeFunc != nullptr) {
         return closeFunc(fd);
     }
 
@@ -216,7 +216,7 @@ void fadeSystemPalette(unsigned char* oldPalette, unsigned char* newPalette, int
             palette[index] = oldPalette[index] - (oldPalette[index] - newPalette[index]) * step / steps;
         }
 
-        if (colorFadeBkFuncP != NULL) {
+        if (colorFadeBkFuncP != nullptr) {
             if (step % 128 == 0) {
                 colorFadeBkFuncP();
             }
@@ -390,7 +390,7 @@ static void setMixTableColor(int a1)
                 v17 = (v14 << 10) | (v15 << 5) | v16;
                 v18 = colorTable[v17];
 
-                v19 = (int)((((double)v11 + (-31.0)) * 0.0078125 + 1.0) * 65536.0);
+                v19 = static_cast<int>((((double)v11 + (-31.0)) * 0.0078125 + 1.0) * 65536.0);
                 v12 = calculateColor(v19, v18);
             }
 
@@ -435,7 +435,7 @@ static void setMixTable()
 // 0x4C046C
 bool loadColorTable(const char* path)
 {
-    if (colorNameMangler != NULL) {
+    if (colorNameMangler != nullptr) {
         path = colorNameMangler(path);
     }
 
@@ -618,15 +618,15 @@ unsigned char* getColorBlendTable(int ch)
 {
     unsigned char* ptr;
 
-    if (blendTable[ch] == NULL) {
-        ptr = (unsigned char*)mallocPtr(4100);
-        *(int*)ptr = 1;
+    if (blendTable[ch] == nullptr) {
+        ptr = static_cast<unsigned char*>(mallocPtr(4100));
+        *reinterpret_cast<int*>(ptr) = 1;
         blendTable[ch] = ptr + 4;
         buildBlendTable(blendTable[ch], ch);
     }
 
     ptr = blendTable[ch];
-    *(int*)((unsigned char*)ptr - 4) = *(int*)((unsigned char*)ptr - 4) + 1;
+    *reinterpret_cast<int*>((unsigned char*)ptr - 4) = *reinterpret_cast<int*>((unsigned char*)ptr - 4) + 1;
 
     return ptr;
 }
@@ -635,12 +635,12 @@ unsigned char* getColorBlendTable(int ch)
 void freeColorBlendTable(int a1)
 {
     unsigned char* v2 = blendTable[a1];
-    if (v2 != NULL) {
-        int* count = (int*)(v2 - sizeof(int));
+    if (v2 != nullptr) {
+        int* count = reinterpret_cast<int*>(v2 - sizeof(int));
         *count -= 1;
         if (*count == 0) {
             freePtr(count);
-            blendTable[a1] = NULL;
+            blendTable[a1] = nullptr;
         }
     }
 }
@@ -660,7 +660,7 @@ void colorGamma(double value)
 
     for (int i = 0; i < 64; i++) {
         double value = pow(i, currentGamma);
-        currentGammaTable[i] = (unsigned char)std::clamp(value, 0.0, 63.0);
+        currentGammaTable[i] = static_cast<unsigned char>(std::clamp(value, 0.0, 63.0));
     }
 
     setSystemPalette(systemCmap);
@@ -700,7 +700,7 @@ bool colorPushColorPalette()
         return false;
     }
 
-    ColorPaletteStackEntry* entry = (ColorPaletteStackEntry*)malloc(sizeof(*entry));
+    ColorPaletteStackEntry* entry = static_cast<ColorPaletteStackEntry*>(malloc(sizeof(*entry)));
     colorPaletteStack[tos] = entry;
 
     memcpy(entry->mappedColors, mappedColor, sizeof(mappedColor));
@@ -729,7 +729,7 @@ bool colorPopColorPalette()
     memcpy(colorTable, entry->colorTable, sizeof(colorTable));
 
     free(entry);
-    colorPaletteStack[tos] = NULL;
+    colorPaletteStack[tos] = nullptr;
 
     setIntensityTables();
 

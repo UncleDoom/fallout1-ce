@@ -1,7 +1,7 @@
 #include "game/map.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <vector>
 
@@ -58,8 +58,7 @@ static void map_place_dude_and_mouse();
 static void square_init();
 static void square_reset();
 static int square_load(DB_FILE* stream, int a2);
-static int map_write_MapData(MapHeader* ptr, DB_FILE* stream);
-static int map_read_MapData(MapHeader* ptr, DB_FILE* stream);
+
 
 // 0x4735CE
 static const short city_vs_city_idx_table[MAP_COUNT][5] = {
@@ -227,10 +226,10 @@ static bool map_bk_enabled = false;
 int map_script_id = -1;
 
 // 0x505AE8
-int* map_local_vars = NULL;
+int* map_local_vars = nullptr;
 
 // 0x505AEC
-int* map_global_vars = NULL;
+int* map_global_vars = nullptr;
 
 // 0x505AF0
 int num_map_local_vars = 0;
@@ -286,7 +285,7 @@ int iso_init()
     }
 
     display_buf = win_get_buf(display_win);
-    if (display_buf == NULL) {
+    if (display_buf == nullptr) {
         debug_printf("win_get_buf failed in iso_init\n");
         return -1;
     }
@@ -373,16 +372,16 @@ void iso_exit()
 void map_init()
 {
     char* executable;
-    config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, "executable", &executable);
+    game_config.getString(GAME_CONFIG_SYSTEM_KEY, "executable", &executable);
     if (compat_stricmp(executable, "mapper") == 0) {
         map_scroll_refresh = map_scroll_refresh_mapper;
     }
 
-    if (message_init(&map_msg_file)) {
+    if (map_msg_file.init()) {
         char path[COMPAT_MAX_PATH];
         snprintf(path, sizeof(path), "%smap.msg", msg_path);
 
-        if (!message_load(&map_msg_file, path)) {
+        if (!map_msg_file.load(path)) {
             debug_printf("\nError loading map_msg_file!");
         }
     } else {
@@ -408,7 +407,7 @@ void map_exit()
     win_hide(display_win);
     gmouse_set_cursor(MOUSE_CURSOR_ARROW);
     remove_bk_process(gmouse_bk_process);
-    if (!message_exit(&map_msg_file)) {
+    if (!map_msg_file.exit()) {
         debug_printf("\nError exiting map_msg_file!");
     }
 }
@@ -563,13 +562,13 @@ int map_malloc_local_var(int a1)
     int oldMapLocalVarsLength = num_map_local_vars;
     num_map_local_vars += a1;
 
-    int* vars = (int*)mem_realloc(map_local_vars, sizeof(*vars) * num_map_local_vars);
-    if (vars == NULL) {
+    int* vars = static_cast<int*>(mem_realloc(map_local_vars, sizeof(*vars) * num_map_local_vars));
+    if (vars == nullptr) {
         debug_printf("\nError: Ran out of memory!");
     }
 
     map_local_vars = vars;
-    memset((unsigned char*)vars + sizeof(*vars) * oldMapLocalVarsLength, 0, sizeof(*vars) * a1);
+    memset(reinterpret_cast<unsigned char*>(vars) + sizeof(*vars) * oldMapLocalVarsLength, 0, sizeof(*vars) * a1);
 
     map_local_pointers.resize(num_map_local_vars);
 
@@ -601,7 +600,7 @@ int map_get_name_idx(char* name, int map)
 {
     MessageListItem mesg;
 
-    if (name == NULL) {
+    if (name == nullptr) {
         return -1;
     }
 
@@ -613,7 +612,7 @@ int map_get_name_idx(char* name, int map)
     }
 
     mesg.num = map;
-    if (message_search(&map_msg_file, &mesg) != 1) {
+    if (map_msg_file.search(&mesg) != 1) {
         return -1;
     }
 
@@ -628,14 +627,14 @@ char* map_get_elev_idx(int map, int elevation)
     MessageListItem mesg;
 
     if (map < 0 || map >= MAP_COUNT) {
-        return NULL;
+        return nullptr;
     }
 
     if (elevation < 0 || elevation >= ELEVATION_COUNT) {
-        return NULL;
+        return nullptr;
     }
 
-    return getmsg(&map_msg_file, &mesg, map * 3 + elevation + 200);
+    return map_msg_file.getMessage(&mesg, map * 3 + elevation + 200);
 }
 
 // 0x474158
@@ -679,7 +678,7 @@ char* map_get_short_name(int map)
 {
     MessageListItem mesg;
 
-    return getmsg(&map_msg_file, &mesg, shrtnames[map]);
+    return map_msg_file.getMessage(&mesg, shrtnames[map]);
 }
 
 // 0x474218
@@ -689,12 +688,12 @@ char* map_get_description_idx(int map)
 
     if (map > 0) {
         mesg.num = map + 100;
-        if (message_search(&map_msg_file, &mesg) == 1) {
+        if (map_msg_file.search(&mesg) == 1) {
             return mesg.text;
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // 0x474248
@@ -743,10 +742,10 @@ int map_scroll(int dx, int dy)
     }
 
     Rect r1;
-    rectCopy(&r1, &map_display_rect);
+    r1 = map_display_rect;
 
     Rect r2;
-    rectCopy(&r2, &r1);
+    r2 = r1;
 
     int width = scr_size.lrx - scr_size.ulx + 1;
     int pitch = width;
@@ -864,16 +863,16 @@ int map_load(char* file_name)
     rc = -1;
 
     extension = strstr(file_name, ".MAP");
-    if (extension != NULL) {
+    if (extension != nullptr) {
         strcpy(extension, ".SAV");
 
         file_path = map_file_path(file_name);
 
         stream = db_fopen(file_path, "rb");
         strcpy(extension, ".MAP");
-        db_fclose(stream);
+        stream->fclose();
 
-        if (stream != NULL) {
+        if (stream != nullptr) {
             rc = map_load_in_game(file_name);
             PlayCityMapMusic();
         }
@@ -882,14 +881,14 @@ int map_load(char* file_name)
     if (rc == -1) {
         file_path = map_file_path(file_name);
         stream = db_fopen(file_path, "rb");
-        if (stream != NULL) {
+        if (stream != nullptr) {
             rc = map_load_file(stream);
-            db_fclose(stream);
+            stream->fclose();
         }
 
         if (rc == 0) {
             strcpy(map_data.name, file_name);
-            obj_dude->data.critter.combat.whoHitMe = NULL;
+            obj_dude->data.critter.combat.whoHitMe = nullptr;
         }
     }
 
@@ -936,10 +935,10 @@ int map_load_file(DB_FILE* stream)
 
     do {
         error = "Invalid file handle";
-        if (stream == NULL) break;
+        if (stream == nullptr) break;
 
         error = "Error reading header";
-        if (map_read_MapData(&map_data, stream) != 0) break;
+        if (map_data.readData(stream) != 0) break;
 
         error = "Invalid map version";
         if (map_data.version != 19) break;
@@ -988,8 +987,8 @@ int map_load_file(DB_FILE* stream)
         if (tile_set_center(map_data.enteringTile, TILE_SET_CENTER_FLAG_IGNORE_SCROLL_RESTRICTIONS) != 0) break;
 
         light_set_ambient(LIGHT_LEVEL_MAX, false);
-        obj_move_to_tile(obj_dude, tile_center_tile, map_elevation, NULL);
-        obj_set_rotation(obj_dude, map_data.enteringRotation, NULL);
+        obj_move_to_tile(obj_dude, tile_center_tile, map_elevation, nullptr);
+        obj_set_rotation(obj_dude, map_data.enteringRotation, nullptr);
         map_match_map_number();
 
         if ((map_data.flags & 1) == 0) {
@@ -997,11 +996,11 @@ int map_load_file(DB_FILE* stream)
             snprintf(path, sizeof(path), "maps\\%s", map_data.name);
 
             char* extension = strstr(path, ".MAP");
-            if (extension == NULL) {
+            if (extension == nullptr) {
                 extension = strstr(path, ".map");
             }
 
-            if (extension != NULL) {
+            if (extension != nullptr) {
                 *extension = '\0';
             }
 
@@ -1020,7 +1019,7 @@ int map_load_file(DB_FILE* stream)
             int fid = art_id(OBJ_TYPE_MISC, 12, 0, 0, 0);
             obj_new(&object, fid, -1);
             object->flags |= (OBJECT_LIGHT_THRU | OBJECT_NO_SAVE | OBJECT_HIDDEN);
-            obj_move_to_tile(object, 1, 0, NULL);
+            obj_move_to_tile(object, 1, 0, nullptr);
             object->sid = map_script_id;
             scr_set_ext_param(map_script_id, (map_data.flags & 1) == 0);
 
@@ -1036,10 +1035,10 @@ int map_load_file(DB_FILE* stream)
             scr_spatials_enable();
         }
 
-        error = NULL;
+        error = nullptr;
     } while (0);
 
-    if (error != NULL) {
+    if (error != nullptr) {
         char message[100]; // TODO: Size is probably wrong.
         snprintf(message, sizeof(message), "%s while loading map, version = %d", error, map_data.version);
         debug_printf(message);
@@ -1066,14 +1065,14 @@ int map_load_file(DB_FILE* stream)
 
     if (map_state.map > 0) {
         if (map_state.rotation >= 0) {
-            obj_set_rotation(obj_dude, map_state.rotation, NULL);
+            obj_set_rotation(obj_dude, map_state.rotation, nullptr);
         }
     } else {
         tile_refresh_display();
     }
 
     gtime_q_add();
-    db_register_callback(NULL, 0);
+    db_register_callback(nullptr, 0);
     gmouse_enable_scrolling();
     gmouse_set_cursor(MOUSE_CURSOR_NONE);
 
@@ -1117,7 +1116,7 @@ static int map_age_dead_critters()
     }
 
     Object* obj = obj_find_first();
-    while (obj != NULL) {
+    while (obj != nullptr) {
         if (PID_TYPE(obj->pid) == OBJ_TYPE_CRITTER
             && obj != obj_dude
             && !isPartyMember(obj)
@@ -1141,10 +1140,10 @@ static int map_age_dead_critters()
 
     int capacity = 100;
     int count = 0;
-    Object** objects = (Object**)mem_malloc(sizeof(*objects) * capacity);
+    Object** objects = static_cast<Object**>(mem_malloc(sizeof(*objects) * capacity));
 
     obj = obj_find_first();
-    while (obj != NULL) {
+    while (obj != nullptr) {
         int type = PID_TYPE(obj->pid);
         if (type == OBJ_TYPE_CRITTER) {
             if (obj != obj_dude && critter_is_dead(obj)) {
@@ -1153,8 +1152,8 @@ static int map_age_dead_critters()
 
                     if (count >= capacity) {
                         capacity *= 2;
-                        objects = (Object**)mem_realloc(objects, sizeof(*objects) * capacity);
-                        if (objects == NULL) {
+                        objects = static_cast<Object**>(mem_realloc(objects, sizeof(*objects) * capacity));
+                        if (objects == nullptr) {
                             debug_printf("\nError: Out of Memory!");
                             return -1;
                         }
@@ -1165,8 +1164,8 @@ static int map_age_dead_critters()
             objects[count++] = obj;
             if (count >= capacity) {
                 capacity *= 2;
-                objects = (Object**)mem_realloc(objects, sizeof(*objects) * capacity);
-                if (objects == NULL) {
+                objects = static_cast<Object**>(mem_realloc(objects, sizeof(*objects) * capacity));
+                if (objects == nullptr) {
                     debug_printf("\nError: Out of Memory!");
                     return -1;
                 }
@@ -1193,7 +1192,7 @@ static int map_age_dead_critters()
                 break;
             }
 
-            obj_move_to_tile(blood, obj->tile, obj->elevation, NULL);
+            obj_move_to_tile(blood, obj->tile, obj->elevation, nullptr);
 
             Proto* proto;
             proto_ptr(obj->pid, &proto);
@@ -1208,11 +1207,11 @@ static int map_age_dead_critters()
                 }
             }
 
-            obj_set_frame(blood, frame, NULL);
+            obj_set_frame(blood, frame, nullptr);
         }
 
         register_clear(obj);
-        obj_erase_object(obj, NULL);
+        obj_erase_object(obj, nullptr);
     }
 
     mem_free(objects);
@@ -1223,7 +1222,7 @@ static int map_age_dead_critters()
 // 0x475160
 int map_leave_map(MapTransition* transition)
 {
-    if (transition == NULL) {
+    if (transition == nullptr) {
         return -1;
     }
 
@@ -1285,9 +1284,9 @@ int map_check_state()
 
             if (map_state.tile != -1 && map_state.tile != 0
                 && map_state.elevation >= 0 && map_state.elevation < ELEVATION_COUNT) {
-                obj_move_to_tile(obj_dude, map_state.tile, map_state.elevation, NULL);
+                obj_move_to_tile(obj_dude, map_state.tile, map_state.elevation, nullptr);
                 map_set_elevation(map_state.elevation);
-                obj_set_rotation(obj_dude, map_state.rotation, NULL);
+                obj_set_rotation(obj_dude, map_state.rotation, nullptr);
             }
 
             if (tile_set_center(obj_dude->tile, TILE_SET_CENTER_REFRESH_WINDOW) == -1) {
@@ -1309,7 +1308,7 @@ int map_check_state()
 // 0x475394
 void map_fix_critter_combat_data()
 {
-    for (Object* object = obj_find_first(); object != NULL; object = obj_find_next()) {
+    for (Object* object = obj_find_first(); object != nullptr; object = obj_find_next()) {
         if (object->pid == -1) {
             continue;
         }
@@ -1319,7 +1318,7 @@ void map_fix_critter_combat_data()
         }
 
         if (object->data.critter.combat.whoHitMeCid == -1) {
-            object->data.critter.combat.whoHitMe = NULL;
+            object->data.critter.combat.whoHitMe = nullptr;
         }
     }
 }
@@ -1331,7 +1330,7 @@ int map_save()
     temp[0] = '\0';
 
     char* masterPatchesPath;
-    if (config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_MASTER_PATCHES_KEY, &masterPatchesPath)) {
+    if (game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_MASTER_PATCHES_KEY, &masterPatchesPath)) {
         strcat(temp, masterPatchesPath);
         compat_mkdir(temp);
 
@@ -1343,9 +1342,9 @@ int map_save()
     if (map_data.name[0] != '\0') {
         char* mapFileName = map_file_path(map_data.name);
         DB_FILE* stream = db_fopen(mapFileName, "wb");
-        if (stream != NULL) {
+        if (stream != nullptr) {
             rc = map_save_file(stream);
-            db_fclose(stream);
+            stream->fclose();
         } else {
             snprintf(temp, sizeof(temp), "Unable to open %s to write!", map_data.name);
             debug_printf(temp);
@@ -1365,7 +1364,7 @@ int map_save()
 // 0x475590
 int map_save_file(DB_FILE* stream)
 {
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
@@ -1389,13 +1388,13 @@ int map_save_file(DB_FILE* stream)
 
         if (tile == SQUARE_GRID_SIZE) {
             Object* object = obj_find_first_at(elevation);
-            if (object != NULL) {
+            if (object != nullptr) {
                 // TODO: Implementation is slightly different, check in debugger.
-                while (object != NULL && (object->flags & OBJECT_NO_SAVE)) {
+                while (object != nullptr && (object->flags & OBJECT_NO_SAVE)) {
                     object = obj_find_next_at();
                 }
 
-                if (object != NULL) {
+                if (object != nullptr) {
                     map_data.flags &= ~map_data_elev_flags[elevation];
                 } else {
                     map_data.flags |= map_data_elev_flags[elevation];
@@ -1412,19 +1411,19 @@ int map_save_file(DB_FILE* stream)
     map_data.globalVariablesCount = num_map_global_vars;
     map_data.darkness = 1;
 
-    map_write_MapData(&map_data, stream);
+    map_data.writeData(stream);
 
     if (map_data.globalVariablesCount != 0) {
-        db_fwriteInt32List(stream, map_global_vars, map_data.globalVariablesCount);
+        stream->fwriteInt32List(map_global_vars, map_data.globalVariablesCount);
     }
 
     if (map_data.localVariablesCount != 0) {
-        db_fwriteInt32List(stream, map_local_vars, map_data.localVariablesCount);
+        stream->fwriteInt32List(map_local_vars, map_data.localVariablesCount);
     }
 
     for (int elevation = 0; elevation < ELEVATION_COUNT; elevation++) {
         if ((map_data.flags & map_data_elev_flags[elevation]) == 0) {
-            db_fwriteInt32List(stream, square[elevation]->field_0, SQUARE_GRID_SIZE);
+            stream->fwriteInt32List(square[elevation]->field_0, SQUARE_GRID_SIZE);
         }
     }
 
@@ -1512,7 +1511,7 @@ void map_setup_paths()
     char path[COMPAT_MAX_PATH];
 
     char* masterPatchesPath;
-    if (config_get_string(&game_config, GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_MASTER_PATCHES_KEY, &masterPatchesPath)) {
+    if (game_config.getString(GAME_CONFIG_SYSTEM_KEY, GAME_CONFIG_MASTER_PATCHES_KEY, &masterPatchesPath)) {
         strcpy(path, masterPatchesPath);
     } else {
         strcpy(path, "DATA");
@@ -1536,7 +1535,7 @@ int map_match_map_name(const char* name)
     compat_strupr(temp);
 
     extension = strstr(temp, ".SAV");
-    if (extension != NULL) {
+    if (extension != nullptr) {
         strcpy(extension, ".MAP");
     }
 
@@ -1559,7 +1558,7 @@ static void map_match_map_number()
     int index;
     char candidate[16];
 
-    if (strstr(map_data.name, ".sav") != NULL) {
+    if (strstr(map_data.name, ".sav") != nullptr) {
         return;
     }
 
@@ -1571,7 +1570,7 @@ static void map_match_map_number()
     compat_strupr(temp);
 
     extension = strstr(temp, ".SAV");
-    if (extension != NULL) {
+    if (extension != nullptr) {
         strcpy(extension, ".MAP");
     }
 
@@ -1598,16 +1597,16 @@ static void map_display_draw(Rect* rect)
 static void map_scroll_refresh_game(Rect* rect)
 {
     Rect rectToUpdate;
-    if (rect_inside_bound(rect, &map_display_rect, &rectToUpdate) == -1) {
+    if (rect->insideBound(map_display_rect, rectToUpdate) == -1) {
         return;
     }
 
     // CE: Clear dirty rect to prevent most of the visual artifacts near map
     // edges.
-    buf_fill(display_buf + rectToUpdate.uly * rectGetWidth(&map_display_rect) + rectToUpdate.ulx,
-        rectGetWidth(&rectToUpdate),
-        rectGetHeight(&rectToUpdate),
-        rectGetWidth(&map_display_rect),
+    buf_fill(display_buf + rectToUpdate.uly * map_display_rect.width() + rectToUpdate.ulx,
+        rectToUpdate.width(),
+        rectToUpdate.height(),
+        map_display_rect.width(),
         0);
 
     square_render_floor(&rectToUpdate, map_elevation);
@@ -1622,14 +1621,14 @@ static void map_scroll_refresh_game(Rect* rect)
 static void map_scroll_refresh_mapper(Rect* rect)
 {
     Rect rectToUpdate;
-    if (rect_inside_bound(rect, &map_display_rect, &rectToUpdate) == -1) {
+    if (rect->insideBound(map_display_rect, rectToUpdate) == -1) {
         return;
     }
 
-    buf_fill(display_buf + rectToUpdate.uly * rectGetWidth(&map_display_rect) + rectToUpdate.ulx,
-        rectGetWidth(&rectToUpdate),
-        rectGetHeight(&rectToUpdate),
-        rectGetWidth(&map_display_rect),
+    buf_fill(display_buf + rectToUpdate.uly * map_display_rect.width() + rectToUpdate.ulx,
+        rectToUpdate.width(),
+        rectToUpdate.height(),
+        map_display_rect.width(),
         0);
 
     square_render_floor(&rectToUpdate, map_elevation);
@@ -1645,8 +1644,8 @@ static int map_allocate_global_vars(int count)
     map_free_global_vars();
 
     if (count != 0) {
-        map_global_vars = (int*)mem_malloc(sizeof(*map_global_vars) * count);
-        if (map_global_vars == NULL) {
+        map_global_vars = static_cast<int*>(mem_malloc(sizeof(*map_global_vars) * count));
+        if (map_global_vars == nullptr) {
             return -1;
         }
 
@@ -1661,9 +1660,9 @@ static int map_allocate_global_vars(int count)
 // 0x475DA4
 static void map_free_global_vars()
 {
-    if (map_global_vars != NULL) {
+    if (map_global_vars != nullptr) {
         mem_free(map_global_vars);
-        map_global_vars = NULL;
+        map_global_vars = nullptr;
         num_map_global_vars = 0;
     }
 
@@ -1673,7 +1672,7 @@ static void map_free_global_vars()
 // 0x475DC8
 static int map_load_global_vars(DB_FILE* stream)
 {
-    if (db_freadInt32List(stream, map_global_vars, num_map_global_vars) != 0) {
+    if (stream->freadInt32List(map_global_vars, num_map_global_vars) != 0) {
         return -1;
     }
 
@@ -1686,8 +1685,8 @@ static int map_allocate_local_vars(int count)
     map_free_local_vars();
 
     if (count != 0) {
-        map_local_vars = (int*)mem_malloc(sizeof(*map_local_vars) * count);
-        if (map_local_vars == NULL) {
+        map_local_vars = static_cast<int*>(mem_malloc(sizeof(*map_local_vars) * count));
+        if (map_local_vars == nullptr) {
             return -1;
         }
 
@@ -1702,9 +1701,9 @@ static int map_allocate_local_vars(int count)
 // 0x475E40
 static void map_free_local_vars()
 {
-    if (map_local_vars != NULL) {
+    if (map_local_vars != nullptr) {
         mem_free(map_local_vars);
-        map_local_vars = NULL;
+        map_local_vars = nullptr;
         num_map_local_vars = 0;
     }
 
@@ -1714,7 +1713,7 @@ static void map_free_local_vars()
 // 0x475E64
 static int map_load_local_vars(DB_FILE* stream)
 {
-    if (db_freadInt32List(stream, map_local_vars, num_map_local_vars) != 0) {
+    if (stream->freadInt32List(map_local_vars, num_map_local_vars) != 0) {
         return -1;
     }
 
@@ -1724,14 +1723,14 @@ static int map_load_local_vars(DB_FILE* stream)
 // 0x475E88
 static void map_place_dude_and_mouse()
 {
-    if (obj_dude != NULL) {
+    if (obj_dude != nullptr) {
         if (FID_ANIM_TYPE(obj_dude->fid) != ANIM_STAND) {
             obj_set_frame(obj_dude, 0, 0);
             obj_dude->fid = art_id(OBJ_TYPE_CRITTER, obj_dude->fid & 0xFFF, ANIM_STAND, (obj_dude->fid & 0xF000) >> 12, obj_dude->rotation + 1);
         }
 
         if (obj_dude->tile == -1) {
-            obj_move_to_tile(obj_dude, tile_center_tile, map_elevation, NULL);
+            obj_move_to_tile(obj_dude, tile_center_tile, map_elevation, nullptr);
             obj_set_rotation(obj_dude, map_data.enteringRotation, 0);
         }
 
@@ -1796,7 +1795,7 @@ static int square_load(DB_FILE* stream, int flags)
     for (int elevation = 0; elevation < ELEVATION_COUNT; elevation++) {
         if ((flags & map_data_elev_flags[elevation]) == 0) {
             int* arr = square[elevation]->field_0;
-            if (db_freadInt32List(stream, arr, SQUARE_GRID_SIZE) != 0) {
+            if (stream->freadInt32List(arr, SQUARE_GRID_SIZE) != 0) {
                 return -1;
             }
 
@@ -1819,41 +1818,41 @@ static int square_load(DB_FILE* stream, int flags)
 }
 
 // 0x476120
-static int map_write_MapData(MapHeader* ptr, DB_FILE* stream)
+int MapHeader::writeData(DB_FILE* stream)
 {
-    if (db_fwriteInt32(stream, ptr->version) == -1) return -1;
-    if (db_fwriteInt8List(stream, ptr->name, 16) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->enteringTile) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->enteringElevation) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->enteringRotation) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->localVariablesCount) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->scriptIndex) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->flags) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->darkness) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->globalVariablesCount) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->field_34) == -1) return -1;
-    if (db_fwriteInt32(stream, ptr->lastVisitTime) == -1) return -1;
-    if (db_fwriteInt32List(stream, ptr->field_3C, 44) == -1) return -1;
+    if (stream->fwriteInt32(version) == -1) return -1;
+    if (stream->fwriteInt8List(name, 16) == -1) return -1;
+    if (stream->fwriteInt32(enteringTile) == -1) return -1;
+    if (stream->fwriteInt32(enteringElevation) == -1) return -1;
+    if (stream->fwriteInt32(enteringRotation) == -1) return -1;
+    if (stream->fwriteInt32(localVariablesCount) == -1) return -1;
+    if (stream->fwriteInt32(scriptIndex) == -1) return -1;
+    if (stream->fwriteInt32(flags) == -1) return -1;
+    if (stream->fwriteInt32(darkness) == -1) return -1;
+    if (stream->fwriteInt32(globalVariablesCount) == -1) return -1;
+    if (stream->fwriteInt32(field_34) == -1) return -1;
+    if (stream->fwriteInt32(lastVisitTime) == -1) return -1;
+    if (stream->fwriteInt32List(field_3C, 44) == -1) return -1;
 
     return 0;
 }
 
 // 0x47621C
-static int map_read_MapData(MapHeader* ptr, DB_FILE* stream)
+int MapHeader::readData(DB_FILE* stream)
 {
-    if (db_freadInt32(stream, &(ptr->version)) == -1) return -1;
-    if (db_freadInt8List(stream, ptr->name, 16) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->enteringTile)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->enteringElevation)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->enteringRotation)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->localVariablesCount)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->scriptIndex)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->flags)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->darkness)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->globalVariablesCount)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->field_34)) == -1) return -1;
-    if (db_freadInt32(stream, &(ptr->lastVisitTime)) == -1) return -1;
-    if (db_freadInt32List(stream, ptr->field_3C, 44) == -1) return -1;
+    if (stream->freadInt32(&version) == -1) return -1;
+    if (stream->freadInt8List(name, 16) == -1) return -1;
+    if (stream->freadInt32(&enteringTile) == -1) return -1;
+    if (stream->freadInt32(&enteringElevation) == -1) return -1;
+    if (stream->freadInt32(&enteringRotation) == -1) return -1;
+    if (stream->freadInt32(&localVariablesCount) == -1) return -1;
+    if (stream->freadInt32(&scriptIndex) == -1) return -1;
+    if (stream->freadInt32(&flags) == -1) return -1;
+    if (stream->freadInt32(&darkness) == -1) return -1;
+    if (stream->freadInt32(&globalVariablesCount) == -1) return -1;
+    if (stream->freadInt32(&field_34) == -1) return -1;
+    if (stream->freadInt32(&lastVisitTime) == -1) return -1;
+    if (stream->freadInt32List(field_3C, 44) == -1) return -1;
 
     return 0;
 }

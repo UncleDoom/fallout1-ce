@@ -7,15 +7,15 @@
 
 namespace fallout {
 
-#define TOUCH_PHASE_BEGAN 0
-#define TOUCH_PHASE_MOVED 1
-#define TOUCH_PHASE_ENDED 2
+static constexpr int TOUCH_PHASE_BEGAN = 0;
+static constexpr int TOUCH_PHASE_MOVED = 1;
+static constexpr int TOUCH_PHASE_ENDED = 2;
 
-#define MAX_TOUCHES 10
+static constexpr int MAX_TOUCHES = 10;
 
-#define TAP_MAXIMUM_DURATION 75
-#define PAN_MINIMUM_MOVEMENT 4
-#define LONG_PRESS_MINIMUM_DURATION 500
+static constexpr int TAP_MAXIMUM_DURATION = 75;
+static constexpr int PAN_MINIMUM_MOVEMENT = 4;
+static constexpr int LONG_PRESS_MINIMUM_DURATION = 500;
 
 struct TouchLocation {
     int x;
@@ -200,25 +200,25 @@ void touch_process_gesture()
         }
     }
 
-    if (currentGesture.type == kPan || currentGesture.type == kLongPress) {
-        if (currentGesture.state != kEnded) {
+    if (currentGesture.type == GestureType::Pan || currentGesture.type == GestureType::LongPress) {
+        if (currentGesture.state != GestureState::Ended) {
             // For continuous gestures we want number of fingers to remain the
             // same as it was when gesture was recognized.
             if (activeCount == currentGesture.numberOfTouches && endedCount == 0) {
                 TouchLocation centroid = touch_get_current_location_centroid(active, activeCount);
-                currentGesture.state = kChanged;
+                currentGesture.state = GestureState::Changed;
                 currentGesture.x = centroid.x;
                 currentGesture.y = centroid.y;
                 gestureEventsQueue.push(currentGesture);
             } else {
-                currentGesture.state = kEnded;
+                currentGesture.state = GestureState::Ended;
                 gestureEventsQueue.push(currentGesture);
             }
         }
 
         // Reset continuous gesture if when current sequence is over.
-        if (currentGesture.state == kEnded && sequenceEndTimestamp != -1) {
-            currentGesture.type = kUnrecognized;
+        if (currentGesture.state == GestureState::Ended && sequenceEndTimestamp != -1) {
+            currentGesture.type = GestureType::Unrecognized;
         }
     } else {
         if (activeCount == 0 && endedCount != 0) {
@@ -240,15 +240,15 @@ void touch_process_gesture()
                 && endLatestTimestamp - endEarliestTimestamp <= TAP_MAXIMUM_DURATION) {
                 TouchLocation currentCentroid = touch_get_current_location_centroid(ended, endedCount);
 
-                currentGesture.type = kTap;
-                currentGesture.state = kEnded;
+                currentGesture.type = GestureType::Tap;
+                currentGesture.state = GestureState::Ended;
                 currentGesture.numberOfTouches = endedCount;
                 currentGesture.x = currentCentroid.x;
                 currentGesture.y = currentCentroid.y;
                 gestureEventsQueue.push(currentGesture);
 
                 // Reset tap gesture immediately.
-                currentGesture.type = kUnrecognized;
+                currentGesture.type = GestureType::Unrecognized;
             }
         } else if (activeCount != 0 && endedCount == 0) {
             TouchLocation startCentroid = touch_get_start_location_centroid(active, activeCount);
@@ -257,15 +257,15 @@ void touch_process_gesture()
             // Disambiguate between pan and long press.
             if (abs(currentCentroid.x - startCentroid.x) >= PAN_MINIMUM_MOVEMENT
                 || abs(currentCentroid.y - startCentroid.y) >= PAN_MINIMUM_MOVEMENT) {
-                currentGesture.type = kPan;
-                currentGesture.state = kBegan;
+                currentGesture.type = GestureType::Pan;
+                currentGesture.state = GestureState::Began;
                 currentGesture.numberOfTouches = activeCount;
                 currentGesture.x = currentCentroid.x;
                 currentGesture.y = currentCentroid.y;
                 gestureEventsQueue.push(currentGesture);
             } else if (SDL_GetTicks() - touches[active[0]].startTimestamp >= LONG_PRESS_MINIMUM_DURATION) {
-                currentGesture.type = kLongPress;
-                currentGesture.state = kBegan;
+                currentGesture.type = GestureType::LongPress;
+                currentGesture.state = GestureState::Began;
                 currentGesture.numberOfTouches = activeCount;
                 currentGesture.x = currentCentroid.x;
                 currentGesture.y = currentCentroid.y;

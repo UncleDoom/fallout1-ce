@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_FONTMGR_H_
-#define FALLOUT_GAME_FONTMGR_H_
+#pragma once
+
 
 namespace fallout {
 
@@ -17,5 +17,3 @@ int FMtext_curr();
 void FMtext_to_buf(unsigned char* buf, const char* string, int length, int pitch, int color);
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_FONTMGR_H_ */

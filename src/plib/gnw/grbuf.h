@@ -1,5 +1,5 @@
-#ifndef FALLOUT_PLIB_GNW_GRBUF_H_
-#define FALLOUT_PLIB_GNW_GRBUF_H_
+#pragma once
+
 
 namespace fallout {
 
@@ -20,5 +20,3 @@ void srcCopy(unsigned char* dest, int destPitch, unsigned char* src, int srcPitc
 void transSrcCopy(unsigned char* dest, int destPitch, unsigned char* src, int srcPitch, int width, int height);
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_GRBUF_H_ */

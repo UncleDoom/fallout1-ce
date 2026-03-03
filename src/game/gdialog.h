@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_GDIALOG_H_
-#define FALLOUT_GAME_GDIALOG_H_
+#pragma once
+
 
 #include "game/art.h"
 #include "game/object_types.h"
@@ -46,5 +46,3 @@ int gdActivateBarter(int modifier);
 void barter_end_to_talk_to();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_GDIALOG_H_ */

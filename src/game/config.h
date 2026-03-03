@@ -1,39 +1,66 @@
-#ifndef FALLOUT_GAME_CONFIG_H_
-#define FALLOUT_GAME_CONFIG_H_
+#pragma once
 
 #include "plib/assoc/assoc.h"
 
 namespace fallout {
 
-// A representation of .INI file.
-//
-// It's implemented as a [assoc_array] whos keys are section names of .INI file,
-// and it's values are [ConfigSection] structs.
-typedef assoc_array Config;
-
 // Representation of .INI section.
 //
-// It's implemented as a [assoc_array] whos keys are names of .INI file
-// key-pair values, and it's values are pointers to strings (char**).
-typedef assoc_array ConfigSection;
+// It's implemented as a [assoc_array] whose keys are names of .INI file
+// key-value pairs, and its values are pointers to strings (char**).
+using ConfigSection = assoc_array;
 
-bool config_init(Config* config);
-void config_exit(Config* config);
-bool config_cmd_line_parse(Config* config, int argc, char** argv);
-bool config_get_string(Config* config, const char* sectionKey, const char* key, char** valuePtr);
-bool config_set_string(Config* config, const char* sectionKey, const char* key, const char* value);
-bool config_get_value(Config* config, const char* sectionKey, const char* key, int* valuePtr);
-bool config_get_values(Config* config, const char* section, const char* key, int* arr, int count);
-bool config_set_value(Config* config, const char* sectionKey, const char* key, int value);
-bool config_load(Config* config, const char* filePath, bool isDb);
-bool config_save(Config* config, const char* filePath, bool isDb);
-bool config_get_double(Config* config, const char* sectionKey, const char* key, double* valuePtr);
-bool config_set_double(Config* config, const char* sectionKey, const char* key, double value);
+// A representation of .INI file.
+//
+// Wraps an assoc_array whose keys are section names and values are
+// ConfigSection structs (themselves assoc_arrays of key→string pairs).
+class Config {
+public:
+    Config() = default;
+    ~Config() = default;
 
-// TODO: Remove.
-bool configGetBool(Config* config, const char* sectionKey, const char* key, bool* valuePtr);
-bool configSetBool(Config* config, const char* sectionKey, const char* key, bool value);
+    // Lifecycle
+    [[nodiscard]] bool init();
+    void exit();
+
+    // Command-line parsing
+    [[nodiscard]] bool cmdLineParse(int argc, char** argv);
+
+    // String accessors
+    [[nodiscard]] bool getString(const char* sectionKey, const char* key, char** valuePtr);
+    [[nodiscard]] bool setString(const char* sectionKey, const char* key, const char* value);
+
+    // Integer accessors
+    [[nodiscard]] bool getValue(const char* sectionKey, const char* key, int* valuePtr);
+    [[nodiscard]] bool getValues(const char* sectionKey, const char* key, int* arr, int count);
+    [[nodiscard]] bool setValue(const char* sectionKey, const char* key, int value);
+
+    // Double accessors
+    [[nodiscard]] bool getDouble(const char* sectionKey, const char* key, double* valuePtr);
+    [[nodiscard]] bool setDouble(const char* sectionKey, const char* key, double value);
+
+    // Bool accessors
+    [[nodiscard]] bool getBool(const char* sectionKey, const char* key, bool* valuePtr);
+    [[nodiscard]] bool setBool(const char* sectionKey, const char* key, bool value);
+
+    // File I/O
+    [[nodiscard]] bool load(const char* filePath, bool isDb);
+    [[nodiscard]] bool save(const char* filePath, bool isDb);
+
+    // Section iteration (used by combatai.cc and similar)
+    int getSize() const { return data_.getSize(); }
+    assoc_pair& getEntry(int index) { return data_.getEntry(index); }
+
+private:
+    static constexpr int INITIAL_CAPACITY = 10;
+    static constexpr int MAX_LINE_LENGTH = 256;
+
+    assoc_array data_;
+
+    bool parseLine(char* string);
+    static bool splitLine(char* string, char* key, char* value);
+    bool addSection(const char* sectionKey);
+    static bool stripWhiteSpace(char* string);
+};
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_CONFIG_H_ */

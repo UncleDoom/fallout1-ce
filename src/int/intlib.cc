@@ -1,6 +1,6 @@
 #include "int/intlib.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "int/datafile.h"
 #include "int/dialog.h"
@@ -20,13 +20,13 @@
 
 namespace fallout {
 
-#define INT_LIB_SOUNDS_CAPACITY 32
-#define INT_LIB_KEY_HANDLERS_CAPACITY 256
+static constexpr int INT_LIB_SOUNDS_CAPACITY = 32;
+static constexpr int INT_LIB_KEY_HANDLERS_CAPACITY = 256;
 
-typedef struct IntLibKeyHandlerEntry {
+struct IntLibKeyHandlerEntry {
     Program* program;
     int proc;
-} IntLibKeyHandlerEntry;
+};
 
 static void op_fillwin3x3(Program* program);
 static void op_format(Program* program);
@@ -153,13 +153,13 @@ static int sayStartingPosition;
 // 0x456CC0
 static void op_fillwin3x3(Program* program)
 {
-    char* fileName = programStackPopString(program);
+    char* fileName = program->stackPopString();
     char* mangledFileName = interpretMangleName(fileName);
 
     int imageWidth;
     int imageHeight;
     unsigned char* imageData = loadDataFile(mangledFileName, &imageWidth, &imageHeight);
-    if (imageData == NULL) {
+    if (imageData == nullptr) {
         interpretError("cannot load 3x3 file '%s'", mangledFileName);
     }
 
@@ -178,12 +178,12 @@ static void op_fillwin3x3(Program* program)
 // 0x456D74
 static void op_format(Program* program)
 {
-    int textAlignment = programStackPopInteger(program);
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
-    char* string = programStackPopString(program);
+    int textAlignment = program->stackPopInteger();
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
+    char* string = program->stackPopString();
 
     if (!windowFormatMessage(string, x, y, width, height, textAlignment)) {
         interpretError("Error formatting message\n");
@@ -195,7 +195,7 @@ static void op_print(Program* program)
 {
     selectWindowID(program->windowId);
 
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
     char string[80];
 
     // SFALL: Fix broken Print() script function.
@@ -209,7 +209,7 @@ static void op_print(Program* program)
     // are still passed to `interpretOutput`.
     switch (value.opcode & VALUE_TYPE_MASK) {
     case VALUE_TYPE_STRING:
-        windowOutput(interpretGetString(program, value.opcode, value.integerValue));
+        windowOutput(program->getString(value.opcode, value.integerValue));
         break;
     case VALUE_TYPE_FLOAT:
         snprintf(string, sizeof(string), "%.5f", value.floatValue);
@@ -227,29 +227,29 @@ static void op_selectfilelist(Program* program)
 {
     program->flags |= PROGRAM_FLAG_0x20;
 
-    char* pattern = programStackPopString(program);
-    char* title = programStackPopString(program);
+    char* pattern = program->stackPopString();
+    char* title = program->stackPopString();
 
     int fileListLength;
     char** fileList = getFileList(interpretMangleName(pattern), &fileListLength);
-    if (fileList != NULL && fileListLength != 0) {
+    if (fileList != nullptr && fileListLength != 0) {
         int selectedIndex = win_list_select(title,
             fileList,
             fileListLength,
-            NULL,
+            nullptr,
             320 - text_width(title) / 2,
             200,
             colorTable[0x7FFF] | 0x10000);
 
         if (selectedIndex != -1) {
-            programStackPushString(program, fileList[selectedIndex]);
+            program->stackPushString(fileList[selectedIndex]);
         } else {
-            programStackPushInteger(program, 0);
+            program->stackPushInteger(0);
         }
 
         freeFileList(fileList);
     } else {
-        programStackPushInteger(program, 0);
+        program->stackPushInteger(0);
     }
 
     program->flags &= ~PROGRAM_FLAG_0x20;
@@ -258,27 +258,27 @@ static void op_selectfilelist(Program* program)
 // 0x4570DC
 static void op_tokenize(Program* program)
 {
-    int ch = programStackPopInteger(program);
+    int ch = program->stackPopInteger();
 
-    ProgramValue prevValue = programStackPopValue(program);
+    ProgramValue prevValue = program->stackPopValue();
 
-    char* prev = NULL;
+    char* prev = nullptr;
     if ((prevValue.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT) {
         if (prevValue.integerValue != 0) {
             interpretError("Error, invalid arg 2 to tokenize. (only accept 0 for int value)");
         }
     } else if ((prevValue.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        prev = interpretGetString(program, prevValue.opcode, prevValue.integerValue);
+        prev = program->getString(prevValue.opcode, prevValue.integerValue);
     } else {
         interpretError("Error, invalid arg 2 to tokenize. (string)");
     }
 
-    char* string = programStackPopString(program);
-    char* temp = NULL;
+    char* string = program->stackPopString();
+    char* temp = nullptr;
 
-    if (prev != NULL) {
+    if (prev != nullptr) {
         char* start = strstr(string, prev);
-        if (start != NULL) {
+        if (start != nullptr) {
             start += strlen(prev);
             while (*start != ch && *start != '\0') {
                 start++;
@@ -293,11 +293,11 @@ static void op_tokenize(Program* program)
                 length++;
             }
 
-            temp = (char*)mycalloc(1, length + 1, __FILE__, __LINE__); // "..\\int\\INTLIB.C, 230
+            temp = static_cast<char*>(mycalloc(1, length + 1, __FILE__, __LINE__)); // "..\\int\\INTLIB.C, 230
             strncpy(temp, start, length);
-            programStackPushString(program, temp);
+            program->stackPushString(temp);
         } else {
-            programStackPushInteger(program, 0);
+            program->stackPushInteger(0);
         }
     } else {
         int length = 0;
@@ -307,16 +307,16 @@ static void op_tokenize(Program* program)
             length++;
         }
 
-        if (string != NULL) {
-            temp = (char*)mycalloc(1, length + 1, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 248
+        if (string != nullptr) {
+            temp = static_cast<char*>(mycalloc(1, length + 1, __FILE__, __LINE__)); // "..\\int\\INTLIB.C", 248
             strncpy(temp, string, length);
-            programStackPushString(program, temp);
+            program->stackPushString(temp);
         } else {
-            programStackPushInteger(program, 0);
+            program->stackPushInteger(0);
         }
     }
 
-    if (temp != NULL) {
+    if (temp != nullptr) {
         myfree(temp, __FILE__, __LINE__); // "..\\int\\INTLIB.C" , 260
     }
 }
@@ -326,18 +326,18 @@ static void op_printrect(Program* program)
 {
     selectWindowID(program->windowId);
 
-    int v1 = programStackPopInteger(program);
+    int v1 = program->stackPopInteger();
     if (v1 > 2) {
         interpretError("Invalid arg 3 given to printrect, expecting int");
     }
 
-    int v2 = programStackPopInteger(program);
+    int v2 = program->stackPopInteger();
 
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
     char string[80];
     switch (value.opcode & VALUE_TYPE_MASK) {
     case VALUE_TYPE_STRING:
-        snprintf(string, sizeof(string), "%s", interpretGetString(program, value.opcode, value.integerValue));
+        snprintf(string, sizeof(string), "%s", program->getString(value.opcode, value.integerValue));
         break;
     case VALUE_TYPE_FLOAT:
         snprintf(string, sizeof(string), "%.5f", value.floatValue);
@@ -355,7 +355,7 @@ static void op_printrect(Program* program)
 // 0x457430
 static void op_selectwin(Program* program)
 {
-    const char* windowName = programStackPopString(program);
+    const char* windowName = program->stackPopString();
     int win = pushWindow(windowName);
     if (win == -1) {
         interpretError("Error selecing window %s\n", windowName);
@@ -369,7 +369,7 @@ static void op_selectwin(Program* program)
 // 0x4574B4
 static void op_display(Program* program)
 {
-    char* fileName = programStackPopString(program);
+    char* fileName = program->stackPopString();
 
     selectWindowID(program->windowId);
 
@@ -380,7 +380,7 @@ static void op_display(Program* program)
 // 0x457514
 static void op_displayraw(Program* program)
 {
-    char* fileName = programStackPopString(program);
+    char* fileName = program->stackPopString();
 
     selectWindowID(program->windowId);
 
@@ -401,7 +401,7 @@ static void interpretFadePaletteBK(unsigned char* oldPalette, unsigned char* new
 
     time = get_time();
     previousTime = time;
-    steps = (int)duration;
+    steps = static_cast<int>(duration);
     step = 0;
     delta = 0;
 
@@ -489,14 +489,14 @@ void interpretFadeInNoBK(float duration)
 // 0x457748
 static void op_fadein(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     program->flags |= PROGRAM_FLAG_0x20;
 
     setSystemPalette(blackPal);
 
     // NOTE: Uninline.
-    interpretFadeIn((float)data);
+    interpretFadeIn(static_cast<float>(data));
 
     currentlyFadedIn = true;
 
@@ -506,12 +506,12 @@ static void op_fadein(Program* program)
 // 0x4577E0
 static void op_fadeout(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     program->flags |= PROGRAM_FLAG_0x20;
 
     // NOTE: Uninline.
-    interpretFadeOut((float)data);
+    interpretFadeOut(static_cast<float>(data));
 
     currentlyFadedIn = false;
 
@@ -531,7 +531,7 @@ int checkMovie(Program* program)
 // 0x457898
 static void op_movieflags(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (!windowSetMovieFlags(data)) {
         interpretError("Error setting movie flags\n");
@@ -544,11 +544,11 @@ static void op_playmovie(Program* program)
     // 0x59C6F8
     static char name[100];
 
-    char* movieFileName = programStackPopString(program);
+    char* movieFileName = program->stackPopString();
 
     strcpy(name, movieFileName);
 
-    if (strrchr(name, '.') == NULL) {
+    if (strrchr(name, '.') == nullptr) {
         strcat(name, ".mve");
     }
 
@@ -569,15 +569,15 @@ static void op_playmovierect(Program* program)
     // 0x59C75C
     static char name[100];
 
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
-    char* movieFileName = programStackPopString(program);
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
+    char* movieFileName = program->stackPopString();
 
     strcpy(name, movieFileName);
 
-    if (strrchr(name, '.') == NULL) {
+    if (strrchr(name, '.') == nullptr) {
         strcat(name, ".mve");
     }
 
@@ -602,19 +602,19 @@ static void op_stopmovie(Program* program)
 // 0x457AF0
 static void op_deleteregion(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     selectWindowID(program->windowId);
 
-    const char* regionName = value.integerValue != -1 ? interpretGetString(program, value.opcode, value.integerValue) : NULL;
+    const char* regionName = value.integerValue != -1 ? program->getString(value.opcode, value.integerValue) : nullptr;
     windowDeleteRegion(regionName);
 }
 
 // 0x457B6C
 static void op_activateregion(Program* program)
 {
-    int v1 = programStackPopInteger(program);
-    char* regionName = programStackPopString(program);
+    int v1 = program->stackPopInteger();
+    char* regionName = program->stackPopString();
 
     windowActivateRegion(regionName, v1);
 }
@@ -622,16 +622,16 @@ static void op_activateregion(Program* program)
 // 0x457BAC
 static void op_checkregion(Program* program)
 {
-    const char* regionName = programStackPopString(program);
+    const char* regionName = program->stackPopString();
 
     bool regionExists = windowCheckRegionExists(regionName);
-    programStackPushInteger(program, regionExists);
+    program->stackPushInteger(regionExists);
 }
 
 // 0x457C0C
 static void op_addregion(Program* program)
 {
-    int args = programStackPopInteger(program);
+    int args = program->stackPopInteger();
 
     if (args < 2) {
         interpretError("addregion call without enough points!");
@@ -642,8 +642,8 @@ static void op_addregion(Program* program)
     windowStartRegion(args / 2);
 
     while (args >= 2) {
-        int y = programStackPopInteger(program);
-        int x = programStackPopInteger(program);
+        int y = program->stackPopInteger();
+        int x = program->stackPopInteger();
 
         y = (y * windowGetYres() + 479) / 480;
         x = (x * windowGetXres() + 639) / 640;
@@ -656,7 +656,7 @@ static void op_addregion(Program* program)
         interpretError("Unnamed regions not allowed\n");
         windowEndRegion();
     } else {
-        const char* regionName = programStackPopString(program);
+        const char* regionName = program->stackPopString();
         windowAddRegionName(regionName);
         windowEndRegion();
     }
@@ -665,11 +665,11 @@ static void op_addregion(Program* program)
 // 0x457D90
 static void op_addregionproc(Program* program)
 {
-    int v1 = programStackPopInteger(program);
-    int v2 = programStackPopInteger(program);
-    int v3 = programStackPopInteger(program);
-    int v4 = programStackPopInteger(program);
-    const char* regionName = programStackPopString(program);
+    int v1 = program->stackPopInteger();
+    int v2 = program->stackPopInteger();
+    int v3 = program->stackPopInteger();
+    int v4 = program->stackPopInteger();
+    const char* regionName = program->stackPopString();
 
     selectWindowID(program->windowId);
 
@@ -681,9 +681,9 @@ static void op_addregionproc(Program* program)
 // 0x457EDC
 static void op_addregionrightproc(Program* program)
 {
-    int v1 = programStackPopInteger(program);
-    int v2 = programStackPopInteger(program);
-    const char* regionName = programStackPopString(program);
+    int v1 = program->stackPopInteger();
+    int v2 = program->stackPopInteger();
+    const char* regionName = program->stackPopString();
     selectWindowID(program->windowId);
 
     if (!windowAddRegionRightProc(regionName, program, v2, v1)) {
@@ -694,11 +694,11 @@ static void op_addregionrightproc(Program* program)
 // 0x457FB4
 static void op_createwin(Program* program)
 {
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
-    char* windowName = programStackPopString(program);
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
+    char* windowName = program->stackPopString();
 
     x = (x * windowGetXres() + 639) / 640;
     y = (y * windowGetYres() + 479) / 480;
@@ -713,11 +713,11 @@ static void op_createwin(Program* program)
 // 0x4580B4
 static void op_resizewin(Program* program)
 {
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
-    char* windowName = programStackPopString(program);
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
+    char* windowName = program->stackPopString();
 
     x = (x * windowGetXres() + 639) / 640;
     y = (y * windowGetYres() + 479) / 480;
@@ -732,11 +732,11 @@ static void op_resizewin(Program* program)
 // 0x4581A8
 static void op_scalewin(Program* program)
 {
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
-    char* windowName = programStackPopString(program);
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
+    char* windowName = program->stackPopString();
 
     x = (x * windowGetXres() + 639) / 640;
     y = (y * windowGetYres() + 479) / 480;
@@ -751,7 +751,7 @@ static void op_scalewin(Program* program)
 // 0x45829C
 static void op_deletewin(Program* program)
 {
-    char* windowName = programStackPopString(program);
+    char* windowName = program->stackPopString();
 
     if (!deleteWindow(windowName)) {
         interpretError("Error deleting window %s\n", windowName);
@@ -777,7 +777,7 @@ static void op_saystart(Program* program)
 // 0x458334
 static void op_saystartpos(Program* program)
 {
-    sayStartingPosition = programStackPopInteger(program);
+    sayStartingPosition = program->stackPopInteger();
 
     program->flags |= PROGRAM_FLAG_0x20;
     int rc = dialogStart(program);
@@ -791,11 +791,11 @@ static void op_saystartpos(Program* program)
 // 0x45838C
 static void op_sayreplytitle(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
-    char* string = NULL;
+    char* string = nullptr;
     if ((value.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        string = interpretGetString(program, value.opcode, value.integerValue);
+        string = program->getString(value.opcode, value.integerValue);
     }
 
     if (dialogTitle(string) != 0) {
@@ -806,11 +806,11 @@ static void op_sayreplytitle(Program* program)
 // 0x4583E0
 static void op_saygotoreply(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
-    char* string = NULL;
+    char* string = nullptr;
     if ((value.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        string = interpretGetString(program, value.opcode, value.integerValue);
+        string = program->getString(value.opcode, value.integerValue);
     }
 
     if (dialogGotoReply(string) != 0) {
@@ -823,17 +823,17 @@ static void op_sayoption(Program* program)
 {
     program->flags |= PROGRAM_FLAG_0x20;
 
-    ProgramValue v3 = programStackPopValue(program);
-    ProgramValue v2 = programStackPopValue(program);
+    ProgramValue v3 = program->stackPopValue();
+    ProgramValue v2 = program->stackPopValue();
 
     const char* v1;
     if ((v2.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v1 = interpretGetString(program, v2.opcode, v2.integerValue);
+        v1 = program->getString(v2.opcode, v2.integerValue);
     } else {
-        v1 = NULL;
+        v1 = nullptr;
     }
     if ((v3.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        const char* v2 = interpretGetString(program, v3.opcode, v3.integerValue);
+        const char* v2 = program->getString(v3.opcode, v3.integerValue);
         if (dialogOption(v1, v2) != 0) {
             program->flags &= ~PROGRAM_FLAG_0x20;
             interpretError("Error setting option.");
@@ -855,21 +855,21 @@ static void op_sayreply(Program* program)
 {
     program->flags |= PROGRAM_FLAG_0x20;
 
-    ProgramValue v3 = programStackPopValue(program);
-    ProgramValue v4 = programStackPopValue(program);
+    ProgramValue v3 = program->stackPopValue();
+    ProgramValue v4 = program->stackPopValue();
 
     const char* v1;
     if ((v4.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v1 = interpretGetString(program, v4.opcode, v4.integerValue);
+        v1 = program->getString(v4.opcode, v4.integerValue);
     } else {
-        v1 = NULL;
+        v1 = nullptr;
     }
 
     const char* v2;
     if ((v3.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v2 = interpretGetString(program, v3.opcode, v3.integerValue);
+        v2 = program->getString(v3.opcode, v3.integerValue);
     } else {
-        v2 = NULL;
+        v2 = nullptr;
     }
 
     if (dialogReply(v1, v2) != 0) {
@@ -904,7 +904,7 @@ static void op_sayend(Program* program)
 static void op_saygetlastpos(Program* program)
 {
     int value = dialogGetExitPoint();
-    programStackPushInteger(program, value);
+    program->stackPushInteger(value);
 }
 
 // 0x458660
@@ -930,7 +930,7 @@ void setTimeOut(int value)
 // 0x458688
 static void op_saymessagetimeout(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     // TODO: What the hell is this?
     if ((value.opcode & VALUE_TYPE_MASK) == 0x4000) {
@@ -945,21 +945,21 @@ static void op_saymessage(Program* program)
 {
     program->flags |= PROGRAM_FLAG_0x20;
 
-    ProgramValue v3 = programStackPopValue(program);
-    ProgramValue v4 = programStackPopValue(program);
+    ProgramValue v3 = program->stackPopValue();
+    ProgramValue v4 = program->stackPopValue();
 
     const char* v1;
     if ((v4.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v1 = interpretGetString(program, v4.opcode, v4.integerValue);
+        v1 = program->getString(v4.opcode, v4.integerValue);
     } else {
-        v1 = NULL;
+        v1 = nullptr;
     }
 
     const char* v2;
     if ((v3.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v2 = interpretGetString(program, v3.opcode, v3.integerValue);
+        v2 = program->getString(v3.opcode, v3.integerValue);
     } else {
-        v2 = NULL;
+        v2 = nullptr;
     }
 
     if (dialogMessage(v1, v2, TimeOut) != 0) {
@@ -973,8 +973,8 @@ static void op_saymessage(Program* program)
 // 0x458780
 static void op_gotoxy(Program* program)
 {
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
 
     selectWindowID(program->windowId);
 
@@ -984,8 +984,8 @@ static void op_gotoxy(Program* program)
 // 0x4587FC
 static void op_addbuttonflag(Program* program)
 {
-    int flag = programStackPopInteger(program);
-    const char* buttonName = programStackPopString(program);
+    int flag = program->stackPopInteger();
+    const char* buttonName = program->stackPopString();
     if (!windowSetButtonFlag(buttonName, flag)) {
         // NOTE: Original code calls interpretGetString one more time with the
         // same params.
@@ -996,8 +996,8 @@ static void op_addbuttonflag(Program* program)
 // 0x45889C
 static void op_addregionflag(Program* program)
 {
-    int flag = programStackPopInteger(program);
-    const char* regionName = programStackPopString(program);
+    int flag = program->stackPopInteger();
+    const char* regionName = program->stackPopString();
     if (!windowSetRegionFlag(regionName, flag)) {
         // NOTE: Original code calls interpretGetString one more time with the
         // same params.
@@ -1008,11 +1008,11 @@ static void op_addregionflag(Program* program)
 // 0x45893C
 static void op_addbutton(Program* program)
 {
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
-    char* buttonName = programStackPopString(program);
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
+    char* buttonName = program->stackPopString();
 
     selectWindowID(program->windowId);
 
@@ -1027,8 +1027,8 @@ static void op_addbutton(Program* program)
 // 0x458ACC
 static void op_addbuttontext(Program* program)
 {
-    const char* text = programStackPopString(program);
-    const char* buttonName = programStackPopString(program);
+    const char* text = program->stackPopString();
+    const char* buttonName = program->stackPopString();
 
     if (!windowAddButtonText(buttonName, text)) {
         interpretError("Error setting text to button %s\n", buttonName);
@@ -1038,17 +1038,17 @@ static void op_addbuttontext(Program* program)
 // 0x458B90
 static void op_addbuttongfx(Program* program)
 {
-    ProgramValue v1 = programStackPopValue(program);
-    ProgramValue v2 = programStackPopValue(program);
-    ProgramValue v3 = programStackPopValue(program);
-    char* buttonName = programStackPopString(program);
+    ProgramValue v1 = program->stackPopValue();
+    ProgramValue v2 = program->stackPopValue();
+    ProgramValue v3 = program->stackPopValue();
+    char* buttonName = program->stackPopString();
 
     if (((v3.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING || ((v3.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT && v3.integerValue == 0))
         || ((v2.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING || ((v2.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT && v2.integerValue == 0))
         || ((v1.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING || ((v1.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT && v1.integerValue == 0))) {
-        char* pressedFileName = interpretMangleName(interpretGetString(program, v3.opcode, v3.integerValue));
-        char* normalFileName = interpretMangleName(interpretGetString(program, v2.opcode, v2.integerValue));
-        char* hoverFileName = interpretMangleName(interpretGetString(program, v1.opcode, v1.integerValue));
+        char* pressedFileName = interpretMangleName(program->getString(v3.opcode, v3.integerValue));
+        char* normalFileName = interpretMangleName(program->getString(v2.opcode, v2.integerValue));
+        char* hoverFileName = interpretMangleName(program->getString(v1.opcode, v1.integerValue));
 
         selectWindowID(program->windowId);
 
@@ -1063,11 +1063,11 @@ static void op_addbuttongfx(Program* program)
 // 0x458D28
 static void op_addbuttonproc(Program* program)
 {
-    int v1 = programStackPopInteger(program);
-    int v2 = programStackPopInteger(program);
-    int v3 = programStackPopInteger(program);
-    int v4 = programStackPopInteger(program);
-    const char* buttonName = programStackPopString(program);
+    int v1 = program->stackPopInteger();
+    int v2 = program->stackPopInteger();
+    int v3 = program->stackPopInteger();
+    int v4 = program->stackPopInteger();
+    const char* buttonName = program->stackPopString();
     selectWindowID(program->windowId);
 
     if (!windowAddButtonProc(buttonName, program, v4, v3, v2, v1)) {
@@ -1078,9 +1078,9 @@ static void op_addbuttonproc(Program* program)
 // 0x458E74
 static void op_addbuttonrightproc(Program* program)
 {
-    int v1 = programStackPopInteger(program);
-    int v2 = programStackPopInteger(program);
-    const char* regionName = programStackPopString(program);
+    int v1 = program->stackPopInteger();
+    int v2 = program->stackPopInteger();
+    const char* regionName = program->stackPopString();
     selectWindowID(program->windowId);
 
     if (!windowAddRegionRightProc(regionName, program, v2, v1)) {
@@ -1098,7 +1098,7 @@ static void op_showwin(Program* program)
 // 0x458F5C
 static void op_deletebutton(Program* program)
 {
-    ProgramValue value = programStackPopValue(program);
+    ProgramValue value = program->stackPopValue();
 
     switch (value.opcode & VALUE_TYPE_MASK) {
     case VALUE_TYPE_STRING:
@@ -1115,11 +1115,11 @@ static void op_deletebutton(Program* program)
     selectWindowID(program->windowId);
 
     if ((value.opcode & 0xF7FF) == VALUE_TYPE_INT) {
-        if (windowDeleteButton(NULL)) {
+        if (windowDeleteButton(nullptr)) {
             return;
         }
     } else {
-        const char* buttonName = interpretGetString(program, value.opcode, value.integerValue);
+        const char* buttonName = program->getString(value.opcode, value.integerValue);
         if (windowDeleteButton(buttonName)) {
             return;
         }
@@ -1131,9 +1131,9 @@ static void op_deletebutton(Program* program)
 // 0x458FF8
 static void op_fillwin(Program* program)
 {
-    ProgramValue b = programStackPopValue(program);
-    ProgramValue g = programStackPopValue(program);
-    ProgramValue r = programStackPopValue(program);
+    ProgramValue b = program->stackPopValue();
+    ProgramValue g = program->stackPopValue();
+    ProgramValue r = program->stackPopValue();
 
     if ((r.opcode & VALUE_TYPE_MASK) != VALUE_TYPE_FLOAT) {
         if ((r.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT) {
@@ -1173,13 +1173,13 @@ static void op_fillwin(Program* program)
 // 0x459108
 static void op_fillrect(Program* program)
 {
-    ProgramValue b = programStackPopValue(program);
-    ProgramValue g = programStackPopValue(program);
-    ProgramValue r = programStackPopValue(program);
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
+    ProgramValue b = program->stackPopValue();
+    ProgramValue g = program->stackPopValue();
+    ProgramValue r = program->stackPopValue();
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
 
     if ((r.opcode & VALUE_TYPE_MASK) != VALUE_TYPE_FLOAT) {
         if ((r.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT) {
@@ -1231,9 +1231,9 @@ static void op_showmouse(Program* program)
 // 0x459310
 static void op_mouseshape(Program* program)
 {
-    int v1 = programStackPopInteger(program);
-    int v2 = programStackPopInteger(program);
-    char* fileName = programStackPopString(program);
+    int v1 = program->stackPopInteger();
+    int v2 = program->stackPopInteger();
+    char* fileName = program->stackPopString();
 
     if (!mouseSetMouseShape(fileName, v2, v1)) {
         interpretError("Error loading mouse shape.");
@@ -1249,11 +1249,11 @@ static void op_setglobalmousefunc(Program* Program)
 // 0x4593E8
 static void op_displaygfx(Program* program)
 {
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
-    char* fileName = programStackPopString(program);
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
+    char* fileName = program->stackPopString();
 
     char* mangledFileName = interpretMangleName(fileName);
     windowDisplay(mangledFileName, x, y, width, height);
@@ -1262,7 +1262,7 @@ static void op_displaygfx(Program* program)
 // 0x459464
 static void op_loadpalettetable(Program* program)
 {
-    char* path = programStackPopString(program);
+    char* path = program->stackPopString();
     if (!loadColorTable(path)) {
         interpretError(colorError());
     }
@@ -1271,38 +1271,38 @@ static void op_loadpalettetable(Program* program)
 // 0x4594C0
 static void op_addNamedEvent(Program* program)
 {
-    int proc = programStackPopInteger(program);
-    const char* name = programStackPopString(program);
+    int proc = program->stackPopInteger();
+    const char* name = program->stackPopString();
     nevs_addevent(name, program, proc, NEVS_TYPE_EVENT);
 }
 
 // 0x459524
 static void op_addNamedHandler(Program* program)
 {
-    int proc = programStackPopInteger(program);
-    const char* name = programStackPopString(program);
+    int proc = program->stackPopInteger();
+    const char* name = program->stackPopString();
     nevs_addevent(name, program, proc, NEVS_TYPE_HANDLER);
 }
 
 // 0x45958C
 static void op_clearNamed(Program* program)
 {
-    char* string = programStackPopString(program);
+    char* string = program->stackPopString();
     nevs_clearevent(string);
 }
 
 // 0x4595D8
 static void op_signalNamed(Program* program)
 {
-    char* str = programStackPopString(program);
+    char* str = program->stackPopString();
     nevs_signal(str);
 }
 
 // 0x459624
 static void op_addkey(Program* program)
 {
-    int proc = programStackPopInteger(program);
-    int key = programStackPopInteger(program);
+    int proc = program->stackPopInteger();
+    int key = program->stackPopInteger();
 
     if (key == -1) {
         anyKeyOffset = proc;
@@ -1320,17 +1320,17 @@ static void op_addkey(Program* program)
 // 0x4596C4
 static void op_deletekey(Program* program)
 {
-    int key = programStackPopInteger(program);
+    int key = program->stackPopInteger();
 
     if (key == -1) {
         anyKeyOffset = 0;
-        anyKeyProg = NULL;
+        anyKeyProg = nullptr;
     } else {
         if (key > INT_LIB_KEY_HANDLERS_CAPACITY - 1) {
             interpretError("Key out of range");
         }
 
-        inputProc[key].program = NULL;
+        inputProc[key].program = nullptr;
         inputProc[key].proc = 0;
     }
 }
@@ -1338,17 +1338,17 @@ static void op_deletekey(Program* program)
 // 0x459738
 static void op_refreshmouse(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (!windowRefreshRegions()) {
-        executeProc(program, data);
+        program->executeProc(data);
     }
 }
 
 // 0x459784
 static void op_setfont(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (!windowSetFont(data)) {
         interpretError("Error setting font");
@@ -1358,7 +1358,7 @@ static void op_setfont(Program* program)
 // 0x4597D0
 static void op_settextflags(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (!windowSetTextFlags(data)) {
         interpretError("Error setting text flags");
@@ -1372,7 +1372,7 @@ static void op_settextcolor(Program* program)
 
     // NOTE: Original code does not use loops.
     for (int arg = 0; arg < 3; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     for (int arg = 0; arg < 3; arg++) {
@@ -1399,7 +1399,7 @@ static void op_sayoptioncolor(Program* program)
 
     // NOTE: Original code does not use loops.
     for (int arg = 0; arg < 3; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     for (int arg = 0; arg < 3; arg++) {
@@ -1426,7 +1426,7 @@ static void op_sayreplycolor(Program* program)
 
     // NOTE: Original code does not use loops.
     for (int arg = 0; arg < 3; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     for (int arg = 0; arg < 3; arg++) {
@@ -1453,7 +1453,7 @@ static void op_sethighlightcolor(Program* program)
 
     // NOTE: Original code does not use loops.
     for (int arg = 0; arg < 3; arg++) {
-        value[arg] = programStackPopValue(program);
+        value[arg] = program->stackPopValue();
     }
 
     for (int arg = 0; arg < 3; arg++) {
@@ -1476,19 +1476,19 @@ static void op_sethighlightcolor(Program* program)
 // 0x459C2C
 static void op_sayreplywindow(Program* program)
 {
-    ProgramValue v2 = programStackPopValue(program);
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
+    ProgramValue v2 = program->stackPopValue();
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
 
     char* v1;
     if ((v2.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v1 = interpretGetString(program, v2.opcode, v2.integerValue);
+        v1 = program->getString(v2.opcode, v2.integerValue);
         v1 = interpretMangleName(v1);
         v1 = mystrdup(v1, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1510
     } else if ((v2.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT && v2.integerValue == 0) {
-        v1 = NULL;
+        v1 = nullptr;
     } else {
         interpretError("Invalid arg 5 given to sayreplywindow");
     }
@@ -1501,7 +1501,7 @@ static void op_sayreplywindow(Program* program)
 // 0x459D08
 static void op_sayreplyflags(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (!dialogSetReplyFlags(data)) {
         interpretError("Error setting reply flags");
@@ -1511,7 +1511,7 @@ static void op_sayreplyflags(Program* program)
 // 0x459D54
 static void op_sayoptionflags(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (!dialogSetOptionFlags(data)) {
         interpretError("Error setting option flags");
@@ -1521,19 +1521,19 @@ static void op_sayoptionflags(Program* program)
 // 0x459DA0
 static void op_sayoptionwindow(Program* program)
 {
-    ProgramValue v2 = programStackPopValue(program);
-    int height = programStackPopInteger(program);
-    int width = programStackPopInteger(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
+    ProgramValue v2 = program->stackPopValue();
+    int height = program->stackPopInteger();
+    int width = program->stackPopInteger();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
 
     char* v1;
     if ((v2.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v1 = interpretGetString(program, v2.opcode, v2.integerValue);
+        v1 = program->getString(v2.opcode, v2.integerValue);
         v1 = interpretMangleName(v1);
         v1 = mystrdup(v1, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1556
     } else if ((v2.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT && v2.integerValue == 0) {
-        v1 = NULL;
+        v1 = nullptr;
     } else {
         interpretError("Invalid arg 5 given to sayoptionwindow");
     }
@@ -1546,8 +1546,8 @@ static void op_sayoptionwindow(Program* program)
 // 0x459E7C
 static void op_sayborder(Program* program)
 {
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
 
     if (dialogSetBorder(x, y) != 0) {
         interpretError("Error setting dialog border");
@@ -1557,17 +1557,17 @@ static void op_sayborder(Program* program)
 // 0x459F00
 static void op_sayscrollup(Program* program)
 {
-    ProgramValue v6 = programStackPopValue(program);
-    ProgramValue v7 = programStackPopValue(program);
-    ProgramValue v8 = programStackPopValue(program);
-    ProgramValue v9 = programStackPopValue(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
+    ProgramValue v6 = program->stackPopValue();
+    ProgramValue v7 = program->stackPopValue();
+    ProgramValue v8 = program->stackPopValue();
+    ProgramValue v9 = program->stackPopValue();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
 
-    char* v1 = NULL;
-    char* v2 = NULL;
-    char* v3 = NULL;
-    char* v4 = NULL;
+    char* v1 = nullptr;
+    char* v2 = nullptr;
+    char* v3 = nullptr;
+    char* v4 = nullptr;
     int v5 = 0;
 
     if ((v6.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT) {
@@ -1597,25 +1597,25 @@ static void op_sayscrollup(Program* program)
     }
 
     if ((v9.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v1 = interpretGetString(program, v9.opcode, v9.integerValue);
+        v1 = program->getString(v9.opcode, v9.integerValue);
         v1 = interpretMangleName(v1);
         v1 = mystrdup(v1, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1611
     }
 
     if ((v8.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v2 = interpretGetString(program, v8.opcode, v8.integerValue);
+        v2 = program->getString(v8.opcode, v8.integerValue);
         v2 = interpretMangleName(v2);
         v2 = mystrdup(v2, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1613
     }
 
     if ((v7.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v3 = interpretGetString(program, v7.opcode, v7.integerValue);
+        v3 = program->getString(v7.opcode, v7.integerValue);
         v3 = interpretMangleName(v3);
         v3 = mystrdup(v3, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1615
     }
 
     if ((v6.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v4 = interpretGetString(program, v6.opcode, v6.integerValue);
+        v4 = program->getString(v6.opcode, v6.integerValue);
         v4 = interpretMangleName(v4);
         v4 = mystrdup(v4, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1617
     }
@@ -1628,17 +1628,17 @@ static void op_sayscrollup(Program* program)
 // 0x45A1A0
 static void op_sayscrolldown(Program* program)
 {
-    ProgramValue v6 = programStackPopValue(program);
-    ProgramValue v7 = programStackPopValue(program);
-    ProgramValue v8 = programStackPopValue(program);
-    ProgramValue v9 = programStackPopValue(program);
-    int y = programStackPopInteger(program);
-    int x = programStackPopInteger(program);
+    ProgramValue v6 = program->stackPopValue();
+    ProgramValue v7 = program->stackPopValue();
+    ProgramValue v8 = program->stackPopValue();
+    ProgramValue v9 = program->stackPopValue();
+    int y = program->stackPopInteger();
+    int x = program->stackPopInteger();
 
-    char* v1 = NULL;
-    char* v2 = NULL;
-    char* v3 = NULL;
-    char* v4 = NULL;
+    char* v1 = nullptr;
+    char* v2 = nullptr;
+    char* v3 = nullptr;
+    char* v4 = nullptr;
     int v5 = 0;
 
     if ((v6.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_INT) {
@@ -1670,25 +1670,25 @@ static void op_sayscrolldown(Program* program)
     }
 
     if ((v9.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v1 = interpretGetString(program, v9.opcode, v9.integerValue);
+        v1 = program->getString(v9.opcode, v9.integerValue);
         v1 = interpretMangleName(v1);
         v1 = mystrdup(v1, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1652
     }
 
     if ((v8.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v2 = interpretGetString(program, v8.opcode, v8.integerValue);
+        v2 = program->getString(v8.opcode, v8.integerValue);
         v2 = interpretMangleName(v2);
         v2 = mystrdup(v2, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1654
     }
 
     if ((v7.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v3 = interpretGetString(program, v7.opcode, v7.integerValue);
+        v3 = program->getString(v7.opcode, v7.integerValue);
         v3 = interpretMangleName(v3);
         v3 = mystrdup(v3, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1656
     }
 
     if ((v6.opcode & VALUE_TYPE_MASK) == VALUE_TYPE_STRING) {
-        v4 = interpretGetString(program, v6.opcode, v6.integerValue);
+        v4 = program->getString(v6.opcode, v6.integerValue);
         v4 = interpretMangleName(v4);
         v4 = mystrdup(v4, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1658
     }
@@ -1701,7 +1701,7 @@ static void op_sayscrolldown(Program* program)
 // 0x45A440
 static void op_saysetspacing(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (dialogSetSpacing(data) != 0) {
         interpretError("Error setting option spacing");
@@ -1720,8 +1720,8 @@ static void op_sayrestart(Program* program)
 static void soundCallbackInterpret(void* userData, int a2)
 {
     if (a2 == 1) {
-        Sound** sound = (Sound**)userData;
-        *sound = NULL;
+        Sound** sound = reinterpret_cast<Sound**>(userData);
+        *sound = nullptr;
     }
 }
 
@@ -1738,17 +1738,17 @@ static int soundDeleteInterpret(int value)
 
     int index = value & ~0xA0000000;
     Sound* sound = interpretSounds[index];
-    if (sound == NULL) {
+    if (sound == nullptr) {
         return 0;
     }
 
-    if (soundPlaying(sound)) {
-        soundStop(sound);
+    if (sound->isPlaying()) {
+        sound->stop();
     }
 
-    soundDelete(sound);
+    sound->destroy();
 
-    interpretSounds[index] = NULL;
+    interpretSounds[index] = nullptr;
 
     return 1;
 }
@@ -1761,7 +1761,7 @@ void soundCloseInterpret()
     int index;
 
     for (index = 0; index < INT_LIB_SOUNDS_CAPACITY; index++) {
-        if (interpretSounds[index] != NULL) {
+        if (interpretSounds[index] != nullptr) {
             soundDeleteInterpret(index | 0xA0000000);
         }
     }
@@ -1800,7 +1800,7 @@ int soundStartInterpret(char* fileName, int mode)
 
     int index;
     for (index = 0; index < INT_LIB_SOUNDS_CAPACITY; index++) {
-        if (interpretSounds[index] == NULL) {
+        if (interpretSounds[index] == nullptr) {
             break;
         }
     }
@@ -1810,82 +1810,82 @@ int soundStartInterpret(char* fileName, int mode)
     }
 
     Sound* sound = interpretSounds[index] = soundAllocate(v3, v5);
-    if (sound == NULL) {
+    if (sound == nullptr) {
         return -1;
     }
 
-    soundSetCallback(sound, soundCallbackInterpret, &(interpretSounds[index]));
+    sound->setCallback(soundCallbackInterpret, &(interpretSounds[index]));
 
     if (mode & 0x01) {
-        soundLoop(sound, 0xFFFF);
+        sound->setLoop(0xFFFF);
     }
 
     if (mode & 0x1000) {
         // mono
-        soundSetChannel(sound, 2);
+        sound->setChannel(2);
     }
 
     if (mode & 0x2000) {
         // stereo
-        soundSetChannel(sound, 3);
+        sound->setChannel(3);
     }
 
-    int rc = soundLoad(sound, fileName);
+    int rc = sound->load(fileName);
     if (rc != SOUND_NO_ERROR) {
-        goto err;
+        sound->destroy();
+        interpretSounds[index] = nullptr;
+        return -1;
     }
 
-    rc = soundPlay(sound);
+    rc = sound->play();
 
     // TODO: Maybe wrong.
     switch (rc) {
     case SOUND_NO_DEVICE:
         debug_printf("soundPlay error: %s\n", "SOUND_NO_DEVICE");
-        goto err;
+        break;
     case SOUND_NOT_INITIALIZED:
         debug_printf("soundPlay error: %s\n", "SOUND_NOT_INITIALIZED");
-        goto err;
+        break;
     case SOUND_NO_SOUND:
         debug_printf("soundPlay error: %s\n", "SOUND_NO_SOUND");
-        goto err;
+        break;
     case SOUND_FUNCTION_NOT_SUPPORTED:
         debug_printf("soundPlay error: %s\n", "SOUND_FUNC_NOT_SUPPORTED");
-        goto err;
+        break;
     case SOUND_NO_BUFFERS_AVAILABLE:
         debug_printf("soundPlay error: %s\n", "SOUND_NO_BUFFERS_AVAILABLE");
-        goto err;
+        break;
     case SOUND_FILE_NOT_FOUND:
         debug_printf("soundPlay error: %s\n", "SOUND_FILE_NOT_FOUND");
-        goto err;
+        break;
     case SOUND_ALREADY_PLAYING:
         debug_printf("soundPlay error: %s\n", "SOUND_ALREADY_PLAYING");
-        goto err;
+        break;
     case SOUND_NOT_PLAYING:
         debug_printf("soundPlay error: %s\n", "SOUND_NOT_PLAYING");
-        goto err;
+        break;
     case SOUND_ALREADY_PAUSED:
         debug_printf("soundPlay error: %s\n", "SOUND_ALREADY_PAUSED");
-        goto err;
+        break;
     case SOUND_NOT_PAUSED:
         debug_printf("soundPlay error: %s\n", "SOUND_NOT_PAUSED");
-        goto err;
+        break;
     case SOUND_INVALID_HANDLE:
         debug_printf("soundPlay error: %s\n", "SOUND_INVALID_HANDLE");
-        goto err;
+        break;
     case SOUND_NO_MEMORY_AVAILABLE:
         debug_printf("soundPlay error: %s\n", "SOUND_NO_MEMORY");
-        goto err;
+        break;
     case SOUND_UNKNOWN_ERROR:
         debug_printf("soundPlay error: %s\n", "SOUND_ERROR");
-        goto err;
+        break;
+    default:
+        return index | 0xA0000000;
     }
 
-    return index | 0xA0000000;
-
-err:
-
-    soundDelete(sound);
-    interpretSounds[index] = NULL;
+    sound->destroy();
+    interpretSounds[index] = nullptr;
     return -1;
 }
 
@@ -1902,15 +1902,15 @@ static int soundPauseInterpret(int value)
 
     int index = value & ~0xA0000000;
     Sound* sound = interpretSounds[index];
-    if (sound == NULL) {
+    if (sound == nullptr) {
         return 0;
     }
 
     int rc;
-    if (soundType(sound, 0x01)) {
-        rc = soundStop(sound);
+    if (sound->getType(0x01)) {
+        rc = sound->stop();
     } else {
-        rc = soundPause(sound);
+        rc = sound->pause();
     }
     return rc == SOUND_NO_ERROR;
 }
@@ -1928,17 +1928,17 @@ static int soundRewindInterpret(int value)
 
     int index = value & ~0xA0000000;
     Sound* sound = interpretSounds[index];
-    if (sound == NULL) {
+    if (sound == nullptr) {
         return 0;
     }
 
-    if (!soundPlaying(sound)) {
+    if (!sound->isPlaying()) {
         return 1;
     }
 
-    soundStop(sound);
+    sound->stop();
 
-    return soundPlay(sound) == SOUND_NO_ERROR;
+    return sound->play() == SOUND_NO_ERROR;
 }
 
 // 0x45AA6C
@@ -1954,15 +1954,15 @@ static int soundUnpauseInterpret(int value)
 
     int index = value & ~0xA0000000;
     Sound* sound = interpretSounds[index];
-    if (sound == NULL) {
+    if (sound == nullptr) {
         return 0;
     }
 
     int rc;
-    if (soundType(sound, 0x01)) {
-        rc = soundPlay(sound);
+    if (sound->getType(0x01)) {
+        rc = sound->play();
     } else {
-        rc = soundUnpause(sound);
+        rc = sound->unpause();
     }
     return rc == SOUND_NO_ERROR;
 }
@@ -1970,54 +1970,54 @@ static int soundUnpauseInterpret(int value)
 // 0x45AAD8
 static void op_soundplay(Program* program)
 {
-    int flags = programStackPopInteger(program);
-    char* fileName = programStackPopString(program);
+    int flags = program->stackPopInteger();
+    char* fileName = program->stackPopString();
 
     char* mangledFileName = interpretMangleName(fileName);
     int rc = soundStartInterpret(mangledFileName, flags);
 
-    programStackPushInteger(program, rc);
+    program->stackPushInteger(rc);
 }
 
 // 0x45AB6C
 static void op_soundpause(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
     soundPauseInterpret(data);
 }
 
 // 0x45ABA8
 static void op_soundresume(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
     soundUnpauseInterpret(data);
 }
 
 // 0x45ABE4
 static void op_soundstop(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
     soundPauseInterpret(data);
 }
 
 // 0x45AC20
 static void op_soundrewind(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
     soundRewindInterpret(data);
 }
 
 // 0x45AC5C
 static void op_sounddelete(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
     soundDeleteInterpret(data);
 }
 
 // 0x45AC98
 static void op_setoneoptpause(Program* program)
 {
-    int data = programStackPopInteger(program);
+    int data = program->stackPopInteger();
 
     if (data) {
         if ((dialogGetMediaFlag() & 8) == 0) {
@@ -2050,9 +2050,9 @@ void intlibClose()
 
     nevs_close();
 
-    if (callbacks != NULL) {
+    if (callbacks != nullptr) {
         myfree(callbacks, __FILE__, __LINE__); // "..\\int\\INTLIB.C", 1976
-        callbacks = NULL;
+        callbacks = nullptr;
         numCallbacks = 0;
     }
 }
@@ -2064,20 +2064,20 @@ static bool intLibDoInput(int key)
         return false;
     }
 
-    if (anyKeyProg != NULL) {
+    if (anyKeyProg != nullptr) {
         if (anyKeyOffset != 0) {
-            executeProc(anyKeyProg, anyKeyOffset);
+            anyKeyProg->executeProc(anyKeyOffset);
         }
         return true;
     }
 
     IntLibKeyHandlerEntry* entry = &(inputProc[key]);
-    if (entry->program == NULL) {
+    if (entry->program == nullptr) {
         return false;
     }
 
     if (entry->proc != 0) {
-        executeProc(entry->program, entry->proc);
+        entry->program->executeProc(entry->proc);
     }
 
     return true;
@@ -2182,16 +2182,16 @@ void interpretRegisterProgramDeleteCallback(IntLibProgramDeleteCallback* callbac
 {
     int index;
     for (index = 0; index < numCallbacks; index++) {
-        if (callbacks[index] == NULL) {
+        if (callbacks[index] == nullptr) {
             break;
         }
     }
 
     if (index == numCallbacks) {
-        if (callbacks != NULL) {
-            callbacks = (IntLibProgramDeleteCallback**)myrealloc(callbacks, sizeof(*callbacks) * (numCallbacks + 1), __FILE__, __LINE__); // ..\\int\\INTLIB.C, 2110
+        if (callbacks != nullptr) {
+            callbacks = static_cast<IntLibProgramDeleteCallback**>(myrealloc(callbacks, sizeof(*callbacks) * (numCallbacks + 1), __FILE__, __LINE__)); // ..\\int\\INTLIB.C, 2110
         } else {
-            callbacks = (IntLibProgramDeleteCallback**)mymalloc(sizeof(*callbacks), __FILE__, __LINE__); // ..\\int\\INTLIB.C, 2112
+            callbacks = static_cast<IntLibProgramDeleteCallback**>(mymalloc(sizeof(*callbacks), __FILE__, __LINE__)); // ..\\int\\INTLIB.C, 2112
         }
         numCallbacks++;
     }
@@ -2204,7 +2204,7 @@ void removeProgramReferences(Program* program)
 {
     for (int index = 0; index < INT_LIB_KEY_HANDLERS_CAPACITY; index++) {
         if (program == inputProc[index].program) {
-            inputProc[index].program = NULL;
+            inputProc[index].program = nullptr;
         }
     }
 
@@ -2212,7 +2212,7 @@ void removeProgramReferences(Program* program)
 
     for (int index = 0; index < numCallbacks; index++) {
         IntLibProgramDeleteCallback* callback = callbacks[index];
-        if (callback != NULL) {
+        if (callback != nullptr) {
             callback(program);
         }
     }

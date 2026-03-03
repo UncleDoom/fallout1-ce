@@ -1,7 +1,7 @@
-#ifndef FALLOUT_PLIB_GNW_GNW_H_
-#define FALLOUT_PLIB_GNW_GNW_H_
+#pragma once
 
-#include <stddef.h>
+
+#include <cstddef>
 
 #include "plib/gnw/gnw_types.h"
 #include "plib/gnw/rect.h"
@@ -9,26 +9,39 @@
 
 namespace fallout {
 
-typedef enum WindowManagerErr {
-    WINDOW_MANAGER_OK = 0,
-    WINDOW_MANAGER_ERR_INITIALIZING_VIDEO_MODE = 1,
-    WINDOW_MANAGER_ERR_NO_MEMORY = 2,
-    WINDOW_MANAGER_ERR_INITIALIZING_TEXT_FONTS = 3,
-    WINDOW_MANAGER_ERR_WINDOW_SYSTEM_ALREADY_INITIALIZED = 4,
-    WINDOW_MANAGER_ERR_WINDOW_SYSTEM_NOT_INITIALIZED = 5,
-    WINDOW_MANAGER_ERR_CURRENT_WINDOWS_TOO_BIG = 6,
-    WINDOW_MANAGER_ERR_INITIALIZING_DEFAULT_DATABASE = 7,
+enum class WindowManagerErr : int {
+    Ok = 0,
+    InitializingVideoMode = 1,
+    NoMemory = 2,
+    InitializingTextFonts = 3,
+    WindowSystemAlreadyInitialized = 4,
+    WindowSystemNotInitialized = 5,
+    CurrentWindowsTooBig = 6,
+    InitializingDefaultDatabase = 7,
 
     // Unknown fatal error.
     //
     // NOTE: When this error code returned from window system initialization, the
     // game simply exits without any debug message. There is no way to figure out
-    // it's meaning.
-    WINDOW_MANAGER_ERR_8 = 8,
-    WINDOW_MANAGER_ERR_ALREADY_RUNNING = 9,
-    WINDOW_MANAGER_ERR_TITLE_NOT_SET = 10,
-    WINDOW_MANAGER_ERR_INITIALIZING_INPUT = 11,
-} WindowManagerErr;
+    // its meaning.
+    Err8 = 8,
+    AlreadyRunning = 9,
+    TitleNotSet = 10,
+    InitializingInput = 11,
+};
+
+inline constexpr int WINDOW_MANAGER_OK = static_cast<int>(WindowManagerErr::Ok);
+inline constexpr int WINDOW_MANAGER_ERR_INITIALIZING_VIDEO_MODE = static_cast<int>(WindowManagerErr::InitializingVideoMode);
+inline constexpr int WINDOW_MANAGER_ERR_NO_MEMORY = static_cast<int>(WindowManagerErr::NoMemory);
+inline constexpr int WINDOW_MANAGER_ERR_INITIALIZING_TEXT_FONTS = static_cast<int>(WindowManagerErr::InitializingTextFonts);
+inline constexpr int WINDOW_MANAGER_ERR_WINDOW_SYSTEM_ALREADY_INITIALIZED = static_cast<int>(WindowManagerErr::WindowSystemAlreadyInitialized);
+inline constexpr int WINDOW_MANAGER_ERR_WINDOW_SYSTEM_NOT_INITIALIZED = static_cast<int>(WindowManagerErr::WindowSystemNotInitialized);
+inline constexpr int WINDOW_MANAGER_ERR_CURRENT_WINDOWS_TOO_BIG = static_cast<int>(WindowManagerErr::CurrentWindowsTooBig);
+inline constexpr int WINDOW_MANAGER_ERR_INITIALIZING_DEFAULT_DATABASE = static_cast<int>(WindowManagerErr::InitializingDefaultDatabase);
+inline constexpr int WINDOW_MANAGER_ERR_8 = static_cast<int>(WindowManagerErr::Err8);
+inline constexpr int WINDOW_MANAGER_ERR_ALREADY_RUNNING = static_cast<int>(WindowManagerErr::AlreadyRunning);
+inline constexpr int WINDOW_MANAGER_ERR_TITLE_NOT_SET = static_cast<int>(WindowManagerErr::TitleNotSet);
+inline constexpr int WINDOW_MANAGER_ERR_INITIALIZING_INPUT = static_cast<int>(WindowManagerErr::InitializingInput);
 
 extern bool GNW_win_init_flag;
 extern int GNW_wcolor[6];
@@ -55,7 +68,6 @@ void win_hide(int win);
 void win_move(int win_index, int x, int y);
 void win_draw(int win);
 void win_draw_rect(int win, const Rect* rect);
-void GNW_win_refresh(Window* window, Rect* rect, unsigned char* a3);
 void win_refresh_all(Rect* rect);
 void win_drag(int win);
 void win_get_mouse_buf(unsigned char* a1);
@@ -73,5 +85,3 @@ void win_set_trans_b2b(int id, WindowBlitProc* trans_b2b);
 bool GNWSystemError(const char* str);
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_GNW_H_ */

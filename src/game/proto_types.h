@@ -1,10 +1,14 @@
-#ifndef FALLOUT_GAME_PROTO_TYPES_H_
-#define FALLOUT_GAME_PROTO_TYPES_H_
+#pragma once
+
+
+#include "game/enum_utils.h"
 
 namespace fallout {
 
+class DB_FILE;
+
 // Number of prototypes in prototype extent.
-#define PROTO_LIST_EXTENT_SIZE 16
+constexpr int PROTO_LIST_EXTENT_SIZE = 16;
 
 // Max number of prototypes of one type to be stored in prototype cache lists.
 // Once this value is reached the top most proto extent is removed from the
@@ -13,200 +17,335 @@ namespace fallout {
 // See:
 // - [sub_4A2108]
 // - [sub_4A2040]
-#define PROTO_LIST_MAX_ENTRIES 512
+constexpr int PROTO_LIST_MAX_ENTRIES = 512;
 
-#define WEAPON_TWO_HAND 0x00000200
+constexpr int WEAPON_TWO_HAND = 0x00000200;
 
-enum {
-    GENDER_MALE,
-    GENDER_FEMALE,
-    GENDER_COUNT,
+enum class Gender : int {
+    Male = 0,
+    Female = 1,
+    Count = 2,
 };
 
-enum {
-    ITEM_TYPE_ARMOR,
-    ITEM_TYPE_CONTAINER,
-    ITEM_TYPE_DRUG,
-    ITEM_TYPE_WEAPON,
-    ITEM_TYPE_AMMO,
-    ITEM_TYPE_MISC,
-    ITEM_TYPE_KEY,
-    ITEM_TYPE_COUNT,
+inline constexpr int GENDER_MALE = static_cast<int>(Gender::Male);
+inline constexpr int GENDER_FEMALE = static_cast<int>(Gender::Female);
+inline constexpr int GENDER_COUNT = static_cast<int>(Gender::Count);
+
+enum class ItemType : int {
+    Armor = 0,
+    Container = 1,
+    Drug = 2,
+    Weapon = 3,
+    Ammo = 4,
+    Misc = 5,
+    Key = 6,
+    Count = 7,
 };
 
-enum {
-    SCENERY_TYPE_DOOR,
-    SCENERY_TYPE_STAIRS,
-    SCENERY_TYPE_ELEVATOR,
-    SCENERY_TYPE_LADDER_UP,
-    SCENERY_TYPE_LADDER_DOWN,
-    SCENERY_TYPE_GENERIC,
-    SCENERY_TYPE_COUNT,
+inline constexpr int ITEM_TYPE_ARMOR = static_cast<int>(ItemType::Armor);
+inline constexpr int ITEM_TYPE_CONTAINER = static_cast<int>(ItemType::Container);
+inline constexpr int ITEM_TYPE_DRUG = static_cast<int>(ItemType::Drug);
+inline constexpr int ITEM_TYPE_WEAPON = static_cast<int>(ItemType::Weapon);
+inline constexpr int ITEM_TYPE_AMMO = static_cast<int>(ItemType::Ammo);
+inline constexpr int ITEM_TYPE_MISC = static_cast<int>(ItemType::Misc);
+inline constexpr int ITEM_TYPE_KEY = static_cast<int>(ItemType::Key);
+inline constexpr int ITEM_TYPE_COUNT = static_cast<int>(ItemType::Count);
+
+enum class SceneryType : int {
+    Door = 0,
+    Stairs = 1,
+    Elevator = 2,
+    LadderUp = 3,
+    LadderDown = 4,
+    Generic = 5,
+    Count = 6,
 };
 
-enum {
-    MATERIAL_TYPE_GLASS,
-    MATERIAL_TYPE_METAL,
-    MATERIAL_TYPE_PLASTIC,
-    MATERIAL_TYPE_WOOD,
-    MATERIAL_TYPE_DIRT,
-    MATERIAL_TYPE_STONE,
-    MATERIAL_TYPE_CEMENT,
-    MATERIAL_TYPE_LEATHER,
-    MATERIAL_TYPE_COUNT,
+inline constexpr int SCENERY_TYPE_DOOR = static_cast<int>(SceneryType::Door);
+inline constexpr int SCENERY_TYPE_STAIRS = static_cast<int>(SceneryType::Stairs);
+inline constexpr int SCENERY_TYPE_ELEVATOR = static_cast<int>(SceneryType::Elevator);
+inline constexpr int SCENERY_TYPE_LADDER_UP = static_cast<int>(SceneryType::LadderUp);
+inline constexpr int SCENERY_TYPE_LADDER_DOWN = static_cast<int>(SceneryType::LadderDown);
+inline constexpr int SCENERY_TYPE_GENERIC = static_cast<int>(SceneryType::Generic);
+inline constexpr int SCENERY_TYPE_COUNT = static_cast<int>(SceneryType::Count);
+
+enum class MaterialType : int {
+    Glass = 0,
+    Metal = 1,
+    Plastic = 2,
+    Wood = 3,
+    Dirt = 4,
+    Stone = 5,
+    Cement = 6,
+    Leather = 7,
+    Count = 8,
 };
 
-enum {
-    DAMAGE_TYPE_NORMAL,
-    DAMAGE_TYPE_LASER,
-    DAMAGE_TYPE_FIRE,
-    DAMAGE_TYPE_PLASMA,
-    DAMAGE_TYPE_ELECTRICAL,
-    DAMAGE_TYPE_EMP,
-    DAMAGE_TYPE_EXPLOSION,
-    DAMAGE_TYPE_COUNT,
+inline constexpr int MATERIAL_TYPE_GLASS = static_cast<int>(MaterialType::Glass);
+inline constexpr int MATERIAL_TYPE_METAL = static_cast<int>(MaterialType::Metal);
+inline constexpr int MATERIAL_TYPE_PLASTIC = static_cast<int>(MaterialType::Plastic);
+inline constexpr int MATERIAL_TYPE_WOOD = static_cast<int>(MaterialType::Wood);
+inline constexpr int MATERIAL_TYPE_DIRT = static_cast<int>(MaterialType::Dirt);
+inline constexpr int MATERIAL_TYPE_STONE = static_cast<int>(MaterialType::Stone);
+inline constexpr int MATERIAL_TYPE_CEMENT = static_cast<int>(MaterialType::Cement);
+inline constexpr int MATERIAL_TYPE_LEATHER = static_cast<int>(MaterialType::Leather);
+inline constexpr int MATERIAL_TYPE_COUNT = static_cast<int>(MaterialType::Count);
+
+enum class DamageType : int {
+    Normal = 0,
+    Laser = 1,
+    Fire = 2,
+    Plasma = 3,
+    Electrical = 4,
+    Emp = 5,
+    Explosion = 6,
+    Count = 7,
 };
 
-enum {
-    CALIBER_TYPE_NONE,
-    CALIBER_TYPE_ROCKET,
-    CALIBER_TYPE_FLAMETHROWER_FUEL,
-    CALIBER_TYPE_C_ENERGY_CELL,
-    CALIBER_TYPE_D_ENERGY_CELL,
-    CALIBER_TYPE_223,
-    CALIBER_TYPE_5_MM,
-    CALIBER_TYPE_40_CAL,
-    CALIBER_TYPE_10_MM,
-    CALIBER_TYPE_44_CAL,
-    CALIBER_TYPE_14_MM,
-    CALIBER_TYPE_12_GAUGE,
-    CALIBER_TYPE_9_MM,
-    CALIBER_TYPE_BB,
-    CALIBER_TYPE_COUNT,
+inline constexpr int DAMAGE_TYPE_NORMAL = static_cast<int>(DamageType::Normal);
+inline constexpr int DAMAGE_TYPE_LASER = static_cast<int>(DamageType::Laser);
+inline constexpr int DAMAGE_TYPE_FIRE = static_cast<int>(DamageType::Fire);
+inline constexpr int DAMAGE_TYPE_PLASMA = static_cast<int>(DamageType::Plasma);
+inline constexpr int DAMAGE_TYPE_ELECTRICAL = static_cast<int>(DamageType::Electrical);
+inline constexpr int DAMAGE_TYPE_EMP = static_cast<int>(DamageType::Emp);
+inline constexpr int DAMAGE_TYPE_EXPLOSION = static_cast<int>(DamageType::Explosion);
+inline constexpr int DAMAGE_TYPE_COUNT = static_cast<int>(DamageType::Count);
+
+enum class CaliberType : int {
+    None = 0,
+    Rocket = 1,
+    FlamethrowerFuel = 2,
+    CEnergyCell = 3,
+    DEnergyCell = 4,
+    Cal223 = 5,
+    Mm5 = 6,
+    Cal40 = 7,
+    Mm10 = 8,
+    Cal44 = 9,
+    Mm14 = 10,
+    Gauge12 = 11,
+    Mm9 = 12,
+    Bb = 13,
+    Count = 14,
 };
 
-enum {
-    RACE_TYPE_CAUCASIAN,
-    RACE_TYPE_AFRICAN,
-    RACE_TYPE_COUNT,
+inline constexpr int CALIBER_TYPE_NONE = static_cast<int>(CaliberType::None);
+inline constexpr int CALIBER_TYPE_ROCKET = static_cast<int>(CaliberType::Rocket);
+inline constexpr int CALIBER_TYPE_FLAMETHROWER_FUEL = static_cast<int>(CaliberType::FlamethrowerFuel);
+inline constexpr int CALIBER_TYPE_C_ENERGY_CELL = static_cast<int>(CaliberType::CEnergyCell);
+inline constexpr int CALIBER_TYPE_D_ENERGY_CELL = static_cast<int>(CaliberType::DEnergyCell);
+inline constexpr int CALIBER_TYPE_223 = static_cast<int>(CaliberType::Cal223);
+inline constexpr int CALIBER_TYPE_5_MM = static_cast<int>(CaliberType::Mm5);
+inline constexpr int CALIBER_TYPE_40_CAL = static_cast<int>(CaliberType::Cal40);
+inline constexpr int CALIBER_TYPE_10_MM = static_cast<int>(CaliberType::Mm10);
+inline constexpr int CALIBER_TYPE_44_CAL = static_cast<int>(CaliberType::Cal44);
+inline constexpr int CALIBER_TYPE_14_MM = static_cast<int>(CaliberType::Mm14);
+inline constexpr int CALIBER_TYPE_12_GAUGE = static_cast<int>(CaliberType::Gauge12);
+inline constexpr int CALIBER_TYPE_9_MM = static_cast<int>(CaliberType::Mm9);
+inline constexpr int CALIBER_TYPE_BB = static_cast<int>(CaliberType::Bb);
+inline constexpr int CALIBER_TYPE_COUNT = static_cast<int>(CaliberType::Count);
+
+enum class RaceType : int {
+    Caucasian = 0,
+    African = 1,
+    Count = 2,
 };
 
-enum {
-    BODY_TYPE_BIPED,
-    BODY_TYPE_QUADRUPED,
-    BODY_TYPE_ROBOTIC,
-    BODY_TYPE_COUNT,
+inline constexpr int RACE_TYPE_CAUCASIAN = static_cast<int>(RaceType::Caucasian);
+inline constexpr int RACE_TYPE_AFRICAN = static_cast<int>(RaceType::African);
+inline constexpr int RACE_TYPE_COUNT = static_cast<int>(RaceType::Count);
+
+enum class BodyType : int {
+    Biped = 0,
+    Quadruped = 1,
+    Robotic = 2,
+    Count = 3,
 };
 
-enum {
-    KILL_TYPE_MAN,
-    KILL_TYPE_WOMAN,
-    KILL_TYPE_CHILD,
-    KILL_TYPE_SUPER_MUTANT,
-    KILL_TYPE_GHOUL,
-    KILL_TYPE_BRAHMIN,
-    KILL_TYPE_RADSCORPION,
-    KILL_TYPE_RAT,
-    KILL_TYPE_FLOATER,
-    KILL_TYPE_CENTAUR,
-    KILL_TYPE_ROBOT,
-    KILL_TYPE_DOG,
-    KILL_TYPE_MANTIS,
-    KILL_TYPE_DEATH_CLAW,
-    KILL_TYPE_PLANT,
-    KILL_TYPE_COUNT,
+inline constexpr int BODY_TYPE_BIPED = static_cast<int>(BodyType::Biped);
+inline constexpr int BODY_TYPE_QUADRUPED = static_cast<int>(BodyType::Quadruped);
+inline constexpr int BODY_TYPE_ROBOTIC = static_cast<int>(BodyType::Robotic);
+inline constexpr int BODY_TYPE_COUNT = static_cast<int>(BodyType::Count);
+
+enum class KillType : int {
+    Man = 0,
+    Woman = 1,
+    Child = 2,
+    SuperMutant = 3,
+    Ghoul = 4,
+    Brahmin = 5,
+    Radscorpion = 6,
+    Rat = 7,
+    Floater = 8,
+    Centaur = 9,
+    Robot = 10,
+    Dog = 11,
+    Mantis = 12,
+    DeathClaw = 13,
+    Plant = 14,
+    Count = 15,
 };
 
-enum {
-    PROTO_ID_POWER_ARMOR = 3,
-    PROTO_ID_SMALL_ENERGY_CELL = 38,
-    PROTO_ID_MICRO_FUSION_CELL = 39,
-    PROTO_ID_STIMPACK = 40,
-    PROTO_ID_MONEY = 41,
-    PROTO_ID_FIRST_AID_KIT = 47,
-    PROTO_ID_RADAWAY = 48,
-    PROTO_ID_DYNAMITE_I = 51,
-    PROTO_ID_GEIGER_COUNTER_I = 52,
-    PROTO_ID_MENTATS = 53,
-    PROTO_ID_STEALTH_BOY_I = 54,
-    PROTO_ID_MOTION_SENSOR = 59,
-    PROTO_ID_BIG_BOOK_OF_SCIENCE = 73,
-    PROTO_ID_DEANS_ELECTRONICS = 76,
-    PROTO_ID_FLARE = 79,
-    PROTO_ID_FIRST_AID_BOOK = 80,
-    PROTO_ID_PLASTIC_EXPLOSIVES_I = 85,
-    PROTO_ID_SCOUT_HANDBOOK = 86,
-    PROTO_ID_BUFF_OUT = 87,
-    PROTO_ID_DOCTORS_BAG = 91,
-    PROTO_ID_GUNS_AND_BULLETS = 102,
-    PROTO_ID_NUKA_COLA = 106,
-    PROTO_ID_PSYCHO = 110,
-    PROTO_ID_BEER = 124,
-    PROTO_ID_BOOZE = 125,
-    PROTO_ID_SUPER_STIMPACK = 144,
-    PROTO_ID_MOLOTOV_COCKTAIL = 159,
-    PROTO_ID_LIT_FLARE = 205,
-    PROTO_ID_DYNAMITE_II = 206, // armed
-    PROTO_ID_GEIGER_COUNTER_II = 207,
-    PROTO_ID_PLASTIC_EXPLOSIVES_II = 209, // armed
-    PROTO_ID_STEALTH_BOY_II = 210,
-    PROTO_ID_HARDENED_POWER_ARMOR = 232,
+inline constexpr int KILL_TYPE_MAN = static_cast<int>(KillType::Man);
+inline constexpr int KILL_TYPE_WOMAN = static_cast<int>(KillType::Woman);
+inline constexpr int KILL_TYPE_CHILD = static_cast<int>(KillType::Child);
+inline constexpr int KILL_TYPE_SUPER_MUTANT = static_cast<int>(KillType::SuperMutant);
+inline constexpr int KILL_TYPE_GHOUL = static_cast<int>(KillType::Ghoul);
+inline constexpr int KILL_TYPE_BRAHMIN = static_cast<int>(KillType::Brahmin);
+inline constexpr int KILL_TYPE_RADSCORPION = static_cast<int>(KillType::Radscorpion);
+inline constexpr int KILL_TYPE_RAT = static_cast<int>(KillType::Rat);
+inline constexpr int KILL_TYPE_FLOATER = static_cast<int>(KillType::Floater);
+inline constexpr int KILL_TYPE_CENTAUR = static_cast<int>(KillType::Centaur);
+inline constexpr int KILL_TYPE_ROBOT = static_cast<int>(KillType::Robot);
+inline constexpr int KILL_TYPE_DOG = static_cast<int>(KillType::Dog);
+inline constexpr int KILL_TYPE_MANTIS = static_cast<int>(KillType::Mantis);
+inline constexpr int KILL_TYPE_DEATH_CLAW = static_cast<int>(KillType::DeathClaw);
+inline constexpr int KILL_TYPE_PLANT = static_cast<int>(KillType::Plant);
+inline constexpr int KILL_TYPE_COUNT = static_cast<int>(KillType::Count);
+
+enum class ProtoId : int {
+    PowerArmor = 3,
+    SmallEnergyCell = 38,
+    MicroFusionCell = 39,
+    Stimpack = 40,
+    Money = 41,
+    FirstAidKit = 47,
+    Radaway = 48,
+    DynamiteI = 51,
+    GeigerCounterI = 52,
+    Mentats = 53,
+    StealthBoyI = 54,
+    MotionSensor = 59,
+    BigBookOfScience = 73,
+    DeansElectronics = 76,
+    Flare = 79,
+    FirstAidBook = 80,
+    PlasticExplosivesI = 85,
+    ScoutHandbook = 86,
+    BuffOut = 87,
+    DoctorsBag = 91,
+    GunsAndBullets = 102,
+    NukaCola = 106,
+    Psycho = 110,
+    Beer = 124,
+    Booze = 125,
+    SuperStimpack = 144,
+    MolotovCocktail = 159,
+    LitFlare = 205,
+    DynamiteII = 206, // armed
+    GeigerCounterII = 207,
+    PlasticExplosivesII = 209, // armed
+    StealthBoyII = 210,
+    HardenedPowerArmor = 232,
 };
 
-#define PROTO_ID_0x1000098 0x1000098
-#define PROTO_ID_0x10001E0 0x10001E0
-#define PROTO_ID_0x2000031 0x2000031
-#define PROTO_ID_0x2000158 0x2000158
-#define PROTO_ID_CAR 0x20003F1
-#define PROTO_ID_0x200050D 0x200050D
-#define PROTO_ID_0x2000099 0x2000099
-#define PROTO_ID_0x20001A5 0x20001A5
-#define PROTO_ID_0x20001D6 0x20001D6
-#define PROTO_ID_0x20001EB 0x20001EB
-#define FID_0x20001F5 0x20001F5
+inline constexpr int PROTO_ID_POWER_ARMOR = static_cast<int>(ProtoId::PowerArmor);
+inline constexpr int PROTO_ID_SMALL_ENERGY_CELL = static_cast<int>(ProtoId::SmallEnergyCell);
+inline constexpr int PROTO_ID_MICRO_FUSION_CELL = static_cast<int>(ProtoId::MicroFusionCell);
+inline constexpr int PROTO_ID_STIMPACK = static_cast<int>(ProtoId::Stimpack);
+inline constexpr int PROTO_ID_MONEY = static_cast<int>(ProtoId::Money);
+inline constexpr int PROTO_ID_FIRST_AID_KIT = static_cast<int>(ProtoId::FirstAidKit);
+inline constexpr int PROTO_ID_RADAWAY = static_cast<int>(ProtoId::Radaway);
+inline constexpr int PROTO_ID_DYNAMITE_I = static_cast<int>(ProtoId::DynamiteI);
+inline constexpr int PROTO_ID_GEIGER_COUNTER_I = static_cast<int>(ProtoId::GeigerCounterI);
+inline constexpr int PROTO_ID_MENTATS = static_cast<int>(ProtoId::Mentats);
+inline constexpr int PROTO_ID_STEALTH_BOY_I = static_cast<int>(ProtoId::StealthBoyI);
+inline constexpr int PROTO_ID_MOTION_SENSOR = static_cast<int>(ProtoId::MotionSensor);
+inline constexpr int PROTO_ID_BIG_BOOK_OF_SCIENCE = static_cast<int>(ProtoId::BigBookOfScience);
+inline constexpr int PROTO_ID_DEANS_ELECTRONICS = static_cast<int>(ProtoId::DeansElectronics);
+inline constexpr int PROTO_ID_FLARE = static_cast<int>(ProtoId::Flare);
+inline constexpr int PROTO_ID_FIRST_AID_BOOK = static_cast<int>(ProtoId::FirstAidBook);
+inline constexpr int PROTO_ID_PLASTIC_EXPLOSIVES_I = static_cast<int>(ProtoId::PlasticExplosivesI);
+inline constexpr int PROTO_ID_SCOUT_HANDBOOK = static_cast<int>(ProtoId::ScoutHandbook);
+inline constexpr int PROTO_ID_BUFF_OUT = static_cast<int>(ProtoId::BuffOut);
+inline constexpr int PROTO_ID_DOCTORS_BAG = static_cast<int>(ProtoId::DoctorsBag);
+inline constexpr int PROTO_ID_GUNS_AND_BULLETS = static_cast<int>(ProtoId::GunsAndBullets);
+inline constexpr int PROTO_ID_NUKA_COLA = static_cast<int>(ProtoId::NukaCola);
+inline constexpr int PROTO_ID_PSYCHO = static_cast<int>(ProtoId::Psycho);
+inline constexpr int PROTO_ID_BEER = static_cast<int>(ProtoId::Beer);
+inline constexpr int PROTO_ID_BOOZE = static_cast<int>(ProtoId::Booze);
+inline constexpr int PROTO_ID_SUPER_STIMPACK = static_cast<int>(ProtoId::SuperStimpack);
+inline constexpr int PROTO_ID_MOLOTOV_COCKTAIL = static_cast<int>(ProtoId::MolotovCocktail);
+inline constexpr int PROTO_ID_LIT_FLARE = static_cast<int>(ProtoId::LitFlare);
+inline constexpr int PROTO_ID_DYNAMITE_II = static_cast<int>(ProtoId::DynamiteII);
+inline constexpr int PROTO_ID_GEIGER_COUNTER_II = static_cast<int>(ProtoId::GeigerCounterII);
+inline constexpr int PROTO_ID_PLASTIC_EXPLOSIVES_II = static_cast<int>(ProtoId::PlasticExplosivesII);
+inline constexpr int PROTO_ID_STEALTH_BOY_II = static_cast<int>(ProtoId::StealthBoyII);
+inline constexpr int PROTO_ID_HARDENED_POWER_ARMOR = static_cast<int>(ProtoId::HardenedPowerArmor);
+
+constexpr int PROTO_ID_0x1000098 = 0x1000098;
+constexpr int PROTO_ID_0x10001E0 = 0x10001E0;
+constexpr int PROTO_ID_0x2000031 = 0x2000031;
+constexpr int PROTO_ID_0x2000158 = 0x2000158;
+constexpr int PROTO_ID_CAR = 0x20003F1;
+constexpr int PROTO_ID_0x200050D = 0x200050D;
+constexpr int PROTO_ID_0x2000099 = 0x2000099;
+constexpr int PROTO_ID_0x20001A5 = 0x20001A5;
+constexpr int PROTO_ID_0x20001D6 = 0x20001D6;
+constexpr int PROTO_ID_0x20001EB = 0x20001EB;
+constexpr int FID_0x20001F5 = 0x20001F5;
 // first exit grid
-#define PROTO_ID_0x5000010 0x5000010
+constexpr int PROTO_ID_0x5000010 = 0x5000010;
 // last exit grid
-#define PROTO_ID_0x5000017 0x5000017
+constexpr int PROTO_ID_0x5000017 = 0x5000017;
 
-typedef enum ItemProtoFlags {
-    ItemProtoFlags_0x08 = 0x08,
-    ItemProtoFlags_0x10 = 0x10,
-    ItemProtoFlags_0x1000 = 0x1000,
-    ItemProtoFlags_0x8000 = 0x8000,
-    ItemProtoFlags_0x20000000 = 0x20000000,
-    ItemProtoFlags_0x80000000 = 0x80000000,
-} ItemProtoFlags;
+enum class ItemProtoFlags : unsigned {
+    Flag_0x08 = 0x08,
+    Flag_0x10 = 0x10,
+    Flag_0x1000 = 0x1000,
+    Flag_0x8000 = 0x8000,
+    Flag_0x20000000 = 0x20000000,
+    Flag_0x80000000 = 0x80000000,
+};
+DEFINE_ENUM_FLAG_OPERATORS(ItemProtoFlags)
 
-typedef enum ItemProtoExtendedFlags {
-    ItemProtoExtendedFlags_BigGun = 0x0100,
-    ItemProtoExtendedFlags_IsTwoHanded = 0x0200,
-    ItemProtoExtendedFlags_0x0800 = 0x0800,
-    ItemProtoExtendedFlags_0x1000 = 0x1000,
-    ItemProtoExtendedFlags_0x2000 = 0x2000,
-    ItemProtoExtendedFlags_0x8000 = 0x8000,
+inline constexpr unsigned ItemProtoFlags_0x08 = static_cast<unsigned>(ItemProtoFlags::Flag_0x08);
+inline constexpr unsigned ItemProtoFlags_0x10 = static_cast<unsigned>(ItemProtoFlags::Flag_0x10);
+inline constexpr unsigned ItemProtoFlags_0x1000 = static_cast<unsigned>(ItemProtoFlags::Flag_0x1000);
+inline constexpr unsigned ItemProtoFlags_0x8000 = static_cast<unsigned>(ItemProtoFlags::Flag_0x8000);
+inline constexpr unsigned ItemProtoFlags_0x20000000 = static_cast<unsigned>(ItemProtoFlags::Flag_0x20000000);
+inline constexpr unsigned ItemProtoFlags_0x80000000 = static_cast<unsigned>(ItemProtoFlags::Flag_0x80000000);
 
-    // This flag is used on weapons to indicate that's an natural (integral)
-    // part of it's owner, for example Claw, or Robot's Rocket Launcher. Items
+
+enum class ItemProtoExtendedFlags : unsigned {
+    BigGun = 0x0100,
+    IsTwoHanded = 0x0200,
+    Flag_0x0800 = 0x0800,
+    Flag_0x1000 = 0x1000,
+    Flag_0x2000 = 0x2000,
+    Flag_0x8000 = 0x8000,
+
+    // This flag is used on weapons to indicate that's a natural (integral)
+    // part of its owner, for example Claw, or Robot's Rocket Launcher. Items
     // with this flag on do count toward total weight and cannot be dropped.
-    ItemProtoExtendedFlags_NaturalWeapon = 0x08000000,
-} ItemProtoExtendedFlags;
+    NaturalWeapon = 0x08000000,
+};
+DEFINE_ENUM_FLAG_OPERATORS(ItemProtoExtendedFlags)
 
-typedef struct {
+inline constexpr unsigned ItemProtoExtendedFlags_BigGun = static_cast<unsigned>(ItemProtoExtendedFlags::BigGun);
+inline constexpr unsigned ItemProtoExtendedFlags_IsTwoHanded = static_cast<unsigned>(ItemProtoExtendedFlags::IsTwoHanded);
+inline constexpr unsigned ItemProtoExtendedFlags_0x0800 = static_cast<unsigned>(ItemProtoExtendedFlags::Flag_0x0800);
+inline constexpr unsigned ItemProtoExtendedFlags_0x1000 = static_cast<unsigned>(ItemProtoExtendedFlags::Flag_0x1000);
+inline constexpr unsigned ItemProtoExtendedFlags_0x2000 = static_cast<unsigned>(ItemProtoExtendedFlags::Flag_0x2000);
+inline constexpr unsigned ItemProtoExtendedFlags_0x8000 = static_cast<unsigned>(ItemProtoExtendedFlags::Flag_0x8000);
+inline constexpr unsigned ItemProtoExtendedFlags_NaturalWeapon = static_cast<unsigned>(ItemProtoExtendedFlags::NaturalWeapon);
+
+
+struct ProtoItemArmorData {
     int armorClass; // d.ac
     int damageResistance[7]; // d.dam_resist
     int damageThreshold[7]; // d.dam_thresh
     int perk; // d.perk
     int maleFid; // d.male_fid
     int femaleFid; // d.female_fid
-} ProtoItemArmorData;
+};
 
-typedef struct {
+struct ProtoItemContainerData {
     int maxSize; // d.max_size
     int openFlags; // d.open_flags
-} ProtoItemContainerData;
+};
 
-typedef struct {
+struct ProtoItemDrugData {
     int stat[3]; // d.stat
     int amount[3]; // d.amount
     int duration1; // d.duration1
@@ -216,9 +355,9 @@ typedef struct {
     int addictionChance; // d.addiction_chance
     int withdrawalEffect; // d.withdrawal_effect
     int withdrawalOnset; // d.withdrawal_onset
-} ProtoItemDrugData;
+};
 
-typedef struct {
+struct ProtoItemWeaponData {
     int animationCode; // d.animation_code
     int minDamage; // d.min_damage
     int maxDamage; // d.max_damage
@@ -236,28 +375,28 @@ typedef struct {
     int ammoTypePid; // d.ammo_type_pid
     int ammoCapacity; // d.max_ammo
     unsigned char soundCode; // d.sound_id
-} ProtoItemWeaponData;
+};
 
-typedef struct {
+struct ProtoItemAmmoData {
     int caliber; // d.caliber
     int quantity; // d.quantity
     int armorClassModifier; // d.ac_adjust
     int damageResistanceModifier; // d.dr_adjust
     int damageMultiplier; // d.dam_mult
     int damageDivisor; // d.dam_div
-} ProtoItemAmmoData;
+};
 
-typedef struct {
+struct ProtoItemMiscData {
     int powerTypePid; // d.power_type_pid
     int powerType; // d.power_type
     int charges; // d.charges
-} ProtoItemMiscData;
+};
 
-typedef struct {
+struct ProtoItemKeyData {
     int keyCode; // d.key_code
-} ProtoItemKeyData;
+};
 
-typedef struct ItemProtoData {
+struct ItemProtoData {
     union {
         struct {
             int field_0;
@@ -276,9 +415,9 @@ typedef struct ItemProtoData {
         ProtoItemMiscData misc;
         ProtoItemKeyData key;
     };
-} ItemProtoData;
+};
 
-typedef struct ItemProto {
+struct ItemProto {
     int pid; // pid
     int messageId; // message_num
     int fid; // fid
@@ -295,9 +434,10 @@ typedef struct ItemProto {
     int cost; // cost
     int inventoryFid; // inv_fid
     unsigned char field_80;
-} ItemProto;
+};
 
-typedef struct CritterProtoData {
+class CritterProtoData {
+public:
     int flags; // d.flags
     int baseStats[35]; // d.stat_base
     int bonusStats[35]; // d.stat_bonus
@@ -305,9 +445,17 @@ typedef struct CritterProtoData {
     int bodyType; // d.body
     int experience;
     int killType;
-} CritterProtoData;
 
-typedef struct CritterProto {
+    void copyFrom(CritterProtoData* src);
+    int loadData(const char* path);
+    int readData(DB_FILE* stream);
+    int saveData(const char* path);
+    int writeData(DB_FILE* stream);
+    void setSkillDefaults();
+    void setStatDefaults();
+};
+
+struct CritterProto {
     int pid; // pid
     int messageId; // message_num
     int fid; // fid
@@ -320,32 +468,32 @@ typedef struct CritterProto {
     int headFid; // head_fid
     int aiPacket; // ai_packet
     int team; // team_num
-} CritterProto;
+};
 
-typedef struct {
+struct SceneryProtoDoorData {
     int openFlags; // d.open_flags
     int keyCode; // d.key_code
-} SceneryProtoDoorData;
+};
 
-typedef struct {
+struct SceneryProtoStairsData {
     int field_0; // d.lower_tile
     int field_4; // d.upper_tile
-} SceneryProtoStairsData;
+};
 
-typedef struct {
+struct SceneryProtoElevatorData {
     int type;
     int level;
-} SceneryProtoElevatorData;
+};
 
-typedef struct {
+struct SceneryProtoLadderData {
     int field_0;
-} SceneryProtoLadderData;
+};
 
-typedef struct {
+struct SceneryProtoGenericData {
     int field_0;
-} SceneryProtoGenericData;
+};
 
-typedef struct SceneryProtoData {
+struct SceneryProtoData {
     union {
         SceneryProtoDoorData door;
         SceneryProtoStairsData stairs;
@@ -353,9 +501,9 @@ typedef struct SceneryProtoData {
         SceneryProtoLadderData ladder;
         SceneryProtoGenericData generic;
     };
-} SceneryProtoData;
+};
 
-typedef struct SceneryProto {
+struct SceneryProto {
     int pid; // id
     int messageId; // message_num
     int fid; // fid
@@ -369,9 +517,9 @@ typedef struct SceneryProto {
     int material;
     int field_30; //
     unsigned char field_34;
-} SceneryProto;
+};
 
-typedef struct WallProto {
+struct WallProto {
     int pid; // id
     int messageId; // message_num
     int fid; // fid
@@ -381,9 +529,9 @@ typedef struct WallProto {
     int extendedFlags; // flags_ext
     int sid; // sid
     int material; // material
-} WallProto;
+};
 
-typedef struct TileProto {
+struct TileProto {
     int pid; // id
     int messageId; // message_num
     int fid; // fid
@@ -391,9 +539,9 @@ typedef struct TileProto {
     int extendedFlags; // flags_ext
     int sid; // sid
     int material; // material
-} TileProto;
+};
 
-typedef struct MiscProto {
+struct MiscProto {
     int pid; // id
     int messageId; // message_num
     int fid; // fid
@@ -401,9 +549,9 @@ typedef struct MiscProto {
     int lightIntensity; // light_intensity
     int flags; // flags
     int extendedFlags; // flags_ext
-} MiscProto;
+};
 
-typedef union Proto {
+union Proto {
     struct {
         int pid; // pid
         int messageId; // message_num
@@ -422,24 +570,22 @@ typedef union Proto {
     WallProto wall;
     TileProto tile;
     MiscProto misc;
-} Proto;
+};
 
-typedef struct ProtoListExtent {
+struct ProtoListExtent {
     Proto* proto[PROTO_LIST_EXTENT_SIZE];
     // Number of protos in the extent
     int length;
     struct ProtoListExtent* next;
-} ProtoListExtent;
+};
 
-typedef struct ProtoList {
+struct ProtoList {
     ProtoListExtent* head;
     ProtoListExtent* tail;
     // Number of extents in the list.
     int length;
     // Number of lines in proto/{type}/{type}.lst.
     int max_entries_num;
-} ProtoList;
+};
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_PROTO_TYPES_H_ */

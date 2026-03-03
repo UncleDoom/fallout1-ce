@@ -1,7 +1,7 @@
 #include "game/select.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "game/art.h"
 #include "game/critter.h"
@@ -30,49 +30,49 @@
 
 namespace fallout {
 
-#define CS_WINDOW_WIDTH 640
-#define CS_WINDOW_HEIGHT 480
+static constexpr int CS_WINDOW_WIDTH = 640;
+static constexpr int CS_WINDOW_HEIGHT = 480;
 
-#define CS_WINDOW_BACKGROUND_X 40
-#define CS_WINDOW_BACKGROUND_Y 30
-#define CS_WINDOW_BACKGROUND_WIDTH 560
-#define CS_WINDOW_BACKGROUND_HEIGHT 300
+static constexpr int CS_WINDOW_BACKGROUND_X = 40;
+static constexpr int CS_WINDOW_BACKGROUND_Y = 30;
+static constexpr int CS_WINDOW_BACKGROUND_WIDTH = 560;
+static constexpr int CS_WINDOW_BACKGROUND_HEIGHT = 300;
 
-#define CS_WINDOW_PREVIOUS_BUTTON_X 292
-#define CS_WINDOW_PREVIOUS_BUTTON_Y 320
+static constexpr int CS_WINDOW_PREVIOUS_BUTTON_X = 292;
+static constexpr int CS_WINDOW_PREVIOUS_BUTTON_Y = 320;
 
-#define CS_WINDOW_NEXT_BUTTON_X 318
-#define CS_WINDOW_NEXT_BUTTON_Y 320
+static constexpr int CS_WINDOW_NEXT_BUTTON_X = 318;
+static constexpr int CS_WINDOW_NEXT_BUTTON_Y = 320;
 
-#define CS_WINDOW_TAKE_BUTTON_X 81
-#define CS_WINDOW_TAKE_BUTTON_Y 323
+static constexpr int CS_WINDOW_TAKE_BUTTON_X = 81;
+static constexpr int CS_WINDOW_TAKE_BUTTON_Y = 323;
 
-#define CS_WINDOW_MODIFY_BUTTON_X 435
-#define CS_WINDOW_MODIFY_BUTTON_Y 320
+static constexpr int CS_WINDOW_MODIFY_BUTTON_X = 435;
+static constexpr int CS_WINDOW_MODIFY_BUTTON_Y = 320;
 
-#define CS_WINDOW_CREATE_BUTTON_X 80
-#define CS_WINDOW_CREATE_BUTTON_Y 425
+static constexpr int CS_WINDOW_CREATE_BUTTON_X = 80;
+static constexpr int CS_WINDOW_CREATE_BUTTON_Y = 425;
 
-#define CS_WINDOW_BACK_BUTTON_X 461
-#define CS_WINDOW_BACK_BUTTON_Y 425
+static constexpr int CS_WINDOW_BACK_BUTTON_X = 461;
+static constexpr int CS_WINDOW_BACK_BUTTON_Y = 425;
 
-#define CS_WINDOW_NAME_MID_X 318
-#define CS_WINDOW_PRIMARY_STAT_MID_X 348
-#define CS_WINDOW_SECONDARY_STAT_MID_X 365
-#define CS_WINDOW_BIO_X 420
+static constexpr int CS_WINDOW_NAME_MID_X = 318;
+static constexpr int CS_WINDOW_PRIMARY_STAT_MID_X = 348;
+static constexpr int CS_WINDOW_SECONDARY_STAT_MID_X = 365;
+static constexpr int CS_WINDOW_BIO_X = 420;
 
-typedef enum PremadeCharacter {
+enum PremadeCharacter {
     PREMADE_CHARACTER_NARG,
     PREMADE_CHARACTER_CHITSA,
     PREMADE_CHARACTER_MINGUN,
     PREMADE_CHARACTER_COUNT,
-} PremadeCharacter;
+};
 
-typedef struct PremadeCharacterDescription {
+struct PremadeCharacterDescription {
     char fileName[20];
     int face;
     char vid[20];
-} PremadeCharacterDescription;
+};
 
 static void select_exit();
 static bool select_update_display();
@@ -85,10 +85,10 @@ static bool select_fatal_error(bool rc);
 int select_window_id = -1;
 
 // 0x507980
-static unsigned char* select_window_buffer = NULL;
+static unsigned char* select_window_buffer = nullptr;
 
 // 0x507984
-static unsigned char* monitor = NULL;
+static unsigned char* monitor = nullptr;
 
 // 0x507988
 static Rect monitor_rect = { 40, 30, 599, 329 };
@@ -97,55 +97,55 @@ static Rect monitor_rect = { 40, 30, 599, 329 };
 static int previous_button = -1;
 
 // 0x50799C
-static CacheEntry* previous_button_up_key = NULL;
+static CacheEntry* previous_button_up_key = nullptr;
 
 // 0x5079A0
-static CacheEntry* previous_button_down_key = NULL;
+static CacheEntry* previous_button_down_key = nullptr;
 
 // 0x5079A4
 static int next_button = -1;
 
 // 0x5079A8
-static CacheEntry* next_button_up_key = NULL;
+static CacheEntry* next_button_up_key = nullptr;
 
 // 0x5079AC
-static CacheEntry* next_button_down_key = NULL;
+static CacheEntry* next_button_down_key = nullptr;
 
 // 0x5079B0
 static int take_button = -1;
 
 // 0x5079B4
-static CacheEntry* take_button_up_key = NULL;
+static CacheEntry* take_button_up_key = nullptr;
 
 // 0x5079B8
-static CacheEntry* take_button_down_key = NULL;
+static CacheEntry* take_button_down_key = nullptr;
 
 // 0x5079BC
 static int modify_button = -1;
 
 // 0x5079C0
-static CacheEntry* modify_button_up_key = NULL;
+static CacheEntry* modify_button_up_key = nullptr;
 
 // 0x5079C4
-static CacheEntry* modify_button_down_key = NULL;
+static CacheEntry* modify_button_down_key = nullptr;
 
 // 0x5079C8
 static int create_button = -1;
 
 // 0x5079CC
-static CacheEntry* create_button_up_key = NULL;
+static CacheEntry* create_button_up_key = nullptr;
 
 // 0x5079D0
-static CacheEntry* create_button_down_key = NULL;
+static CacheEntry* create_button_down_key = nullptr;
 
 // 0x5079D4
 static int back_button = -1;
 
 // 0x5079D8
-static CacheEntry* back_button_up_key = NULL;
+static CacheEntry* back_button_up_key = nullptr;
 
 // 0x5079DC
-static CacheEntry* back_button_down_key = NULL;
+static CacheEntry* back_button_down_key = nullptr;
 
 // 0x5079E0
 static int premade_index = PREMADE_CHARACTER_NARG;
@@ -323,14 +323,14 @@ bool select_init()
     }
 
     select_window_buffer = win_get_buf(select_window_id);
-    if (select_window_buffer == NULL) {
+    if (select_window_buffer == nullptr) {
         return select_fatal_error(false);
     }
 
     CacheEntry* backgroundFrmHandle;
     backgroundFid = art_id(OBJ_TYPE_INTERFACE, 174, 0, 0, 0);
     backgroundFrmData = art_ptr_lock_data(backgroundFid, 0, 0, &backgroundFrmHandle);
-    if (backgroundFrmData == NULL) {
+    if (backgroundFrmData == nullptr) {
         return select_fatal_error(false);
     }
 
@@ -341,8 +341,8 @@ bool select_init()
         select_window_buffer,
         CS_WINDOW_WIDTH);
 
-    monitor = (unsigned char*)mem_malloc(CS_WINDOW_BACKGROUND_WIDTH * CS_WINDOW_BACKGROUND_HEIGHT);
-    if (monitor == NULL)
+    monitor = static_cast<unsigned char*>(mem_malloc(CS_WINDOW_BACKGROUND_WIDTH * CS_WINDOW_BACKGROUND_HEIGHT));
+    if (monitor == nullptr)
         return select_fatal_error(false);
 
     buf_to_buf(backgroundFrmData + CS_WINDOW_WIDTH * CS_WINDOW_BACKGROUND_Y + CS_WINDOW_BACKGROUND_X,
@@ -359,13 +359,13 @@ bool select_init()
     // Setup "Previous" button.
     fid = art_id(OBJ_TYPE_INTERFACE, 122, 0, 0, 0);
     previous_button_up = art_ptr_lock_data(fid, 0, 0, &previous_button_up_key);
-    if (previous_button_up == NULL) {
+    if (previous_button_up == nullptr) {
         return select_fatal_error(false);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 123, 0, 0, 0);
     previous_button_down = art_ptr_lock_data(fid, 0, 0, &previous_button_down_key);
-    if (previous_button_down == NULL) {
+    if (previous_button_down == nullptr) {
         return select_fatal_error(false);
     }
 
@@ -380,7 +380,7 @@ bool select_init()
         500,
         previous_button_up,
         previous_button_down,
-        NULL,
+        nullptr,
         0);
     if (previous_button == -1) {
         return select_fatal_error(false);
@@ -391,13 +391,13 @@ bool select_init()
     // Setup "Next" button.
     fid = art_id(OBJ_TYPE_INTERFACE, 124, 0, 0, 0);
     next_button_up = art_ptr_lock_data(fid, 0, 0, &next_button_up_key);
-    if (next_button_up == NULL) {
+    if (next_button_up == nullptr) {
         return select_fatal_error(false);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 125, 0, 0, 0);
     next_button_down = art_ptr_lock_data(fid, 0, 0, &next_button_down_key);
-    if (next_button_down == NULL) {
+    if (next_button_down == nullptr) {
         return select_fatal_error(false);
     }
 
@@ -412,7 +412,7 @@ bool select_init()
         501,
         next_button_up,
         next_button_down,
-        NULL,
+        nullptr,
         0);
     if (next_button == -1) {
         return select_fatal_error(false);
@@ -423,13 +423,13 @@ bool select_init()
     // Setup "Take" button.
     fid = art_id(OBJ_TYPE_INTERFACE, 8, 0, 0, 0);
     take_button_up = art_ptr_lock_data(fid, 0, 0, &take_button_up_key);
-    if (take_button_up == NULL) {
+    if (take_button_up == nullptr) {
         return select_fatal_error(false);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
     take_button_down = art_ptr_lock_data(fid, 0, 0, &take_button_down_key);
-    if (take_button_down == NULL) {
+    if (take_button_down == nullptr) {
         return select_fatal_error(false);
     }
 
@@ -444,7 +444,7 @@ bool select_init()
         KEY_LOWERCASE_T,
         take_button_up,
         take_button_down,
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (take_button == -1) {
         return select_fatal_error(false);
@@ -455,12 +455,12 @@ bool select_init()
     // Setup "Modify" button.
     fid = art_id(OBJ_TYPE_INTERFACE, 8, 0, 0, 0);
     modify_button_up = art_ptr_lock_data(fid, 0, 0, &modify_button_up_key);
-    if (modify_button_up == NULL)
+    if (modify_button_up == nullptr)
         return select_fatal_error(false);
 
     fid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
     modify_button_down = art_ptr_lock_data(fid, 0, 0, &modify_button_down_key);
-    if (modify_button_down == NULL) {
+    if (modify_button_down == nullptr) {
         return select_fatal_error(false);
     }
 
@@ -475,7 +475,7 @@ bool select_init()
         KEY_LOWERCASE_M,
         modify_button_up,
         modify_button_down,
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (modify_button == -1) {
         return select_fatal_error(false);
@@ -486,13 +486,13 @@ bool select_init()
     // Setup "Create" button.
     fid = art_id(OBJ_TYPE_INTERFACE, 8, 0, 0, 0);
     create_button_up = art_ptr_lock_data(fid, 0, 0, &create_button_up_key);
-    if (create_button_up == NULL) {
+    if (create_button_up == nullptr) {
         return select_fatal_error(false);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
     create_button_down = art_ptr_lock_data(fid, 0, 0, &create_button_down_key);
-    if (create_button_down == NULL) {
+    if (create_button_down == nullptr) {
         return select_fatal_error(false);
     }
 
@@ -507,7 +507,7 @@ bool select_init()
         KEY_LOWERCASE_C,
         create_button_up,
         create_button_down,
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (create_button == -1) {
         return select_fatal_error(false);
@@ -518,13 +518,13 @@ bool select_init()
     // Setup "Back" button.
     fid = art_id(OBJ_TYPE_INTERFACE, 8, 0, 0, 0);
     back_button_up = art_ptr_lock_data(fid, 0, 0, &back_button_up_key);
-    if (back_button_up == NULL) {
+    if (back_button_up == nullptr) {
         return select_fatal_error(false);
     }
 
     fid = art_id(OBJ_TYPE_INTERFACE, 9, 0, 0, 0);
     back_button_down = art_ptr_lock_data(fid, 0, 0, &back_button_down_key);
-    if (back_button_down == NULL) {
+    if (back_button_down == nullptr) {
         return select_fatal_error(false);
     }
 
@@ -539,7 +539,7 @@ bool select_init()
         KEY_ESCAPE,
         back_button_up,
         back_button_down,
-        NULL,
+        nullptr,
         BUTTON_FLAG_TRANSPARENT);
     if (back_button == -1) {
         return select_fatal_error(false);
@@ -570,16 +570,16 @@ static void select_exit()
         previous_button = -1;
     }
 
-    if (previous_button_down != NULL) {
+    if (previous_button_down != nullptr) {
         art_ptr_unlock(previous_button_down_key);
-        previous_button_down_key = NULL;
-        previous_button_down = NULL;
+        previous_button_down_key = nullptr;
+        previous_button_down = nullptr;
     }
 
-    if (previous_button_up != NULL) {
+    if (previous_button_up != nullptr) {
         art_ptr_unlock(previous_button_up_key);
-        previous_button_up_key = NULL;
-        previous_button_up = NULL;
+        previous_button_up_key = nullptr;
+        previous_button_up = nullptr;
     }
 
     if (next_button != -1) {
@@ -587,16 +587,16 @@ static void select_exit()
         next_button = -1;
     }
 
-    if (next_button_down != NULL) {
+    if (next_button_down != nullptr) {
         art_ptr_unlock(next_button_down_key);
-        next_button_down_key = NULL;
-        next_button_down = NULL;
+        next_button_down_key = nullptr;
+        next_button_down = nullptr;
     }
 
-    if (next_button_up != NULL) {
+    if (next_button_up != nullptr) {
         art_ptr_unlock(next_button_up_key);
-        next_button_up_key = NULL;
-        next_button_up = NULL;
+        next_button_up_key = nullptr;
+        next_button_up = nullptr;
     }
 
     if (take_button != -1) {
@@ -604,16 +604,16 @@ static void select_exit()
         take_button = -1;
     }
 
-    if (take_button_down != NULL) {
+    if (take_button_down != nullptr) {
         art_ptr_unlock(take_button_down_key);
-        take_button_down_key = NULL;
-        take_button_down = NULL;
+        take_button_down_key = nullptr;
+        take_button_down = nullptr;
     }
 
-    if (take_button_up != NULL) {
+    if (take_button_up != nullptr) {
         art_ptr_unlock(take_button_up_key);
-        take_button_up_key = NULL;
-        take_button_up = NULL;
+        take_button_up_key = nullptr;
+        take_button_up = nullptr;
     }
 
     if (modify_button != -1) {
@@ -621,16 +621,16 @@ static void select_exit()
         modify_button = -1;
     }
 
-    if (modify_button_down != NULL) {
+    if (modify_button_down != nullptr) {
         art_ptr_unlock(modify_button_down_key);
-        modify_button_down_key = NULL;
-        modify_button_down = NULL;
+        modify_button_down_key = nullptr;
+        modify_button_down = nullptr;
     }
 
-    if (modify_button_up != NULL) {
+    if (modify_button_up != nullptr) {
         art_ptr_unlock(modify_button_up_key);
-        modify_button_up_key = NULL;
-        modify_button_up = NULL;
+        modify_button_up_key = nullptr;
+        modify_button_up = nullptr;
     }
 
     if (create_button != -1) {
@@ -638,16 +638,16 @@ static void select_exit()
         create_button = -1;
     }
 
-    if (create_button_down != NULL) {
+    if (create_button_down != nullptr) {
         art_ptr_unlock(create_button_down_key);
-        create_button_down_key = NULL;
-        create_button_down = NULL;
+        create_button_down_key = nullptr;
+        create_button_down = nullptr;
     }
 
-    if (create_button_up != NULL) {
+    if (create_button_up != nullptr) {
         art_ptr_unlock(create_button_up_key);
-        create_button_up_key = NULL;
-        create_button_up = NULL;
+        create_button_up_key = nullptr;
+        create_button_up = nullptr;
     }
 
     if (back_button != -1) {
@@ -655,21 +655,21 @@ static void select_exit()
         back_button = -1;
     }
 
-    if (back_button_down != NULL) {
+    if (back_button_down != nullptr) {
         art_ptr_unlock(back_button_down_key);
-        back_button_down_key = NULL;
-        back_button_down = NULL;
+        back_button_down_key = nullptr;
+        back_button_down = nullptr;
     }
 
-    if (back_button_up != NULL) {
+    if (back_button_up != nullptr) {
         art_ptr_unlock(back_button_up_key);
-        back_button_up_key = NULL;
-        back_button_up = NULL;
+        back_button_up_key = nullptr;
+        back_button_up = nullptr;
     }
 
-    if (monitor != NULL) {
+    if (monitor != nullptr) {
         mem_free(monitor);
-        monitor = NULL;
+        monitor = nullptr;
     }
 
     win_delete(select_window_id);
@@ -715,11 +715,11 @@ static bool select_display_portrait()
     CacheEntry* faceFrmHandle;
     int faceFid = art_id(OBJ_TYPE_INTERFACE, premade_characters[premade_index].face, 0, 0, 0);
     Art* frm = art_ptr_lock(faceFid, &faceFrmHandle);
-    if (frm != NULL) {
-        unsigned char* data = art_frame_data(frm, 0, 0);
-        if (data != NULL) {
-            int width = art_frame_width(frm, 0, 0);
-            int height = art_frame_length(frm, 0, 0);
+    if (frm != nullptr) {
+        unsigned char* data = frm->frameData(0, 0);
+        if (data != nullptr) {
+            int width = frm->frameWidth(0, 0);
+            int height = frm->frameLength(0, 0);
             int y;
 
             for (y = 1; y < height; y += 2) {
@@ -903,7 +903,7 @@ static bool select_display_stats()
 
     messageListItem.num = 16;
     text[0] = '\0';
-    if (message_search(&misc_message_file, &messageListItem)) {
+    if (misc_message_file.search(&messageListItem)) {
         strcpy(text, messageListItem.text);
     }
 
@@ -936,7 +936,7 @@ static bool select_display_stats()
 
     messageListItem.num = 15;
     text[0] = '\0';
-    if (message_search(&misc_message_file, &messageListItem)) {
+    if (misc_message_file.search(&messageListItem)) {
         strcpy(text, messageListItem.text);
     }
 
@@ -1015,12 +1015,12 @@ static bool select_display_bio()
     snprintf(path, sizeof(path), "%s.bio", premade_characters[premade_index].fileName);
 
     DB_FILE* stream = db_fopen(path, "rt");
-    if (stream != NULL) {
+    if (stream != nullptr) {
         int y = 40;
         int lineHeight = text_height();
 
         char string[256];
-        while (db_fgets(string, 256, stream) && y < 260) {
+        while (stream->fgets(string, 256) && y < 260) {
             text_to_buf(select_window_buffer + CS_WINDOW_WIDTH * y + CS_WINDOW_BIO_X,
                 string,
                 CS_WINDOW_WIDTH - CS_WINDOW_BIO_X,
@@ -1029,7 +1029,7 @@ static bool select_display_bio()
             y += lineHeight;
         }
 
-        db_fclose(stream);
+        stream->fclose();
     }
 
     text_font(oldFont);

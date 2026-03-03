@@ -1,5 +1,5 @@
-#ifndef FALLOUT_GAME_DISPLAY_H_
-#define FALLOUT_GAME_DISPLAY_H_
+#pragma once
+
 
 namespace fallout {
 
@@ -18,5 +18,3 @@ void display_disable();
 void display_enable();
 
 } // namespace fallout
-
-#endif /* FALLOUT_GAME_DISPLAY_H_ */

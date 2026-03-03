@@ -1,9 +1,10 @@
 #include "game/graphlib.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 
+#include "game/raii.h"
 #include "plib/color/color.h"
 #include "plib/gnw/debug.h"
 #include "plib/gnw/memory.h"
@@ -112,37 +113,22 @@ void bit1exbit8(int ulx, int uly, int lrx, int lry, int offset_x, int offset_y, 
 // 0x446B80
 int CompLZS(unsigned char* a1, unsigned char* a2, int a3)
 {
-    dad = NULL;
-    rson = NULL;
-    lson = NULL;
-    text_buf = NULL;
-
     // NOTE: Original code is slightly different, it uses deep nesting or a
     // bunch of gotos.
-    lson = (int*)mem_malloc(sizeof(*lson) * 4104);
-    rson = (int*)mem_malloc(sizeof(*rson) * 4376);
-    dad = (int*)mem_malloc(sizeof(*dad) * 4104);
-    text_buf = (unsigned char*)mem_malloc(sizeof(*text_buf) * 4122);
+    auto lsonGuard = makeMemBuffer<int>(4104);
+    auto rsonGuard = makeMemBuffer<int>(4376);
+    auto dadGuard = makeMemBuffer<int>(4104);
+    auto textBufGuard = makeMemBuffer<unsigned char>(4122);
 
-    if (lson == NULL || rson == NULL || dad == NULL || text_buf == NULL) {
+    if (!lsonGuard || !rsonGuard || !dadGuard || !textBufGuard) {
         debug_printf("\nGRAPHLIB: Error allocating compression buffers!\n");
-
-        if (dad != NULL) {
-            mem_free(dad);
-        }
-
-        if (rson != NULL) {
-            mem_free(rson);
-        }
-        if (lson != NULL) {
-            mem_free(lson);
-        }
-        if (text_buf != NULL) {
-            mem_free(text_buf);
-        }
-
         return -1;
     }
+
+    lson = lsonGuard.get();
+    rson = rsonGuard.get();
+    dad = dadGuard.get();
+    text_buf = textBufGuard.get();
 
     InitTree();
 
@@ -269,11 +255,6 @@ int CompLZS(unsigned char* a1, unsigned char* a2, int a3)
 
         codesize += v36;
     }
-
-    mem_free(lson);
-    mem_free(rson);
-    mem_free(dad);
-    mem_free(text_buf);
 
     if (rc == -1) {
         v4 = -1;
@@ -403,8 +384,8 @@ static void DeleteNode(int a1)
 // 0x44725C
 int DecodeLZS(unsigned char* src, unsigned char* dest, int length)
 {
-    text_buf = (unsigned char*)mem_malloc(sizeof(*text_buf) * 4122);
-    if (text_buf == NULL) {
+    text_buf = static_cast<unsigned char*>(mem_malloc(sizeof(*text_buf) * 4122));
+    if (text_buf == nullptr) {
         debug_printf("\nGRAPHLIB: Error allocating decompression buffer!\n");
         return -1;
     }
@@ -470,7 +451,7 @@ void InitGreyTable(int a1, int a2)
             int v1 = std::max((Color2RGB(index) & 0x7C00) >> 10, std::max((Color2RGB(index) & 0x3E0) >> 5, Color2RGB(index) & 0x1F));
             int v2 = std::min((Color2RGB(index) & 0x7C00) >> 10, std::min((Color2RGB(index) & 0x3E0) >> 5, Color2RGB(index) & 0x1F));
             int v3 = v1 + v2;
-            int v4 = (int)((double)v3 * 240.0 / 510.0);
+            int v4 = static_cast<int>((double)v3 * 240.0 / 510.0);
 
             int paletteIndex = ((v4 & 0xFF) << 10) | ((v4 & 0xFF) << 5) | (v4 & 0xFF);
             GreyTable[index] = colorTable[paletteIndex];

@@ -1,5 +1,5 @@
-#ifndef FALLOUT_PLIB_GNW_WINMAIN_H_
-#define FALLOUT_PLIB_GNW_WINMAIN_H_
+#pragma once
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -16,5 +16,3 @@ extern HANDLE GNW95_mutex;
 extern char GNW95_title[256];
 
 } // namespace fallout
-
-#endif /* FALLOUT_PLIB_GNW_WINMAIN_H_ */
