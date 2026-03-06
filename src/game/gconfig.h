@@ -48,6 +48,7 @@ namespace fallout {
 #define GAME_CONFIG_TEXT_LINE_DELAY_KEY "text_line_delay"
 #define GAME_CONFIG_BRIGHTNESS_KEY "brightness"
 #define GAME_CONFIG_MOUSE_SENSITIVITY_KEY "mouse_sensitivity"
+#define GAME_CONFIG_GAMEPAD_CURSOR_SPEED_KEY "gamepad_cursor_speed"
 #define GAME_CONFIG_INITIALIZE_KEY "initialize"
 #define GAME_CONFIG_DEVICE_KEY "device"
 #define GAME_CONFIG_PORT_KEY "port"

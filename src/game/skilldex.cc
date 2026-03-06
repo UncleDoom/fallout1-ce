@@ -18,6 +18,8 @@
 #include "plib/gnw/button.h"
 #include "plib/gnw/debug.h"
 #include "plib/gnw/gnw.h"
+#include "plib/gnw/focus.h"
+#include "plib/gnw/gamepad.h"
 #include "plib/gnw/grbuf.h"
 #include "plib/gnw/input.h"
 #include "plib/gnw/memory.h"
@@ -122,6 +124,9 @@ int skilldex_select()
         return -1;
     }
 
+    gamepad_push_context(GAMEPAD_CTX_SKILLDEX);
+    focus_warp_mouse_to_current();
+
     int rc = -1;
     while (rc == -1) {
         sharedFpsLimiter.mark();
@@ -144,6 +149,9 @@ int skilldex_select()
     if (rc != 0) {
         block_for_tocks(1000 / 9);
     }
+
+    gamepad_pop_context();
+    focus_clear();
 
     skilldex_end();
 
@@ -374,6 +382,26 @@ static int skilldex_start()
     if (cancelBtn != -1) {
         win_register_button_sound_func(cancelBtn, gsound_red_butt_press, gsound_red_butt_release);
     }
+
+    // CE: Register skill buttons with focus system for gamepad D-Pad navigation.
+    // Coordinates are screen-absolute for mouse_set_position().
+    focus_init();
+    int focusBtnW = ginfo[SKILLDEX_FRM_BUTTON_OFF].width;
+    int focusBtnH = ginfo[SKILLDEX_FRM_BUTTON_OFF].height;
+    int focusButtonY = 45;
+    for (int index = 0; index < SKILLDEX_SKILL_COUNT; index++) {
+        focus_register(index,
+            skilldexWindowX + 15 + focusBtnW / 2,
+            skilldexWindowY + focusButtonY + focusBtnH / 2,
+            focusBtnW, focusBtnH, 501 + index);
+        focusButtonY += 36;
+    }
+    // Cancel button
+    focus_register(SKILLDEX_SKILL_COUNT,
+        skilldexWindowX + 48 + ginfo[SKILLDEX_FRM_LITTLE_RED_BUTTON_UP].width / 2,
+        skilldexWindowY + 338 + ginfo[SKILLDEX_FRM_LITTLE_RED_BUTTON_UP].height / 2,
+        ginfo[SKILLDEX_FRM_LITTLE_RED_BUTTON_UP].width,
+        ginfo[SKILLDEX_FRM_LITTLE_RED_BUTTON_UP].height, 500);
 
     win_draw(skldxwin);
 

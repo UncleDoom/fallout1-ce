@@ -40,6 +40,7 @@
 #include "plib/gnw/button.h"
 #include "plib/gnw/debug.h"
 #include "plib/gnw/gnw.h"
+#include "plib/gnw/gamepad.h"
 #include "plib/gnw/grbuf.h"
 #include "plib/gnw/input.h"
 #include "plib/gnw/svga.h"
@@ -426,6 +427,8 @@ void handle_inventory()
     display_inventory(stack_offset[curr_stack], -1, INVENTORY_WINDOW_TYPE_NORMAL);
     inven_set_mouse(INVENTORY_WINDOW_CURSOR_HAND);
 
+    gamepad_push_context(GAMEPAD_CTX_INVENTORY);
+
     for (;;) {
         sharedFpsLimiter.mark();
 
@@ -508,6 +511,8 @@ void handle_inventory()
         obj_change_fid(inven_dude, i_fid, &rect);
         tile_refresh_rect(&rect, inven_dude->elevation);
     }
+
+    gamepad_pop_context();
 
     Object* newArmor = inven_worn(inven_dude);
     if (inven_dude == obj_dude) {
@@ -4614,6 +4619,8 @@ void barter_inventory(int win, Object* a2, Object* a3, Object* a4, int a5)
     display_table_inventories(win, a3, a4, -1);
 
     inven_set_mouse(INVENTORY_WINDOW_CURSOR_HAND);
+
+    gamepad_push_context(GAMEPAD_CTX_BARTER);
 
     int modifier;
     int npcReactionValue = reaction_get(a2);

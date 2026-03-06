@@ -41,6 +41,8 @@
 #include "plib/gnw/memory.h"
 #include "plib/gnw/svga.h"
 #include "plib/gnw/text.h"
+#include "plib/gnw/gamepad.h"
+#include "game/gamepad_actions.h"
 
 namespace fallout {
 
@@ -2137,6 +2139,10 @@ static int combat_input()
 {
     int input;
 
+    // CE: Set gamepad context to combat for the duration of player's turn.
+    gamepad_push_context(GAMEPAD_CTX_COMBAT);
+    gamepad_actions_reset();
+
     while ((combat_state & COMBAT_STATE_0x02) != 0) {
         sharedFpsLimiter.mark();
 
@@ -2181,6 +2187,9 @@ static int combat_input()
     if (game_user_wants_to_quit == 1) {
         game_user_wants_to_quit = 0;
     }
+
+    // CE: Restore previous gamepad context.
+    gamepad_pop_context();
 
     if ((combat_state & COMBAT_STATE_0x08) != 0) {
         combat_state &= ~COMBAT_STATE_0x08;

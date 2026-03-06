@@ -1,5 +1,7 @@
 #include "plib/gnw/dxinput.h"
 
+#include "plib/gnw/gamepad.h"
+
 namespace fallout {
 
 static bool dxinput_mouse_init();
@@ -26,12 +28,16 @@ bool dxinput_init()
         return false;
     }
 
+    // CE: Initialize gamepad subsystem.
+    gamepad_init();
+
     return true;
 }
 
 // 0x4E0478
 void dxinput_exit()
 {
+    gamepad_exit();
     SDL_QuitSubSystem(SDL_INIT_EVENTS);
 }
 

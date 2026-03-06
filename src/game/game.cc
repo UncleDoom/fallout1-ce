@@ -18,6 +18,8 @@
 #include "game/fontmgr.h"
 #include "game/gconfig.h"
 #include "game/gdialog.h"
+#include "game/gamepad_actions.h"
+#include "game/radial_menu.h"
 #include "game/gmemory.h"
 #include "game/gmouse.h"
 #include "game/gmovie.h"
@@ -57,6 +59,7 @@
 #include "plib/gnw/memory.h"
 #include "plib/gnw/svga.h"
 #include "plib/gnw/text.h"
+#include "plib/gnw/gamepad.h"
 
 #include <unistd.h>
 
@@ -436,6 +439,15 @@ int game_handle_input(int eventCode, bool isInCombatMode)
     }
 
     if (eventCode == -1) {
+        // CE: Gamepad analog stick processing for gameplay/combat.
+        if (gamepad_is_connected()) {
+            if (isInCombat()) {
+                gamepad_actions_combat_tick();
+            } else {
+                gamepad_actions_gameplay_tick();
+            }
+        }
+
         if ((mouse_get_buttons() & MOUSE_EVENT_WHEEL) != 0) {
             int wheelX;
             int wheelY;
@@ -495,29 +507,64 @@ int game_handle_input(int eventCode, bool isInCombatMode)
             intface_use_item();
         }
         break;
-    case -2:
-        if (1) {
-            int mouseEvent = mouse_get_buttons();
-            int mouseX;
-            int mouseY;
-            mouse_get_position(&mouseX, &mouseY);
+    // CE: Gamepad custom action keys
+    case GAMEPAD_KEY_CYCLE_PREV:
+        if (isInCombat()) {
+            gamepad_combat_cycle_target(-1);
+        }
+        break;
+    case GAMEPAD_KEY_CYCLE_NEXT:
+        if (isInCombat()) {
+            gamepad_combat_cycle_target(1);
+        }
+        break;
+    case GAMEPAD_KEY_TOGGLE_MODE:
+        if (intface_is_enabled()) {
+            gmouse_3d_toggle_mode();
+        }
+        break;
+    case GAMEPAD_KEY_RADIAL_MENU:
+        if (intface_is_enabled()) {
+            gsound_play_sfx_file("ib1p1xx1");
 
-            if ((mouseEvent & MOUSE_EVENT_LEFT_BUTTON_DOWN) != 0) {
-                if ((mouseEvent & MOUSE_EVENT_LEFT_BUTTON_REPEAT) == 0) {
-                    if (mouseX == scr_size.ulx || mouseX == scr_size.lrx
-                        || mouseY == scr_size.uly || mouseY == scr_size.lry) {
-                        gmouse_clicked_on_edge = true;
-                    } else {
-                        gmouse_clicked_on_edge = false;
-                    }
-                }
-            } else {
-                if ((mouseEvent & MOUSE_EVENT_LEFT_BUTTON_UP) != 0) {
-                    gmouse_clicked_on_edge = false;
-                }
+            int mode = -1;
+            int rc = radial_menu_open();
+
+            switch (rc) {
+            case SKILLDEX_RC_ERROR:
+                break;
+            case SKILLDEX_RC_SNEAK:
+                action_skill_use(SKILL_SNEAK);
+                break;
+            case SKILLDEX_RC_LOCKPICK:
+                mode = GAME_MOUSE_MODE_USE_LOCKPICK;
+                break;
+            case SKILLDEX_RC_STEAL:
+                mode = GAME_MOUSE_MODE_USE_STEAL;
+                break;
+            case SKILLDEX_RC_TRAPS:
+                mode = GAME_MOUSE_MODE_USE_TRAPS;
+                break;
+            case SKILLDEX_RC_FIRST_AID:
+                mode = GAME_MOUSE_MODE_USE_FIRST_AID;
+                break;
+            case SKILLDEX_RC_DOCTOR:
+                mode = GAME_MOUSE_MODE_USE_DOCTOR;
+                break;
+            case SKILLDEX_RC_SCIENCE:
+                mode = GAME_MOUSE_MODE_USE_SCIENCE;
+                break;
+            case SKILLDEX_RC_REPAIR:
+                mode = GAME_MOUSE_MODE_USE_REPAIR;
+                break;
+            default:
+                break;
             }
 
-            gmouse_handle_event(mouseX, mouseY, mouseEvent);
+            if (mode != -1) {
+                gmouse_set_cursor(MOUSE_CURSOR_USE_CROSSHAIR);
+                gmouse_3d_set_mode(mode);
+            }
         }
         break;
     case KEY_CTRL_Q:

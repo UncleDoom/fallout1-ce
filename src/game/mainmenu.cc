@@ -12,6 +12,8 @@
 #include "game/version.h"
 #include "plib/color/color.h"
 #include "plib/gnw/button.h"
+#include "plib/gnw/focus.h"
+#include "plib/gnw/gamepad.h"
 #include "plib/gnw/gnw.h"
 #include "plib/gnw/grbuf.h"
 #include "plib/gnw/input.h"
@@ -31,6 +33,12 @@ enum MainMenuButton {
     MAIN_MENU_BUTTON_EXIT,
     MAIN_MENU_BUTTON_COUNT,
 };
+
+constexpr int BUTTON_X_COORDINATE = 425;
+constexpr int BUTTON_Y_MULTIPLIER = 41;
+constexpr int BUTTON_Y_CONSTANT = 45;
+constexpr int BUTTON_WIDTH = 26;
+constexpr int BUTTON_HEIGHT = 26;
 
 static int main_menu_fatal_error();
 static void main_menu_play_sound(const char* fileName);
@@ -91,6 +99,35 @@ static CacheEntry* button_down_key;
 
 // 0x612DE0
 static CacheEntry* background_key;
+
+struct Coordinates {
+    int x;
+    int y;
+};
+
+struct MainMenuButtonGeometry {
+    Coordinates coordinates;
+    int width;
+    int height;
+
+    Coordinates getCenter() const {
+        return Coordinates{
+            coordinates.x + width / 2,
+            coordinates.y + height / 2
+        };
+    }
+
+    static MainMenuButtonGeometry fromButtonIndex(int buttonIndex) {
+        return MainMenuButtonGeometry{
+            {
+                BUTTON_X_COORDINATE,
+                (BUTTON_Y_MULTIPLIER * buttonIndex) + BUTTON_Y_CONSTANT,
+            },
+            BUTTON_WIDTH,
+            BUTTON_HEIGHT
+        };
+    }
+};
 
 // 0x472F80
 int main_menu_create()
@@ -170,12 +207,15 @@ int main_menu_create()
         buttons[index] = -1;
     }
 
+    focus_init();
     for (int index = 0; index < MAIN_MENU_BUTTON_COUNT; index++) {
+        auto geometry = MainMenuButtonGeometry::fromButtonIndex(index);
+
         buttons[index] = win_register_button(main_window,
-            425,
-            index * 42 - index + 45,
-            26,
-            26,
+            geometry.coordinates.x,
+            geometry.coordinates.y,
+            geometry.width,
+            geometry.height,
             -1,
             -1,
             1111,
@@ -190,6 +230,16 @@ int main_menu_create()
         }
 
         win_register_button_mask(buttons[index], button_up_data);
+
+        // We need to add the offsets for the main menu window x and y in the current resolution
+        focus_register(
+            index,
+            geometry.getCenter().x + mainMenuWindowX,
+            geometry.getCenter().y + mainMenuWindowY,
+            geometry.width,
+            geometry.height,
+            button_values[index]
+        );
     }
 
     text_font(104);
@@ -320,6 +370,10 @@ int main_menu_loop()
 {
     in_main_menu = true;
 
+    // CE: Set gamepad context for the main menu.
+    gamepad_push_context(GAMEPAD_CTX_MENU);
+    focus_warp_mouse_to_current();
+
     bool oldCursorIsHidden = mouse_hidden();
     if (oldCursorIsHidden) {
         mouse_show();
@@ -389,6 +443,10 @@ int main_menu_loop()
     if (oldCursorIsHidden) {
         mouse_hide();
     }
+
+    // CE: Restore gamepad context.
+    gamepad_pop_context();
+    focus_clear();
 
     in_main_menu = false;
 

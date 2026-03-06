@@ -48,6 +48,8 @@
 #include "plib/gnw/memory.h"
 #include "plib/gnw/svga.h"
 #include "plib/gnw/text.h"
+#include "plib/gnw/gamepad.h"
+#include "game/gamepad_actions.h"
 
 namespace fallout {
 
@@ -1145,6 +1147,9 @@ int world_map(WorldMapContext ctx)
         gmouse_set_cursor(MOUSE_CURSOR_ARROW);
         gsound_background_play_level_music("03WRLDMP", 12);
 
+        // CE: Set gamepad context to world map.
+        gamepad_push_context(GAMEPAD_CTX_WORLDMAP);
+
         hover = 0;
 
         while (!done) {
@@ -1155,6 +1160,12 @@ int world_map(WorldMapContext ctx)
             }
             time = get_time();
             input = get_input();
+
+            // CE: Gamepad world map tick.
+            if (gamepad_is_connected()) {
+                gamepad_actions_worldmap_tick();
+            }
+
             mouseGetPositionInWindow(world_win, &mouse_x, &mouse_y);
 
             mouse_dx = abs(mouse_x - (world_xpos - viewport_x + 22));
@@ -2091,6 +2102,9 @@ int world_map(WorldMapContext ctx)
         }
 
     out:
+
+        // CE: Restore previous gamepad context.
+        gamepad_pop_context();
 
         UnInitWorldMapData();
         art_flush();

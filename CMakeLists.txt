@@ -23,6 +23,7 @@ set(CMAKE_CXX_EXTENSIONS NO)
 option(ASAN "Enable address sanitizer" OFF)
 option(UBSAN "Enable undefined behaviour sanitizer" OFF)
 option(STRICT_WARNINGS "Enable strict compiler warnings" ON)
+option(GAMEPAD_HINTS "Enable on-screen gamepad button hints" OFF)
 
 if (ANDROID)
     add_library(${EXECUTABLE_NAME} SHARED)
@@ -98,6 +99,8 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/game/game_vars.h"
     "src/game/game.cc"
     "src/game/game.h"
+    "src/game/gamepad_actions.cc"
+    "src/game/gamepad_actions.h"
     "src/game/gconfig.cc"
     "src/game/gconfig.h"
     "src/game/gdebug.cc"
@@ -168,6 +171,8 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/game/proto.h"
     "src/game/queue.cc"
     "src/game/queue.h"
+    "src/game/radial_menu.cc"
+    "src/game/radial_menu.h"
     "src/game/reaction.cc"
     "src/game/reaction.h"
     "src/game/result.h"
@@ -256,6 +261,10 @@ target_sources(${EXECUTABLE_NAME} PUBLIC
     "src/plib/gnw/debug.h"
     "src/plib/gnw/dxinput.cc"
     "src/plib/gnw/dxinput.h"
+    "src/plib/gnw/focus.cc"
+    "src/plib/gnw/focus.h"
+    "src/plib/gnw/gamepad.cc"
+    "src/plib/gnw/gamepad.h"
     "src/plib/gnw/grbuf.cc"
     "src/plib/gnw/grbuf.h"
     "src/plib/gnw/input.cc"
@@ -313,6 +322,10 @@ if(WIN32)
         NOMINMAX
         WIN32_LEAN_AND_MEAN
     )
+endif()
+
+if(GAMEPAD_HINTS)
+    target_compile_definitions(${EXECUTABLE_NAME} PUBLIC GAMEPAD_HINTS)
 endif()
 
 if(WIN32)

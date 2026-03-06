@@ -33,7 +33,9 @@
 #include "plib/color/color.h"
 #include "plib/gnw/button.h"
 #include "plib/gnw/debug.h"
+#include "plib/gnw/focus.h"
 #include "plib/gnw/gnw.h"
+#include "plib/gnw/gamepad.h"
 #include "plib/gnw/grbuf.h"
 #include "plib/gnw/input.h"
 #include "plib/gnw/memory.h"
@@ -713,6 +715,7 @@ void gdialog_enter(Object* target, int a2)
 // 0x43E0A0
 void dialogue_system_enter()
 {
+    gamepad_push_context(GAMEPAD_CTX_DIALOGUE);
     game_state_update();
 
     gdDialogTurnMouseOff = true;
@@ -732,6 +735,9 @@ void dialogue_system_enter()
     game_state_request(GAME_STATE_2);
 
     game_state_update();
+
+    gamepad_pop_context();
+    focus_clear();
 }
 
 // 0x43E10C
@@ -1864,6 +1870,33 @@ static void gDialogProcessUpdate()
                 debug_printf("\nError: Can't create button!");
             }
         }
+    }
+
+    // CE: Register focus elements for gamepad D-Pad navigation.
+    // Coordinates are screen-absolute for mouse_set_position().
+    int focusOptWinX = (screenGetWidth() - GAME_DIALOG_WINDOW_WIDTH) / 2 + GAME_DIALOG_OPTIONS_WINDOW_X;
+    int focusOptWinY = (screenGetHeight() - GAME_DIALOG_WINDOW_HEIGHT) / 2 + GAME_DIALOG_OPTIONS_WINDOW_Y;
+    focus_init();
+    for (int idx = 0; idx < gdNumOptions; idx++) {
+        GameDialogOptionEntry* entry = &(dialogBlock.options[idx]);
+        if (entry->btn == -1) continue;
+
+        int btn_y = (idx == 0) ? 0 : entry->field_14;
+        int btn_h;
+        if (idx < gdNumOptions - 1) {
+            btn_h = dialogBlock.options[idx + 1].field_14 - btn_y - 4;
+        } else {
+            btn_h = 111 - btn_y - 4;
+        }
+        if (btn_h < 1) btn_h = 1;
+
+        focus_register(idx,
+            focusOptWinX + 2 + width / 2,
+            focusOptWinY + btn_y + btn_h / 2,
+            width, btn_h, 49 + idx);
+    }
+    if (focus_get_count() > 0) {
+        focus_warp_mouse_to_current();
     }
 
     win_draw(gReplyWin);

@@ -14,6 +14,7 @@
 #include "plib/gnw/memory.h"
 #include "plib/gnw/svga.h"
 #include "plib/gnw/text.h"
+#include "plib/gnw/gamepad.h"
 #include "plib/gnw/touch.h"
 #include "plib/gnw/vcr.h"
 #include "plib/gnw/winmain.h"
@@ -214,6 +215,9 @@ void get_input_position(int* x, int* y)
 void process_bk()
 {
     int v1;
+
+    // CE: Process gamepad analog sticks each frame.
+    gamepad_process_sticks();
 
     GNW_do_bk_process();
 
@@ -1131,6 +1135,21 @@ void GNW95_process_message()
                 audioEnginePause();
                 break;
             }
+            break;
+        case SDL_CONTROLLERDEVICEADDED:
+            gamepad_handle_device_added(e.cdevice.which);
+            break;
+        case SDL_CONTROLLERDEVICEREMOVED:
+            gamepad_handle_device_removed(e.cdevice.which);
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+            gamepad_handle_button(e.cbutton.button, true);
+            break;
+        case SDL_CONTROLLERBUTTONUP:
+            gamepad_handle_button(e.cbutton.button, false);
+            break;
+        case SDL_CONTROLLERAXISMOTION:
+            gamepad_handle_axis(e.caxis.axis, e.caxis.value);
             break;
         case SDL_QUIT:
             exit(EXIT_SUCCESS);

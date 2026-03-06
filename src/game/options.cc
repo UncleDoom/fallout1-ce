@@ -25,6 +25,8 @@
 #include "plib/color/color.h"
 #include "plib/gnw/button.h"
 #include "plib/gnw/debug.h"
+#include "plib/gnw/focus.h"
+#include "plib/gnw/gamepad.h"
 #include "plib/gnw/gnw.h"
 #include "plib/gnw/grbuf.h"
 #include "plib/gnw/input.h"
@@ -385,6 +387,10 @@ int do_options()
         return -1;
     }
 
+    // CE: Set gamepad context for options menu.
+    gamepad_push_context(GAMEPAD_CTX_MENU);
+    focus_warp_mouse_to_current();
+
     int rc = -1;
     while (rc == -1) {
         sharedFpsLimiter.mark();
@@ -458,6 +464,10 @@ int do_options()
         renderPresent();
         sharedFpsLimiter.throttle();
     }
+
+    // CE: Restore gamepad context.
+    gamepad_pop_context();
+    focus_clear();
 
     OptnEnd();
 
@@ -556,6 +566,11 @@ static int OptnStart()
     int textY = (ginfo[OPTIONS_WINDOW_FRM_BUTTON_ON].height - text_height()) / 2 + 1;
     int buttonY = 17;
 
+    // CE: Prepare focus system for gamepad D-Pad navigation.
+    focus_init();
+    int btnW = ginfo[OPTIONS_WINDOW_FRM_BUTTON_ON].width;
+    int btnH = ginfo[OPTIONS_WINDOW_FRM_BUTTON_ON].height;
+
     for (int index = 0; index < OPTIONS_WINDOW_BUTTONS_COUNT; index += 2) {
         char text[128];
 
@@ -574,6 +589,10 @@ static int OptnStart()
         if (btn != -1) {
             win_register_button_sound_func(btn, gsound_lrg_butt_press, gsound_lrg_butt_release);
         }
+
+        // CE: Register with focus system (screen-absolute coords).
+        focus_register(index / 2, optionsWindowX + 13 + btnW / 2,
+            optionsWindowY + buttonY + btnH / 2, btnW, btnH, index / 2 + 500);
 
         buttonY += ginfo[OPTIONS_WINDOW_FRM_BUTTON_ON].height + 3;
     }

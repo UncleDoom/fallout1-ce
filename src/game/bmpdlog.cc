@@ -15,6 +15,8 @@
 #include "plib/color/color.h"
 #include "plib/gnw/button.h"
 #include "plib/gnw/debug.h"
+#include "plib/gnw/focus.h"
+#include "plib/gnw/gamepad.h"
 #include "plib/gnw/gnw.h"
 #include "plib/gnw/grbuf.h"
 #include "plib/gnw/input.h"
@@ -457,6 +459,26 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
 
     win_draw(win);
 
+    // CE: Gamepad support — push menu context and register focus for buttons.
+    gamepad_push_context(GAMEPAD_CTX_MENU);
+    if ((flags & DIALOG_BOX_0x20) == 0) {
+        focus_init();
+        int v27_focus = hasTwoButtons ? doneX[dialogType] : (backgroundWidth - doneBoxWidth) / 2;
+        // Yes/Done button (event 500)
+        focus_register(0,
+            x + v27_focus + 13 + downButtonWidth / 2,
+            y + doneY[dialogType] + 4 + downButtonHeight / 2,
+            downButtonWidth, downButtonHeight, 500);
+        if (hasTwoButtons && dialogType == DIALOG_TYPE_LARGE) {
+            // No/Cancel button (event 501)
+            focus_register(1,
+                x + doneBoxWidth + doneX[dialogType] + 37 + downButtonWidth / 2,
+                y + doneY[dialogType] + 4 + downButtonHeight / 2,
+                downButtonWidth, downButtonHeight, 501);
+        }
+        focus_warp_mouse_to_current();
+    }
+
     int rc = -1;
     while (rc == -1) {
         sharedFpsLimiter.mark();
@@ -489,6 +511,8 @@ int dialog_out(const char* title, const char** body, int bodyLength, int x, int 
     }
 
     win_delete(win);
+    focus_clear();
+    gamepad_pop_context();
     art_ptr_unlock(backgroundHandle);
     text_font(savedFont);
 

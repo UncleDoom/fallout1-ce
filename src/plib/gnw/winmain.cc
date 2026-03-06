@@ -93,6 +93,8 @@ private:
 };
 #endif
 
+static bool override_base_path = true;
+
 // Performs platform-specific initialization (working directory, touch hints).
 static void platformInit() noexcept
 {
@@ -103,9 +105,11 @@ static void platformInit() noexcept
 #endif
 
 #if __APPLE__ && TARGET_OS_OSX
-    char* basePath = SDL_GetBasePath();
-    chdir(basePath);
-    SDL_free(basePath);
+    if (override_base_path) {
+        char* basePath = SDL_GetBasePath();
+        chdir(basePath);
+        SDL_free(basePath);
+    }
 #endif
 
 #if __ANDROID__
@@ -126,6 +130,18 @@ HANDLE GNW95_mutex = nullptr;
 // 0x6B0760
 char GNW95_title[256];
 
+void parse_arguments(int argc, char* argv[]) {
+    if (argc <= 1) {
+        return;
+    }
+    for (size_t i = 1; i < argc; i++) {
+        if (strcmp("--keep-pwd", argv[i]) == 0) {
+            override_base_path = false;
+        }
+    }
+
+}
+
 int main(int argc, char* argv[])
 {
 #if _WIN32
@@ -134,6 +150,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 #endif
+    parse_arguments(argc, argv);
 
     platformInit();
 

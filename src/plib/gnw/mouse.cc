@@ -2,6 +2,7 @@
 
 #include "plib/color/color.h"
 #include "plib/gnw/dxinput.h"
+#include "plib/gnw/gamepad.h"
 #include "plib/gnw/gnw.h"
 #include "plib/gnw/input.h"
 #include "plib/gnw/memory.h"
@@ -497,6 +498,13 @@ void mouse_info()
         y = 0;
     }
 
+    // CE: Gamepad A button simulates left mouse click.
+    // This integrates with the existing mouse state machine so that
+    // holding A produces DOWN → REPEAT → UP transitions naturally.
+    if (gamepad_wants_mouse_click()) {
+        buttons |= MOUSE_STATE_LEFT_BUTTON_DOWN;
+    }
+
     // Adjust for mouse senstivity.
     x = static_cast<int>(x * mouse_sensitivity);
     y = static_cast<int>(y * mouse_sensitivity);
@@ -680,11 +688,29 @@ void mouse_get_position(int* x, int* y)
 // 0x4B528C
 void mouse_set_position(int x, int y)
 {
+    // CE: If the cursor is visible, erase it at the old position and redraw
+    // at the new one.  Without this, programmatic warps (gamepad focus,
+    // analog-stick cursor) leave a stale sprite until the next physical
+    // mouse movement triggers mouse_simulate_input's redraw path.
+    bool wasVisible = have_mouse && !mouse_is_hidden;
+    Rect oldRect;
+    if (wasVisible) {
+        oldRect.ulx = mouse_x;
+        oldRect.uly = mouse_y;
+        oldRect.lrx = mouse_width + mouse_x - 1;
+        oldRect.lry = mouse_length + mouse_y - 1;
+    }
+
     mouse_x = x - mouse_hotx;
     mouse_y = y - mouse_hoty;
     raw_y = y - mouse_hoty;
     raw_x = x - mouse_hotx;
     mouse_clip();
+
+    if (wasVisible) {
+        win_refresh_all(&oldRect);
+        mouse_show();
+    }
 }
 
 // 0x4B52C0
