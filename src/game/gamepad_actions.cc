@@ -120,6 +120,7 @@ void gamepad_actions_gameplay_tick()
 
     int direction = stick_to_hex_direction(lx, ly);
     // Scale distance by deflection magnitude: 1 tile at 30-60%, 2 at 60-80%, 3+ at 80%+
+    // TODO: don't scale just jump by discrete distance steps based on thresholds. This is simpler and more intuitive.
     int distance = 1;
     if (mag > 0.8f) distance = 3;
     else if (mag > 0.6f) distance = 2;
@@ -217,6 +218,7 @@ void gamepad_combat_cycle_target(int direction)
 
     // Warp mouse to target's screen position
     int sx, sy;
+    // FIXME: it should target the "center of mass" of the critters sprite
     if (tile_coord(target->tile, &sx, &sy, map_elevation) == 0) {
         mouse_set_position(sx + 16, sy + 8);
         g_combat_cursor_tile = target->tile;
