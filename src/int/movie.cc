@@ -531,7 +531,9 @@ static void cleanupMovie(int a1)
 
     _MVE_ReleaseMem();
 
-    handle->fclose();
+    if (handle != nullptr) {
+        handle->fclose();
+    }
 
     if (alphaWindowBuf != nullptr) {
         buf_to_buf(alphaWindowBuf, movieW, movieH, movieW, win_get_buf(GNWWin) + movieY * win_width(GNWWin) + movieX, win_width(GNWWin));

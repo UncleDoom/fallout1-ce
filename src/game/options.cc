@@ -911,6 +911,7 @@ static int do_prefscreen()
 // 0x481F8C
 static int PrefStart()
 {
+    // TODO: add focus areas
     int i;
     int fid;
     char* messageItemText;

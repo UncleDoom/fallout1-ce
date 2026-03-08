@@ -870,9 +870,9 @@ int map_load(char* file_name)
 
         stream = db_fopen(file_path, "rb");
         strcpy(extension, ".MAP");
-        stream->fclose();
 
         if (stream != nullptr) {
+            stream->fclose();
             rc = map_load_in_game(file_name);
             PlayCityMapMusic();
         }

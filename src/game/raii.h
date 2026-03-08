@@ -68,7 +68,7 @@ public:
         : stream_(stream) {}
 
     ~DbFileGuard() {
-        if (stream_) {
+        if (stream_ != nullptr) {
             stream_->fclose();
         }
     }
@@ -79,7 +79,9 @@ public:
 
     DbFileGuard& operator=(DbFileGuard&& other) noexcept {
         if (this != &other) {
-            if (stream_) stream_->fclose();
+            if (stream_ != nullptr) {
+                stream_->fclose();
+            }
             stream_ = std::exchange(other.stream_, nullptr);
         }
         return *this;
@@ -99,7 +101,9 @@ public:
 
     /// Close the stream early and reset to null.
     void reset(DB_FILE* stream = nullptr) noexcept {
-        if (stream_) stream_->fclose();
+        if (stream_) {
+            stream_->fclose();
+        }
         stream_ = stream;
     }
 

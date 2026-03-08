@@ -134,7 +134,9 @@ int audioOpen(const char* fname, int flags)
 int audioCloseFile(int fileHandle)
 {
     Audio* audioFile = &(audio[fileHandle - 1]);
-    audioFile->stream->fclose();
+    if (audioFile->stream != nullptr) {
+        audioFile->stream->fclose();
+    }
 
     if ((audioFile->flags & AUDIO_FILE_COMPRESSED) != 0) {
         AudioDecoder_Close(audioFile->audioDecoder);
